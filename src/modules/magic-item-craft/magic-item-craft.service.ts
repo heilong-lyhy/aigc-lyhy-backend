@@ -2,42 +2,35 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type {
-  MagicItemCraftTaskView,
   QueueMagicItemCraftTaskInput,
   QueueMagicItemCraftTaskResult,
 } from './magic-item-craft.types';
 import {
-  MagicItemCraftTaskEntity,
   MagicItemCraftTaskQualityLevel,
   MagicItemCraftTaskStatus,
-} from './magic-item-craft-task.entity';
-import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+} from '@app-types/models/magic-item-craft.types';
+import { MagicItemCraftTaskEntity } from './magic-item-craft-task.entity';
+import { MagicItemCraftQueueService } from '@modules/common/magic-item-craft-queue/magic-item-craft-queue.service';
 
 @Injectable()
 export class MagicItemCraftService {
   constructor(
     @InjectRepository(MagicItemCraftTaskEntity)
     private readonly magicItemCraftTaskRepo: Repository<MagicItemCraftTaskEntity>,
-    private readonly bullMqProducer: BullMqProducerGateway,
+    private readonly magicItemCraftQueueService: MagicItemCraftQueueService,
   ) {}
 
   async enqueueTask(
     input: QueueMagicItemCraftTaskInput,
     _occurredAt: Date,
   ): Promise<QueueMagicItemCraftTaskResult> {
-    const job = await this.bullMqProducer.enqueue({
-      queueName: BULLMQ_QUEUES.MAGIC_ITEM_CRAFT,
-      jobName: BULLMQ_JOBS.MAGIC_ITEM_CRAFT.CRAFT,
-      payload: {
-        itemName: input.itemName,
-        itemType: input.itemType,
-        materialLevel: input.materialLevel,
-        requestNote: input.requestNote,
-        actorAccountId: input.actorAccountId ?? null,
-        actorActiveRole: input.actorActiveRole ?? null,
-        traceId: input.traceId,
-      },
+    const job = await this.magicItemCraftQueueService.enqueueCraftJob({
+      itemName: input.itemName,
+      itemType: input.itemType,
+      materialLevel: input.materialLevel,
+      requestNote: input.requestNote,
+      actorAccountId: input.actorAccountId ?? null,
+      actorActiveRole: input.actorActiveRole ?? null,
       traceId: input.traceId,
     });
 
@@ -92,31 +85,5 @@ export class MagicItemCraftService {
         failureReason: input.failureReason,
       },
     );
-  }
-
-  async findById(id: string): Promise<MagicItemCraftTaskEntity | null> {
-    return this.magicItemCraftTaskRepo.findOne({ where: { id } });
-  }
-
-  async findByTraceId(traceId: string): Promise<MagicItemCraftTaskEntity | null> {
-    return this.magicItemCraftTaskRepo.findOne({ where: { traceId } });
-  }
-
-  toView(entity: MagicItemCraftTaskEntity): MagicItemCraftTaskView {
-    return {
-      id: entity.id,
-      traceId: entity.traceId,
-      itemName: entity.itemName,
-      itemType: entity.itemType,
-      materialLevel: entity.materialLevel,
-      requestNote: entity.requestNote,
-      status: entity.status,
-      qualityLevel: entity.qualityLevel,
-      resultDescription: entity.resultDescription,
-      failureReason: entity.failureReason,
-      craftLog: entity.craftLog,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
   }
 }

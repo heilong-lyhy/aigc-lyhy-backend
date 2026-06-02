@@ -25,7 +25,7 @@ import {
   MagicItemCraftTaskQualityLevel,
   MagicItemCraftTaskStatus,
   MagicItemCraftTaskType,
-} from '@src/modules/magic-item-craft/magic-item-craft.types';
+} from '@app-types/models/magic-item-craft.types';
 
 export function registerEnums(): void {
   registerEnumType(AccountStatus, { name: 'AccountStatus' });

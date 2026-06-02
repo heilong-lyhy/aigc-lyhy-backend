@@ -1,5 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { MagicItemCraftTaskStatus } from '@src/modules/magic-item-craft/magic-item-craft.types';
+import { MagicItemCraftTaskStatus } from '@app-types/models/magic-item-craft.types';
 
 @ObjectType()
 export class CreateMagicItemCraftTaskResult {

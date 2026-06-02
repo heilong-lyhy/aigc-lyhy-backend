@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  MagicItemCraftTaskQualityLevel,
-  type QueueMagicItemCraftTaskInput,
-} from '@src/modules/magic-item-craft/magic-item-craft.types';
+import { MagicItemCraftTaskQualityLevel } from '@app-types/models/magic-item-craft.types';
+import type { QueueMagicItemCraftTaskInput } from '@src/modules/magic-item-craft/magic-item-craft.types';
 import { MagicItemCraftService } from '@src/modules/magic-item-craft/magic-item-craft.service';
 
-export interface MagicItemCraftJobPayload extends QueueMagicItemCraftTaskInput {}
+export type MagicItemCraftJobPayload = QueueMagicItemCraftTaskInput;
 
 export interface ConsumeMagicItemCraftJobProcessInput {
   readonly queueName: string;
@@ -71,7 +69,7 @@ export class ConsumeMagicItemCraftUsecase {
     };
   }
 
-  async complete(input: ConsumeMagicItemCraftJobCompleteInput): Promise<void> {
+  complete(input: ConsumeMagicItemCraftJobCompleteInput): void {
     this.logger.log(`Magic item craft job completed: ${input.traceId}`);
   }
 
@@ -97,11 +95,11 @@ export class ConsumeMagicItemCraftUsecase {
     const randomQuality = qualityLevels[Math.floor(Math.random() * qualityLevels.length)];
 
     const materialDescriptions: Record<string, string> = {
-      '1': '普通的',
-      '2': '精良的',
-      '3': '优质的',
-      '4': '珍稀的',
-      '5': '极品的',
+      LEVEL_1: '普通的',
+      LEVEL_2: '精良的',
+      LEVEL_3: '优质的',
+      LEVEL_4: '珍稀的',
+      LEVEL_5: '极品的',
     };
 
     const typeDescriptions: Record<string, string> = {
@@ -118,7 +116,7 @@ export class ConsumeMagicItemCraftUsecase {
       LEGENDARY: '传说级的',
     };
 
-    const description = `${materialDescriptions[String(input.materialLevel)] || '普通的'}${typeDescriptions[input.itemType] || '物品'}: ${input.itemName}`;
+    const description = `${materialDescriptions[`LEVEL_${input.materialLevel}`] || '普通的'}${typeDescriptions[input.itemType] || '物品'}: ${input.itemName}`;
     const fullDescription = `${qualityDescriptions[randomQuality]}的${description}！这件道具散发着神秘的光芒，蕴含着强大的魔力。`;
 
     const craftLogLines = [

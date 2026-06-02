@@ -19,8 +19,8 @@ export class MagicItemCraftJobProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('completed')
-  async onCompleted(job: MagicItemCraftJob): Promise<void> {
-    await this.handler.onCompleted({ job });
+  onCompleted(job: MagicItemCraftJob): void {
+    this.handler.onCompleted({ job });
   }
 
   @OnWorkerEvent('failed')

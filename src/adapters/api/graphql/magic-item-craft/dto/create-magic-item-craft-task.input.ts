@@ -2,7 +2,7 @@ import { Field, InputType, Int } from '@nestjs/graphql';
 import { Transform, TransformFnParams } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 import { trimText } from '@src/core/common/text/text.helper';
-import { MagicItemCraftTaskType } from '@src/modules/magic-item-craft/magic-item-craft.types';
+import { MagicItemCraftTaskType } from '@app-types/models/magic-item-craft.types';
 
 @InputType()
 export class CreateMagicItemCraftTaskInput {

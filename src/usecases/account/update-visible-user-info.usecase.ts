@@ -130,11 +130,11 @@ export class UpdateVisibleUserInfoUsecase {
           });
         }
         if (shouldUpdateIdentityHint && resolvedIdentityHint) {
-          const account = await this.accountService.lockByIdForUpdate(
+          const lockedAccount = await this.accountService.lockByIdForUpdate(
             targetAccountId,
             transactionContext,
           );
-          const currentIdentityHint = this.normalizeIdentityHint(account.identityHint);
+          const currentIdentityHint = this.normalizeIdentityHint(lockedAccount.identityHint);
           if (currentIdentityHint !== resolvedIdentityHint) {
             await this.accountService.updateAccount(
               targetAccountId,
@@ -505,7 +505,7 @@ export class UpdateAccessGroupUsecase {
     }
 
     return await this.transactionRunner.run(async (transactionContext) => {
-      const account = await this.accountService.lockByIdForUpdate(
+      const lockedAccount = await this.accountService.lockByIdForUpdate(
         targetAccountId,
         transactionContext,
       );
@@ -514,7 +514,7 @@ export class UpdateAccessGroupUsecase {
         accessGroup: normalizedAccessGroup,
         transactionContext,
       });
-      const currentIdentityHint = this.normalizeIdentityHint(account.identityHint);
+      const currentIdentityHint = this.normalizeIdentityHint(lockedAccount.identityHint);
       const identityHintChanged = currentIdentityHint !== finalIdentityHint;
 
       if (identityHintChanged) {

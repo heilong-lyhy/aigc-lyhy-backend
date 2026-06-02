@@ -19,8 +19,8 @@ export class MagicItemCraftJobHandler {
     );
   }
 
-  async onCompleted(input: { readonly job: MagicItemCraftJob }): Promise<void> {
-    await this.consumeMagicItemCraftUsecase.complete(
+  onCompleted(input: { readonly job: MagicItemCraftJob }): void {
+    this.consumeMagicItemCraftUsecase.complete(
       mapMagicItemCraftJobToCompleteInput({ job: input.job }),
     );
   }

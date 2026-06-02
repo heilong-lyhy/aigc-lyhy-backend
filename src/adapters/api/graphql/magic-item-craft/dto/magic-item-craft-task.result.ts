@@ -3,7 +3,7 @@ import {
   MagicItemCraftTaskQualityLevel,
   MagicItemCraftTaskStatus,
   MagicItemCraftTaskType,
-} from '@src/modules/magic-item-craft/magic-item-craft.types';
+} from '@app-types/models/magic-item-craft.types';
 
 @ObjectType()
 export class MagicItemCraftTaskResult {

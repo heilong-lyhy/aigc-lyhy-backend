@@ -6,27 +6,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-export enum MagicItemCraftTaskStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  SUCCEEDED = 'SUCCEEDED',
-  FAILED = 'FAILED',
-}
-
-export enum MagicItemCraftTaskType {
-  WEAPON = 'WEAPON',
-  ARMOR = 'ARMOR',
-  TOOL = 'TOOL',
-  TOY = 'TOY',
-}
-
-export enum MagicItemCraftTaskQualityLevel {
-  COMMON = 'COMMON',
-  RARE = 'RARE',
-  EPIC = 'EPIC',
-  LEGENDARY = 'LEGENDARY',
-}
+import {
+  MagicItemCraftTaskQualityLevel,
+  MagicItemCraftTaskStatus,
+  MagicItemCraftTaskType,
+} from '@app-types/models/magic-item-craft.types';
 
 @Entity('magic_item_craft_tasks')
 @Index('idx_trace_id', ['traceId'], { unique: true })

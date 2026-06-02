@@ -6,10 +6,9 @@ import type {
   MagicItemCraftJobPayload,
   MagicItemCraftResult,
 } from '@src/usecases/magic-item-craft/consume-magic-item-craft.usecase';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
 
-export const MAGIC_ITEM_CRAFT_QUEUE_NAME = BULLMQ_QUEUES.MAGIC_ITEM_CRAFT;
-export const MAGIC_ITEM_CRAFT_JOB_NAME = BULLMQ_JOBS.MAGIC_ITEM_CRAFT.CRAFT;
+export const MAGIC_ITEM_CRAFT_QUEUE_NAME = 'magic_item_craft';
+export const MAGIC_ITEM_CRAFT_JOB_NAME = 'craft';
 
 export type MagicItemCraftJob = Job<
   MagicItemCraftJobPayload,

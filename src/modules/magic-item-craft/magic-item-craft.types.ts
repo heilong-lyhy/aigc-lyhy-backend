@@ -2,7 +2,7 @@ import {
   MagicItemCraftTaskQualityLevel,
   MagicItemCraftTaskStatus,
   MagicItemCraftTaskType,
-} from './magic-item-craft-task.entity';
+} from '@app-types/models/magic-item-craft.types';
 
 export { MagicItemCraftTaskQualityLevel, MagicItemCraftTaskStatus, MagicItemCraftTaskType };
 

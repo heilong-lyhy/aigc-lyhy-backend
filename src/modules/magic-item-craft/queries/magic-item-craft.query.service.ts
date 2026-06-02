@@ -17,6 +17,12 @@ export class MagicItemCraftQueryService {
     return this.toView(entity);
   }
 
+  async findByTraceId(traceId: string): Promise<MagicItemCraftTaskView | null> {
+    const entity = await this.magicItemCraftTaskRepo.findOne({ where: { traceId } });
+    if (!entity) return null;
+    return this.toView(entity);
+  }
+
   private toView(entity: MagicItemCraftTaskEntity): MagicItemCraftTaskView {
     return {
       id: entity.id,

@@ -67,6 +67,16 @@ export interface UserInfoUpdateData {
   userState?: UserState;
 }
 
+export interface AccountSaveResult {
+  readonly createdAt: Date;
+  readonly id: number;
+}
+
+export interface AccountLockResult {
+  readonly id: number;
+  readonly identityHint: string | null;
+}
+
 @Injectable()
 export class AccountService {
   constructor(
@@ -106,24 +116,15 @@ export class AccountService {
     });
   }
 
-  /** 创建账户实体（不落库） */
-  createAccountEntity(params: {
+  async createAndSaveAccount(params: {
     accountData: AccountCreateData;
     transactionContext?: PersistenceTransactionContext;
-  }): AccountEntity {
+  }): Promise<AccountSaveResult> {
     const { accountData, transactionContext } = params;
     const repository = this.getAccountRepository(transactionContext);
-    return repository.create(accountData);
-  }
-
-  /** 落库账户实体 */
-  async saveAccount(params: {
-    account: AccountEntity;
-    transactionContext?: PersistenceTransactionContext;
-  }): Promise<AccountEntity> {
-    const { account, transactionContext } = params;
-    const repository = this.getAccountRepository(transactionContext);
-    return await repository.save(account);
+    const entity = repository.create(accountData);
+    const saved = await repository.save(entity);
+    return { id: saved.id, createdAt: saved.createdAt };
   }
 
   /** 更新账户 */
@@ -148,16 +149,10 @@ export class AccountService {
     });
   }
 
-  /**
-   * 显式锁定账户以避免并发覆盖
-   * @param accountId 账户 ID
-   * @param transactionContext 事务上下文
-   * @returns 锁定的账户实体
-   */
   async lockByIdForUpdate(
     accountId: number,
     transactionContext: PersistenceTransactionContext,
-  ): Promise<AccountEntity> {
+  ): Promise<AccountLockResult> {
     const repository = this.getAccountRepository(transactionContext);
     const account = await repository
       .createQueryBuilder('account')
@@ -169,27 +164,17 @@ export class AccountService {
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
     }
 
-    return account;
+    return { id: account.id, identityHint: account.identityHint };
   }
 
-  /** 创建用户信息实体（不落库） */
-  createUserInfoEntity(params: {
+  async createAndSaveUserInfo(params: {
     userInfoData: UserInfoCreateData;
     transactionContext?: PersistenceTransactionContext;
-  }): UserInfoEntity {
+  }): Promise<void> {
     const { userInfoData, transactionContext } = params;
     const repository = this.getUserInfoRepository(transactionContext);
-    return repository.create(userInfoData);
-  }
-
-  /** 落库用户信息实体 */
-  async saveUserInfo(params: {
-    userInfo: UserInfoEntity;
-    transactionContext?: PersistenceTransactionContext;
-  }): Promise<UserInfoEntity> {
-    const { userInfo, transactionContext } = params;
-    const repository = this.getUserInfoRepository(transactionContext);
-    return await repository.save(userInfo);
+    const entity = repository.create(userInfoData);
+    await repository.save(entity);
   }
 
   async updateUserInfoFields(params: {

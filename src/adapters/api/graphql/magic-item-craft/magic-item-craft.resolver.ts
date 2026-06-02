@@ -8,7 +8,6 @@ import { GetMagicItemCraftTaskUsecase } from '@src/usecases/magic-item-craft/get
 import { CreateMagicItemCraftTaskInput } from './dto/create-magic-item-craft-task.input';
 import { CreateMagicItemCraftTaskResult } from './dto/create-magic-item-craft-task.result';
 import { MagicItemCraftTaskResult } from './dto/magic-item-craft-task.result';
-import type { MagicItemCraftTaskType } from '@src/modules/magic-item-craft/magic-item-craft.types';
 
 @Resolver()
 export class MagicItemCraftResolver {

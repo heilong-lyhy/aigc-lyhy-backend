@@ -77,8 +77,7 @@ export class CreateAccountUsecase {
       }
     }
 
-    // 1) 创建账户（先写临时密码拿到 createdAt）
-    const account = this.accountService.createAccountEntity({
+    const savedAccount = await this.accountService.createAndSaveAccount({
       transactionContext,
       accountData: {
         ...accountData,
@@ -88,9 +87,7 @@ export class CreateAccountUsecase {
         updatedAt: new Date(),
       },
     });
-    const savedAccount = await this.accountService.saveAccount({ account, transactionContext });
 
-    // 2) 依据 createdAt 生成最终哈希密码并更新
     const hashedPassword = AccountService.hashPasswordWithTimestamp(
       String(accountData.loginPassword),
       savedAccount.createdAt,
@@ -101,8 +98,7 @@ export class CreateAccountUsecase {
       transactionContext,
     });
 
-    // 3) 写入 UserInfo
-    const userInfo = this.accountService.createUserInfoEntity({
+    await this.accountService.createAndSaveUserInfo({
       transactionContext,
       userInfoData: {
         ...userInfoData,
@@ -111,7 +107,6 @@ export class CreateAccountUsecase {
         updatedAt: new Date(),
       },
     });
-    await this.accountService.saveUserInfo({ userInfo, transactionContext });
 
     return await this.accountQueryService.getUserAccountViewById({
       accountId: savedAccount.id,
