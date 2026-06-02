@@ -20,10 +20,7 @@ export class MagicItemCraftService {
     private readonly magicItemCraftQueueService: MagicItemCraftQueueService,
   ) {}
 
-  async enqueueTask(
-    input: QueueMagicItemCraftTaskInput,
-    _occurredAt: Date,
-  ): Promise<QueueMagicItemCraftTaskResult> {
+  async enqueueTask(input: QueueMagicItemCraftTaskInput): Promise<QueueMagicItemCraftTaskResult> {
     const job = await this.magicItemCraftQueueService.enqueueCraftJob({
       itemName: input.itemName,
       itemType: input.itemType,

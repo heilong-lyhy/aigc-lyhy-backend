@@ -10,7 +10,6 @@ export class QueueMagicItemCraftUsecase {
   constructor(private readonly magicItemCraftService: MagicItemCraftService) {}
 
   async execute(input: QueueMagicItemCraftTaskInput): Promise<QueueMagicItemCraftTaskResult> {
-    const now = new Date();
-    return await this.magicItemCraftService.enqueueTask(input, now);
+    return await this.magicItemCraftService.enqueueTask(input);
   }
 }

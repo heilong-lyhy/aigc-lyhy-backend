@@ -116,7 +116,18 @@ export class ConsumeMagicItemCraftUsecase {
       LEGENDARY: '传说级的',
     };
 
-    const description = `${materialDescriptions[`LEVEL_${input.materialLevel}`] || '普通的'}${typeDescriptions[input.itemType] || '物品'}: ${input.itemName}`;
+    const materialKey = `LEVEL_${input.materialLevel}`;
+    const materialDesc = materialDescriptions[materialKey];
+    if (!materialDesc) {
+      throw new Error(`invalid_material_level:${input.materialLevel}`);
+    }
+
+    const typeDesc = typeDescriptions[input.itemType];
+    if (!typeDesc) {
+      throw new Error(`invalid_item_type:${input.itemType}`);
+    }
+
+    const description = `${materialDesc}${typeDesc}: ${input.itemName}`;
     const fullDescription = `${qualityDescriptions[randomQuality]}的${description}！这件道具散发着神秘的光芒，蕴含着强大的魔力。`;
 
     const craftLogLines = [
