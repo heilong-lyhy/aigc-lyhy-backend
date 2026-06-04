@@ -2,6 +2,7 @@
 // 文件聚合根写服务
 // 职责：文件上传、删除；通过 FileStorageAdapter boundary contract 实现存储
 // 文件类型白名单与大小限制在此服务中校验
+// View 映射委托 BlogFileQueryService，避免 toView 重复
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
@@ -9,7 +10,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import { type BlogFileWriteResult, type UploadBlogFileInput } from './blog.types';
+import type { UploadBlogFileInput } from './blog.types';
 import {
   BLOG_FILE_STORAGE_TOKEN,
   type FileStorageAdapter,
@@ -17,6 +18,7 @@ import {
   type BlogFileUploadConfig,
 } from './contracts/file-storage.contract';
 import { BlogFileEntity } from './entities/blog-file.entity';
+import { BlogFileQueryService } from './queries/blog-file.query.service';
 
 @Injectable()
 export class BlogFileService {
@@ -30,6 +32,7 @@ export class BlogFileService {
     private readonly fileStorage: FileStorageAdapter,
     @Inject(BLOG_FILE_UPLOAD_CONFIG_TOKEN)
     private readonly uploadConfig: BlogFileUploadConfig,
+    private readonly queryService: BlogFileQueryService,
   ) {
     this.allowedMimeTypes = this.uploadConfig.allowedMimeTypes;
     this.maxFileSize = this.uploadConfig.maxFileSize;
@@ -38,7 +41,7 @@ export class BlogFileService {
   async uploadFile(
     input: UploadBlogFileInput & { buffer: Buffer },
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogFileWriteResult> {
+  ) {
     // 文件类型白名单校验
     if (!this.allowedMimeTypes.includes(input.mimeType)) {
       throw new DomainError(BLOG_ERROR.FILE_TYPE_NOT_ALLOWED, '不支持的文件类型');
@@ -69,7 +72,7 @@ export class BlogFileService {
     });
 
     const saved = await repo.save(entity);
-    return this.toView(saved);
+    return this.queryService.getFileById(saved.id, transactionContext);
   }
 
   async deleteFile(id: number, transactionContext?: PersistenceTransactionContext): Promise<void> {
@@ -86,20 +89,6 @@ export class BlogFileService {
   }
 
   // ─── 内部工具 ───
-
-  private toView(entity: BlogFileEntity): BlogFileWriteResult {
-    return {
-      id: entity.id,
-      originalName: entity.originalName,
-      storedName: entity.storedName,
-      mimeType: entity.mimeType,
-      fileSize: entity.fileSize,
-      storagePath: entity.storagePath,
-      fileType: entity.fileType,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
-  }
 
   private getFileRepo(
     transactionContext?: PersistenceTransactionContext,

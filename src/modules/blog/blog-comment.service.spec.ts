@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { BlogCommentStatus } from './blog.types';
 import { BlogCommentEntity } from './entities/blog-comment.entity';
 import { BlogCommentService } from './blog-comment.service';
+import { BlogCommentQueryService } from './queries/blog-comment.query.service';
 import {
   BLOG_AVATAR_GENERATOR_TOKEN,
   type AvatarGenerator,
@@ -16,6 +17,7 @@ describe('BlogCommentService', () => {
   let service: BlogCommentService;
   let commentRepo: jest.Mocked<Repository<BlogCommentEntity>>;
   let avatarGenerator: jest.Mocked<AvatarGenerator>;
+  let queryService: { findCommentById: jest.Mock };
 
   const mockCommentRepo = {
     findOne: jest.fn(),
@@ -29,18 +31,24 @@ describe('BlogCommentService', () => {
     generateAvatar: jest.fn(),
   };
 
+  const mockQueryService = {
+    findCommentById: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogCommentService,
         { provide: getRepositoryToken(BlogCommentEntity), useValue: mockCommentRepo },
         { provide: BLOG_AVATAR_GENERATOR_TOKEN, useValue: mockAvatarGenerator },
+        { provide: BlogCommentQueryService, useValue: mockQueryService },
       ],
     }).compile();
 
     service = module.get<BlogCommentService>(BlogCommentService);
     commentRepo = module.get(getRepositoryToken(BlogCommentEntity));
     avatarGenerator = module.get(BLOG_AVATAR_GENERATOR_TOKEN);
+    queryService = mockQueryService;
   });
 
   afterEach(() => {
@@ -77,12 +85,27 @@ describe('BlogCommentService', () => {
       mockAvatarGenerator.generateAvatar.mockResolvedValue('https://avatar.example.com/test.png');
       commentRepo.create.mockReturnValue(savedEntity);
       commentRepo.save.mockResolvedValue(savedEntity);
+      queryService.findCommentById.mockResolvedValue({
+        id: 1,
+        postId: 1,
+        parentId: null,
+        replyToId: null,
+        authorName: '访客',
+        authorAvatar: 'https://avatar.example.com/test.png',
+        content: '评论内容',
+        status: BlogCommentStatus.PENDING,
+        nestingLevel: 0,
+        createdAt: savedEntity.createdAt,
+        updatedAt: savedEntity.updatedAt,
+      });
 
       const result = await service.createComment(baseInput);
 
-      expect(result.nestingLevel).toBe(0);
-      expect(result.authorAvatar).toBe('https://avatar.example.com/test.png');
+      expect(result).not.toBeNull();
+      expect(result!.nestingLevel).toBe(0);
+      expect(result!.authorAvatar).toBe('https://avatar.example.com/test.png');
       expect(avatarGenerator.generateAvatar).toHaveBeenCalledWith('test@example.com');
+      expect(queryService.findCommentById).toHaveBeenCalledWith(1, undefined);
     });
 
     it('应成功创建子评论（nestingLevel = parent + 1）', async () => {
@@ -111,10 +134,24 @@ describe('BlogCommentService', () => {
       mockAvatarGenerator.generateAvatar.mockResolvedValue('avatar-url');
       commentRepo.create.mockReturnValue(savedEntity);
       commentRepo.save.mockResolvedValue(savedEntity);
+      queryService.findCommentById.mockResolvedValue({
+        id: 11,
+        postId: 1,
+        parentId: 10,
+        replyToId: null,
+        authorName: '访客',
+        authorAvatar: 'avatar-url',
+        content: '回复内容',
+        status: BlogCommentStatus.PENDING,
+        nestingLevel: 3,
+        createdAt: savedEntity.createdAt,
+        updatedAt: savedEntity.updatedAt,
+      });
 
       const result = await service.createComment({ ...baseInput, parentId: 10 });
 
-      expect(result.nestingLevel).toBe(3);
+      expect(result).not.toBeNull();
+      expect(result!.nestingLevel).toBe(3);
     });
 
     it('父评论不存在时应抛出 COMMENT_NOT_FOUND', async () => {
@@ -174,9 +211,14 @@ describe('BlogCommentService', () => {
       mockAvatarGenerator.generateAvatar.mockResolvedValue('avatar-url');
       commentRepo.create.mockReturnValue(savedEntity);
       commentRepo.save.mockResolvedValue(savedEntity);
+      queryService.findCommentById.mockResolvedValue({
+        id: 11,
+        nestingLevel: 5,
+      });
 
       const result = await service.createComment({ ...baseInput, parentId: 10 });
-      expect(result.nestingLevel).toBe(5);
+      expect(result).not.toBeNull();
+      expect(result!.nestingLevel).toBe(5);
     });
   });
 
@@ -189,20 +231,22 @@ describe('BlogCommentService', () => {
         status: BlogCommentStatus.PENDING,
       } as BlogCommentEntity;
 
-      const saved = {
-        ...existing,
-        status: BlogCommentStatus.APPROVED,
-      } as BlogCommentEntity;
-
       commentRepo.findOne.mockResolvedValue(existing);
-      commentRepo.save.mockResolvedValue(saved);
+      commentRepo.update.mockResolvedValue(undefined as never);
+      queryService.findCommentById.mockResolvedValue({
+        id: 1,
+        status: BlogCommentStatus.APPROVED,
+      });
 
       const result = await service.updateCommentStatus({
         id: 1,
         status: BlogCommentStatus.APPROVED,
       });
 
-      expect(result.status).toBe(BlogCommentStatus.APPROVED);
+      expect(result).not.toBeNull();
+      expect(result!.status).toBe(BlogCommentStatus.APPROVED);
+      expect(commentRepo.update).toHaveBeenCalledWith(1, { status: BlogCommentStatus.APPROVED });
+      expect(queryService.findCommentById).toHaveBeenCalledWith(1, undefined);
     });
 
     it('评论不存在时应抛出 COMMENT_NOT_FOUND', async () => {
@@ -223,7 +267,7 @@ describe('BlogCommentService', () => {
     });
 
     it('应批量更新评论状态', async () => {
-      commentRepo.update.mockResolvedValue(undefined);
+      commentRepo.update.mockResolvedValue(undefined as never);
 
       await service.batchUpdateCommentStatus({
         ids: [1, 2, 3],

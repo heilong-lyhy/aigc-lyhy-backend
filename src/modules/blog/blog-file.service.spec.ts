@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { BlogFileType } from './blog.types';
 import { BlogFileEntity } from './entities/blog-file.entity';
 import { BlogFileService } from './blog-file.service';
+import { BlogFileQueryService } from './queries/blog-file.query.service';
 import {
   BLOG_FILE_STORAGE_TOKEN,
   type FileStorageAdapter,
@@ -18,6 +19,7 @@ describe('BlogFileService', () => {
   let service: BlogFileService;
   let fileRepo: jest.Mocked<Repository<BlogFileEntity>>;
   let fileStorage: jest.Mocked<FileStorageAdapter>;
+  let queryService: { getFileById: jest.Mock };
 
   const mockFileRepo = {
     findOne: jest.fn(),
@@ -37,6 +39,10 @@ describe('BlogFileService', () => {
     maxFileSize: 10 * 1024 * 1024, // 10MB
   };
 
+  const mockQueryService = {
+    getFileById: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,12 +50,14 @@ describe('BlogFileService', () => {
         { provide: getRepositoryToken(BlogFileEntity), useValue: mockFileRepo },
         { provide: BLOG_FILE_STORAGE_TOKEN, useValue: mockFileStorage },
         { provide: BLOG_FILE_UPLOAD_CONFIG_TOKEN, useValue: defaultUploadConfig },
+        { provide: BlogFileQueryService, useValue: mockQueryService },
       ],
     }).compile();
 
     service = module.get<BlogFileService>(BlogFileService);
     fileRepo = module.get(getRepositoryToken(BlogFileEntity));
     fileStorage = module.get(BLOG_FILE_STORAGE_TOKEN);
+    queryService = mockQueryService;
   });
 
   afterEach(() => {
@@ -85,14 +93,27 @@ describe('BlogFileService', () => {
 
       fileRepo.create.mockReturnValue(savedEntity);
       fileRepo.save.mockResolvedValue(savedEntity);
+      queryService.getFileById.mockResolvedValue({
+        id: 1,
+        originalName: 'photo.jpg',
+        storedName: 'abc123.jpg',
+        mimeType: 'image/jpeg',
+        fileSize: 1024,
+        storagePath: 'image/abc123.jpg',
+        fileType: BlogFileType.IMAGE,
+        createdAt: savedEntity.createdAt,
+        updatedAt: savedEntity.updatedAt,
+      });
 
       const result = await service.uploadFile(validInput);
 
-      expect(result.id).toBe(1);
-      expect(result.storagePath).toBe('image/abc123.jpg');
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe(1);
+      expect(result!.storagePath).toBe('image/abc123.jpg');
       expect(fileStorage.saveFile).toHaveBeenCalledWith(
         expect.objectContaining({ storedName: 'abc123.jpg' }),
       );
+      expect(queryService.getFileById).toHaveBeenCalledWith(1, undefined);
     });
 
     it('MIME 类型不在白名单时应抛出 FILE_TYPE_NOT_ALLOWED', async () => {
@@ -127,6 +148,7 @@ describe('BlogFileService', () => {
 
       fileRepo.create.mockReturnValue(savedEntity);
       fileRepo.save.mockResolvedValue(savedEntity);
+      queryService.getFileById.mockResolvedValue({ id: 1 });
 
       const result = await service.uploadFile(exactSizeInput);
       expect(result).toBeDefined();
@@ -143,7 +165,7 @@ describe('BlogFileService', () => {
       } as BlogFileEntity;
 
       fileRepo.findOne.mockResolvedValue(existing);
-      fileStorage.deleteFile.mockResolvedValue(undefined);
+      fileStorage.deleteFile.mockResolvedValue(undefined as never);
       fileRepo.softRemove.mockResolvedValue(existing);
 
       await service.deleteFile(1);

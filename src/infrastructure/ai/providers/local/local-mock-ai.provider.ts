@@ -7,6 +7,7 @@ import type {
 } from '@core/ai/ai-provider.interface';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { buildProviderJobId } from '../utils/provider-job-id';
 
 @Injectable()
 export class LocalMockAiProvider implements AiProviderClient {
@@ -16,7 +17,7 @@ export class LocalMockAiProvider implements AiProviderClient {
     const providerStartedAt = new Date();
     const normalizedPrompt = input.prompt.trim();
     const outputText = normalizedPrompt.length > 0 ? normalizedPrompt : '[empty_prompt]';
-    const providerJobId = this.buildProviderJobId({
+    const providerJobId = buildProviderJobId({
       provider: this.name,
       model: input.model,
       content: normalizedPrompt,
@@ -45,7 +46,7 @@ export class LocalMockAiProvider implements AiProviderClient {
   embed(input: EmbedAiContentInput): Promise<EmbedAiContentResult> {
     const providerStartedAt = new Date();
     const normalizedText = input.text.trim();
-    const providerJobId = this.buildProviderJobId({
+    const providerJobId = buildProviderJobId({
       provider: this.name,
       model: input.model,
       content: normalizedText,
@@ -69,15 +70,6 @@ export class LocalMockAiProvider implements AiProviderClient {
       providerStartedAt,
       providerFinishedAt,
     });
-  }
-
-  private buildProviderJobId(input: {
-    readonly provider: string;
-    readonly model: string;
-    readonly content: string;
-  }): string {
-    const digest = createHash('sha256').update(`${input.model}:${input.content}`).digest('hex');
-    return `${input.provider}:${digest.slice(0, 24)}`;
   }
 
   private buildVector(input: {

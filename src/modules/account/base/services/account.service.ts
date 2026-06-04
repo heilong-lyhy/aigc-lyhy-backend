@@ -8,7 +8,8 @@ import {
   LoginHistoryItemModel,
 } from '@app-types/models/account.types';
 import { Gender, type GeographicInfo, UserState } from '@app-types/models/user-info.types';
-import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/domain-error';
+import { ACCOUNT_ERROR, DomainError } from '@core/common/errors/domain-error';
+import { validatePasswordNormalize } from '@core/common/password/normalize-password';
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -249,22 +250,13 @@ export class AccountService {
   }
 
   /**
-   * 密码预处理 - 与 PasswordPolicyService 保持一致
+   * 密码预处理 - 统一调用 validatePasswordNormalize
+   * validatePasswordNormalize 不合法时直接抛 DomainError（INPUT_NORMALIZE_ERROR），合法时返回规范化密码
    * @param password 原始密码
    * @returns 预处理后的密码
    */
   private static preprocessPassword(password: string): string {
-    if (!password || /^\s*$/u.test(password)) {
-      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '密码不能为空或纯空白字符');
-    }
-
-    const normalizedPassword = password.normalize('NFKC');
-
-    if (/^\s|\s$/u.test(normalizedPassword)) {
-      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '密码首尾不能包含空格');
-    }
-
-    return normalizedPassword;
+    return validatePasswordNormalize(password);
   }
 
   private getAccountRepository(

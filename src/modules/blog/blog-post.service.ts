@@ -1,5 +1,7 @@
 // src/modules/blog/blog-post.service.ts
 // 文章聚合根写服务：细粒度写操作，事务上下文由 Usecase 传入
+// View 映射委托 BlogPostQueryService，避免 toView 重复
+// 聚合内子实体（BlogPostTag）写入通过本服务入口编排，禁止 usecase 绕过聚合根直接调子实体 service
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
@@ -11,21 +13,68 @@ import {
   BlogPostStatus,
   type CreateBlogPostInput,
   type UpdateBlogPostInput,
-  type BlogPostWriteResult,
+  type BlogPostDetailView,
 } from './blog.types';
 import { BlogPostEntity } from './entities/blog-post.entity';
+import { BlogPostTagService } from './blog-post-tag.service';
+import { BlogPostQueryService } from './queries/blog-post.query.service';
 
 @Injectable()
 export class BlogPostService {
   constructor(
     @InjectRepository(BlogPostEntity)
     private readonly postRepo: Repository<BlogPostEntity>,
+    private readonly postTagService: BlogPostTagService,
+    private readonly queryService: BlogPostQueryService,
   ) {}
+
+  /**
+   * 创建文章并同步标签关联（聚合根入口）
+   * usecase 应调用此方法，而非分别调 createPost + postTagService.syncPostTags
+   */
+  async createPostWithTags(
+    input: CreateBlogPostInput,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostDetailView | null> {
+    const view = await this.createPost(input, transactionContext);
+    if (!view) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '创建文章后未找到记录');
+    }
+
+    if (input.tagIds && input.tagIds.length > 0) {
+      await this.postTagService.syncPostTags(view.id, input.tagIds, transactionContext);
+    }
+
+    // 标签同步后重新读取完整 view（含 tags）
+    return this.queryService.findPostById(view.id, transactionContext);
+  }
+
+  /**
+   * 更新文章并同步标签关联（聚合根入口）
+   * usecase 应调用此方法，而非分别调 updatePost + postTagService.syncPostTags
+   */
+  async updatePostWithTags(
+    id: number,
+    input: UpdateBlogPostInput,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostDetailView | null> {
+    const view = await this.updatePost(id, input, transactionContext);
+    if (!view) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+
+    if (input.tagIds !== undefined) {
+      await this.postTagService.syncPostTags(id, input.tagIds, transactionContext);
+    }
+
+    // 标签同步后重新读取完整 view（含 tags）
+    return this.queryService.findPostById(id, transactionContext);
+  }
 
   async createPost(
     input: CreateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogPostWriteResult> {
+  ): Promise<BlogPostDetailView | null> {
     const repo = this.getRepo(transactionContext);
     const entity = repo.create({
       title: input.title,
@@ -40,14 +89,14 @@ export class BlogPostService {
       publishedAt: input.publishedAt ?? null,
     });
     const saved = await repo.save(entity);
-    return this.toView(saved);
+    return this.queryService.findPostById(saved.id, transactionContext);
   }
 
   async updatePost(
     id: number,
     input: UpdateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogPostWriteResult> {
+  ): Promise<BlogPostDetailView | null> {
     const repo = this.getRepo(transactionContext);
 
     const entity = await repo.findOne({ where: { id } });
@@ -69,15 +118,41 @@ export class BlogPostService {
     if (input.publishedAt !== undefined) patch.publishedAt = input.publishedAt;
 
     if (Object.keys(patch).length === 0) {
-      return this.toView(entity);
+      return this.queryService.findPostById(id, transactionContext);
     }
 
     await repo.update(id, patch);
-    const updated = await repo.findOne({ where: { id } });
-    if (!updated) {
+    return this.queryService.findPostById(id, transactionContext);
+  }
+
+  /**
+   * 发布文章（聚合根入口）：校验状态 → 更新为 PUBLISHED + 设置 publishedAt
+   * 内部完成存在性校验和状态校验，usecase 无需重复校验
+   */
+  async publishPost(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostDetailView | null> {
+    const repo = this.getRepo(transactionContext);
+    const entity = await repo.findOne({ where: { id } });
+    if (!entity) {
       throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
     }
-    return this.toView(updated);
+
+    if (entity.status === BlogPostStatus.PUBLISHED) {
+      throw new DomainError(BLOG_ERROR.POST_ALREADY_PUBLISHED, '文章已发布，无需重复发布');
+    }
+
+    if (entity.status === BlogPostStatus.DELETED) {
+      throw new DomainError(BLOG_ERROR.POST_DELETED, '已删除的文章不能发布');
+    }
+
+    await repo.update(id, {
+      status: BlogPostStatus.PUBLISHED,
+      publishedAt: new Date(),
+    });
+
+    return this.queryService.findPostById(id, transactionContext);
   }
 
   async softDeletePost(
@@ -89,6 +164,8 @@ export class BlogPostService {
     if (!entity) {
       throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
     }
+    // 软删除时同步设置 status=DELETED，确保 BlogPostStatus.DELETED 语义可达
+    entity.status = BlogPostStatus.DELETED;
     await repo.softRemove(entity);
   }
 
@@ -116,26 +193,39 @@ export class BlogPostService {
     await repo.decrement({ id }, 'commentCount', 1);
   }
 
-  // ─── 内部工具 ───
-
-  private toView(entity: BlogPostEntity): BlogPostWriteResult {
-    return {
-      id: entity.id,
-      title: entity.title,
-      slug: entity.slug,
-      excerpt: entity.excerpt,
-      coverImage: entity.coverImage,
-      status: entity.status,
-      categoryId: entity.categoryId,
-      viewCount: entity.viewCount,
-      likeCount: entity.likeCount,
-      commentCount: entity.commentCount,
-      isPinned: entity.isPinned,
-      publishedAt: entity.publishedAt,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
+  async incrementLikeCount(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getRepo(transactionContext);
+    await repo.increment({ id }, 'likeCount', 1);
   }
+
+  async decrementLikeCount(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getRepo(transactionContext);
+    await repo.decrement({ id }, 'likeCount', 1);
+  }
+
+  /**
+   * 断言 slug 唯一性，不唯一时抛 DomainError(SLUG_DUPLICATE)
+   * @param slug 待校验的 slug
+   * @param excludeId 排除的记录 ID（更新场景排除自身）
+   */
+  async assertSlugUnique(
+    slug: string,
+    excludeId?: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const existing = await this.queryService.findPostBySlug(slug, transactionContext);
+    if (existing && existing.id !== excludeId) {
+      throw new DomainError(BLOG_ERROR.POST_SLUG_DUPLICATE, '文章 slug 已存在');
+    }
+  }
+
+  // ─── 内部工具 ───
 
   private getRepo(transactionContext?: PersistenceTransactionContext): Repository<BlogPostEntity> {
     return transactionContext

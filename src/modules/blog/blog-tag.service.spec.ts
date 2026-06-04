@@ -6,10 +6,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BlogTagEntity } from './entities/blog-tag.entity';
 import { BlogTagService } from './blog-tag.service';
+import { BlogTagQueryService } from './queries/blog-tag.query.service';
 
 describe('BlogTagService', () => {
   let service: BlogTagService;
   let tagRepo: jest.Mocked<Repository<BlogTagEntity>>;
+  let queryService: { findTagById: jest.Mock };
 
   const mockTagRepo = {
     findOne: jest.fn(),
@@ -18,16 +20,22 @@ describe('BlogTagService', () => {
     softRemove: jest.fn(),
   };
 
+  const mockQueryService = {
+    findTagById: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogTagService,
         { provide: getRepositoryToken(BlogTagEntity), useValue: mockTagRepo },
+        { provide: BlogTagQueryService, useValue: mockQueryService },
       ],
     }).compile();
 
     service = module.get<BlogTagService>(BlogTagService);
     tagRepo = module.get(getRepositoryToken(BlogTagEntity));
+    queryService = mockQueryService;
   });
 
   afterEach(() => {
@@ -35,7 +43,7 @@ describe('BlogTagService', () => {
   });
 
   describe('createTag', () => {
-    it('应成功创建标签并返回 WriteResult', async () => {
+    it('应成功创建标签并委托 QueryService 返回视图', async () => {
       const savedEntity = {
         id: 1,
         name: 'TypeScript',
@@ -46,13 +54,18 @@ describe('BlogTagService', () => {
 
       tagRepo.create.mockReturnValue(savedEntity);
       tagRepo.save.mockResolvedValue(savedEntity);
+      queryService.findTagById.mockResolvedValue({
+        id: 1,
+        name: 'TypeScript',
+        slug: 'typescript',
+        postCount: 0,
+      });
 
       const result = await service.createTag({ name: 'TypeScript', slug: 'typescript' });
 
-      expect(result.id).toBe(1);
-      expect(result.name).toBe('TypeScript');
-      // WriteResult 不含 postCount
-      expect(result).not.toHaveProperty('postCount');
+      expect(result!.id).toBe(1);
+      expect(result!.name).toBe('TypeScript');
+      expect(queryService.findTagById).toHaveBeenCalledWith(1, undefined);
     });
   });
 

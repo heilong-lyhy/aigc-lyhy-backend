@@ -1,5 +1,6 @@
 // src/core/common/password/password-policy.service.spec.ts
 
+import { DomainError, INPUT_NORMALIZE_ERROR } from '@core/common/errors/domain-error';
 import { PasswordPolicyService } from './password-policy.service';
 
 describe('PasswordPolicyService', () => {
@@ -73,33 +74,24 @@ describe('PasswordPolicyService', () => {
 
   describe('validatePassword - 增强预处理功能', () => {
     it('应该拒绝空密码', () => {
-      const result = service.validatePassword('');
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('密码不能为空或纯空白字符');
+      expect(() => service.validatePassword('')).toThrow(DomainError);
+      try {
+        service.validatePassword('');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DomainError);
+        expect((error as DomainError).code).toBe(INPUT_NORMALIZE_ERROR.REQUIRED_TEXT_EMPTY);
+      }
     });
 
     it('应该拒绝纯空白字符密码', () => {
-      const result1 = service.validatePassword('   ');
-      expect(result1.isValid).toBe(false);
-      expect(result1.errors).toContain('密码不能为空或纯空白字符');
-
-      const result2 = service.validatePassword('\t\n  ');
-      expect(result2.isValid).toBe(false);
-      expect(result2.errors).toContain('密码不能为空或纯空白字符');
+      expect(() => service.validatePassword('   ')).toThrow(DomainError);
+      expect(() => service.validatePassword('\t\n  ')).toThrow(DomainError);
     });
 
     it('应该拒绝包含首尾空格的密码', () => {
-      const result1 = service.validatePassword(' MyStrong2024!@#');
-      expect(result1.isValid).toBe(false);
-      expect(result1.errors).toContain('密码首尾不能包含空格');
-
-      const result2 = service.validatePassword('MyStrong2024!@# ');
-      expect(result2.isValid).toBe(false);
-      expect(result2.errors).toContain('密码首尾不能包含空格');
-
-      const result3 = service.validatePassword('  MyStrong2024!@#  ');
-      expect(result3.isValid).toBe(false);
-      expect(result3.errors).toContain('密码首尾不能包含空格');
+      expect(() => service.validatePassword(' MyStrong2024!@#')).toThrow(DomainError);
+      expect(() => service.validatePassword('MyStrong2024!@# ')).toThrow(DomainError);
+      expect(() => service.validatePassword('  MyStrong2024!@#  ')).toThrow(DomainError);
     });
 
     it('应该正确处理 NFKC 规范化 - 全角字符', () => {
@@ -121,17 +113,11 @@ describe('PasswordPolicyService', () => {
     it('应该拒绝包含特殊 Unicode 空格的密码', () => {
       // 不间断空格 (U+00A0)
       const nonBreakingSpacePassword = 'MyStrong2024!@#\u00A0';
-
-      const result1 = service.validatePassword(nonBreakingSpacePassword);
-      expect(result1.isValid).toBe(false);
-      expect(result1.errors).toContain('密码首尾不能包含空格');
+      expect(() => service.validatePassword(nonBreakingSpacePassword)).toThrow(DomainError);
 
       // 全角空格 (U+3000)
       const fullWidthSpacePassword = '\u3000MyStrong2024!@#';
-
-      const result2 = service.validatePassword(fullWidthSpacePassword);
-      expect(result2.isValid).toBe(false);
-      expect(result2.errors).toContain('密码首尾不能包含空格');
+      expect(() => service.validatePassword(fullWidthSpacePassword)).toThrow(DomainError);
     });
   });
 

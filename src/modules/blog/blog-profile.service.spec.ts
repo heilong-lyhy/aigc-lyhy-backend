@@ -5,11 +5,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BlogProfileEntity } from './entities/blog-profile.entity';
+import { BlogProfileQueryService } from './queries/blog-profile.query.service';
 import { BlogProfileService } from './blog-profile.service';
 
 describe('BlogProfileService', () => {
   let service: BlogProfileService;
   let profileRepo: jest.Mocked<Repository<BlogProfileEntity>>;
+  let queryService: { findProfileById: jest.Mock };
 
   const mockProfileRepo = {
     findOne: jest.fn(),
@@ -18,16 +20,22 @@ describe('BlogProfileService', () => {
     update: jest.fn(),
   };
 
+  const mockQueryService = {
+    findProfileById: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogProfileService,
         { provide: getRepositoryToken(BlogProfileEntity), useValue: mockProfileRepo },
+        { provide: BlogProfileQueryService, useValue: mockQueryService },
       ],
     }).compile();
 
     service = module.get<BlogProfileService>(BlogProfileService);
     profileRepo = module.get(getRepositoryToken(BlogProfileEntity));
+    queryService = mockQueryService;
   });
 
   afterEach(() => {
@@ -48,11 +56,22 @@ describe('BlogProfileService', () => {
 
       profileRepo.create.mockReturnValue(savedEntity);
       profileRepo.save.mockResolvedValue(savedEntity);
+      queryService.findProfileById.mockResolvedValue({
+        id: 1,
+        nickname: '博主',
+        bio: null,
+        avatarUrl: null,
+        socialLinks: null,
+        createdAt: savedEntity.createdAt,
+        updatedAt: savedEntity.updatedAt,
+      });
 
       const result = await service.createProfile('博主');
 
-      expect(result.id).toBe(1);
-      expect(result.nickname).toBe('博主');
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe(1);
+      expect(result!.nickname).toBe('博主');
+      expect(queryService.findProfileById).toHaveBeenCalledWith(1, undefined);
     });
   });
 
@@ -66,20 +85,24 @@ describe('BlogProfileService', () => {
         socialLinks: null,
       } as BlogProfileEntity;
 
-      const updated = {
-        ...existing,
+      profileRepo.findOne.mockResolvedValueOnce(existing);
+      profileRepo.update.mockResolvedValue(undefined as never);
+      queryService.findProfileById.mockResolvedValue({
+        id: 1,
         nickname: '新昵称',
         bio: '个人简介',
-      } as BlogProfileEntity;
-
-      profileRepo.findOne.mockResolvedValueOnce(existing);
-      profileRepo.update.mockResolvedValue(undefined);
-      profileRepo.findOne.mockResolvedValueOnce(updated);
+        avatarUrl: null,
+        socialLinks: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const result = await service.updateProfile(1, { nickname: '新昵称', bio: '个人简介' });
 
-      expect(result.nickname).toBe('新昵称');
-      expect(result.bio).toBe('个人简介');
+      expect(result).not.toBeNull();
+      expect(result!.nickname).toBe('新昵称');
+      expect(result!.bio).toBe('个人简介');
+      expect(queryService.findProfileById).toHaveBeenCalledWith(1, undefined);
     });
 
     it('博主信息不存在时应抛出 PROFILE_NOT_FOUND', async () => {
@@ -101,10 +124,20 @@ describe('BlogProfileService', () => {
       } as BlogProfileEntity;
 
       profileRepo.findOne.mockResolvedValue(existing);
+      queryService.findProfileById.mockResolvedValue({
+        id: 1,
+        nickname: '博主',
+        bio: null,
+        avatarUrl: null,
+        socialLinks: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const result = await service.updateProfile(1, {});
 
-      expect(result.nickname).toBe('博主');
+      expect(result).not.toBeNull();
+      expect(result!.nickname).toBe('博主');
       expect(profileRepo.update).not.toHaveBeenCalled();
     });
   });

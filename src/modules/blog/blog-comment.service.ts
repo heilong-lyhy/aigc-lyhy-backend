@@ -1,6 +1,7 @@
 // src/modules/blog/blog-comment.service.ts
 // 评论聚合根写服务
 // 职责：评论的创建、状态更新、批量审核、软删除；不含跨聚合根编排
+// View 映射委托 BlogCommentQueryService，避免 toView 重复
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
@@ -8,17 +9,18 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
-import type {
-  BatchUpdateBlogCommentStatusInput,
-  BlogCommentWriteResult,
-  CreateBlogCommentInput,
-  UpdateBlogCommentStatusInput,
+import {
+  BlogCommentStatus,
+  type BatchUpdateBlogCommentStatusInput,
+  type CreateBlogCommentInput,
+  type UpdateBlogCommentStatusInput,
 } from './blog.types';
 import { BlogCommentEntity } from './entities/blog-comment.entity';
 import {
   BLOG_AVATAR_GENERATOR_TOKEN,
   type AvatarGenerator,
 } from './contracts/avatar-generator.contract';
+import { BlogCommentQueryService } from './queries/blog-comment.query.service';
 
 /** 评论最大嵌套层级 */
 const MAX_NESTING_LEVEL = 5;
@@ -30,12 +32,13 @@ export class BlogCommentService {
     private readonly commentRepo: Repository<BlogCommentEntity>,
     @Inject(BLOG_AVATAR_GENERATOR_TOKEN)
     private readonly avatarGenerator: AvatarGenerator,
+    private readonly queryService: BlogCommentQueryService,
   ) {}
 
   async createComment(
     input: CreateBlogCommentInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCommentWriteResult> {
+  ) {
     const repo = this.getCommentRepo(transactionContext);
 
     let nestingLevel = 0;
@@ -66,21 +69,20 @@ export class BlogCommentService {
     });
 
     const saved = await repo.save(entity);
-    return this.toView(saved);
+    return this.queryService.findCommentById(saved.id, transactionContext);
   }
 
   async updateCommentStatus(
     input: UpdateBlogCommentStatusInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCommentWriteResult> {
+  ) {
     const repo = this.getCommentRepo(transactionContext);
-    const entity = await repo.findOne({ where: { id: input.id } });
-    if (!entity) {
+    const existing = await repo.findOne({ where: { id: input.id } });
+    if (!existing) {
       throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '评论不存在');
     }
-    entity.status = input.status;
-    const saved = await repo.save(entity);
-    return this.toView(saved);
+    await repo.update(input.id, { status: input.status });
+    return this.queryService.findCommentById(input.id, transactionContext);
   }
 
   /**
@@ -108,23 +110,19 @@ export class BlogCommentService {
     await repo.softRemove(entity);
   }
 
-  // ─── 内部工具 ───
-
-  private toView(entity: BlogCommentEntity): BlogCommentWriteResult {
-    return {
-      id: entity.id,
-      postId: entity.postId,
-      parentId: entity.parentId,
-      replyToId: entity.replyToId,
-      authorName: entity.authorName,
-      authorAvatar: entity.authorAvatar,
-      content: entity.content,
-      status: entity.status,
-      nestingLevel: entity.nestingLevel,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
+  /**
+   * 将指定文章下所有评论标记为不可见（SPAM 状态）
+   * 用于文章删除时的级联处理，不硬删评论
+   */
+  async markCommentsHiddenByPostId(
+    postId: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getCommentRepo(transactionContext);
+    await repo.update({ postId }, { status: BlogCommentStatus.SPAM });
   }
+
+  // ─── 内部工具 ───
 
   private getCommentRepo(
     transactionContext?: PersistenceTransactionContext,

@@ -29,6 +29,7 @@ import { BlogCommentQueryService } from './queries/blog-comment.query.service';
 import { BlogLikeQueryService } from './queries/blog-like.query.service';
 import { BlogFileQueryService } from './queries/blog-file.query.service';
 import { BlogProfileQueryService } from './queries/blog-profile.query.service';
+import { BlogDashboardQueryService } from './queries/blog-dashboard.query.service';
 import { BLOG_AVATAR_GENERATOR_TOKEN } from './contracts/avatar-generator.contract';
 import {
   BLOG_FILE_STORAGE_TOKEN,
@@ -68,6 +69,7 @@ const BLOG_ENTITIES = [
     BlogLikeQueryService,
     BlogFileQueryService,
     BlogProfileQueryService,
+    BlogDashboardQueryService,
   ],
   exports: [
     TypeOrmModule,
@@ -86,6 +88,7 @@ const BLOG_ENTITIES = [
     BlogLikeQueryService,
     BlogFileQueryService,
     BlogProfileQueryService,
+    BlogDashboardQueryService,
   ],
 })
 export class BlogModule {}

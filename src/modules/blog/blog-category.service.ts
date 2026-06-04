@@ -1,5 +1,6 @@
 // src/modules/blog/blog-category.service.ts
 // 分类聚合根写服务：细粒度写操作，事务上下文由 Usecase 传入
+// View 映射委托 BlogCategoryQueryService，避免 toView 重复
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
@@ -7,24 +8,22 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type {
-  CreateBlogCategoryInput,
-  UpdateBlogCategoryInput,
-  BlogCategoryWriteResult,
-} from './blog.types';
+import type { CreateBlogCategoryInput, UpdateBlogCategoryInput } from './blog.types';
 import { BlogCategoryEntity } from './entities/blog-category.entity';
+import { BlogCategoryQueryService } from './queries/blog-category.query.service';
 
 @Injectable()
 export class BlogCategoryService {
   constructor(
     @InjectRepository(BlogCategoryEntity)
     private readonly categoryRepo: Repository<BlogCategoryEntity>,
+    private readonly queryService: BlogCategoryQueryService,
   ) {}
 
   async createCategory(
     input: CreateBlogCategoryInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCategoryWriteResult> {
+  ) {
     const repo = this.getRepo(transactionContext);
     const entity = repo.create({
       name: input.name,
@@ -34,14 +33,14 @@ export class BlogCategoryService {
       sortOrder: input.sortOrder ?? 0,
     });
     const saved = await repo.save(entity);
-    return this.toView(saved);
+    return this.queryService.findCategoryById(saved.id, transactionContext);
   }
 
   async updateCategory(
     id: number,
     input: UpdateBlogCategoryInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCategoryWriteResult> {
+  ) {
     const repo = this.getRepo(transactionContext);
 
     const entity = await repo.findOne({ where: { id } });
@@ -58,15 +57,11 @@ export class BlogCategoryService {
     if (input.sortOrder !== undefined) patch.sortOrder = input.sortOrder;
 
     if (Object.keys(patch).length === 0) {
-      return this.toView(entity);
+      return this.queryService.findCategoryById(id, transactionContext);
     }
 
     await repo.update(id, patch);
-    const updated = await repo.findOne({ where: { id } });
-    if (!updated) {
-      throw new DomainError(BLOG_ERROR.CATEGORY_NOT_FOUND, '分类不存在');
-    }
-    return this.toView(updated);
+    return this.queryService.findCategoryById(id, transactionContext);
   }
 
   async softDeleteCategory(
@@ -95,19 +90,6 @@ export class BlogCategoryService {
   }
 
   // ─── 内部工具 ───
-
-  private toView(entity: BlogCategoryEntity): BlogCategoryWriteResult {
-    return {
-      id: entity.id,
-      name: entity.name,
-      slug: entity.slug,
-      description: entity.description,
-      parentId: entity.parentId,
-      sortOrder: entity.sortOrder,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
-  }
 
   private getRepo(
     transactionContext?: PersistenceTransactionContext,

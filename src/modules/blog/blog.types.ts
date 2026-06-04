@@ -166,23 +166,6 @@ export interface BlogDashboardView {
   readonly totalViews: number;
 }
 
-// ─── WriteResult 类型（写服务返回，不含需 join / 聚合填充的字段） ───
-
-/** 文章写操作结果（categoryName 需由 QueryService join 填充） */
-export type BlogPostWriteResult = Omit<BlogPostView, 'categoryName'>;
-
-/** 分类写操作结果（postCount 需由 QueryService 聚合填充） */
-export type BlogCategoryWriteResult = Omit<BlogCategoryView, 'postCount'>;
-
-/** 标签写操作结果（postCount 需由 QueryService 聚合填充） */
-export type BlogTagWriteResult = Omit<BlogTagView, 'postCount'>;
-
-/** 评论写操作结果（无跨聚合 join 字段，结构与 View 一致） */
-export type BlogCommentWriteResult = BlogCommentView;
-
-/** 文件写操作结果（无跨聚合 join 字段，结构与 View 一致） */
-export type BlogFileWriteResult = BlogFileView;
-
 // ─── Input 类型 ───
 
 export interface CreateBlogPostInput {
