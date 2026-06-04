@@ -38,6 +38,10 @@ Source of truth: This file defines QueryService rules; code examples elsewhere m
 - 规范化输出。
   - QueryService 负责将内部实体或聚合读取结果转换为对外 View 或 DTO。
   - 对上游禁止返回 ORM Entity 或 QueryBuilder。
+  - toView 禁止硬编码 `null` / `0` 等占位默认值作为"事实未加载"字段的填充。
+    需 join / 聚合的字段必须在 QueryService 中完成加载；
+    若字段在当前读取上下文中不可用，应从 View 类型中剔除（使用 `Omit` 定义子集类型），
+    而非返回语义错误的占位值。
 - 只读与权限判断。
   - 细粒度授权与读侧校验在 QueryService 内完成。
   - 包括可见性与字段裁剪。

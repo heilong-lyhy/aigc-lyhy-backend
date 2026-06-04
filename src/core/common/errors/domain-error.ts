@@ -152,6 +152,34 @@ export const INPUT_NORMALIZE_ERROR = {
 } as const;
 Object.freeze(INPUT_NORMALIZE_ERROR);
 
+// 博客领域错误码
+export const BLOG_ERROR = {
+  POST_NOT_FOUND: 'BLOG_POST_NOT_FOUND',
+  POST_SLUG_DUPLICATE: 'BLOG_POST_SLUG_DUPLICATE',
+  CATEGORY_NOT_FOUND: 'BLOG_CATEGORY_NOT_FOUND',
+  CATEGORY_SLUG_DUPLICATE: 'BLOG_CATEGORY_SLUG_DUPLICATE',
+  TAG_NOT_FOUND: 'BLOG_TAG_NOT_FOUND',
+  TAG_SLUG_DUPLICATE: 'BLOG_TAG_SLUG_DUPLICATE',
+  COMMENT_NOT_FOUND: 'BLOG_COMMENT_NOT_FOUND',
+  COMMENT_NESTING_EXCEEDED: 'BLOG_COMMENT_NESTING_EXCEEDED',
+  FILE_UPLOAD_FAILED: 'BLOG_FILE_UPLOAD_FAILED',
+  FILE_NOT_FOUND: 'BLOG_FILE_NOT_FOUND',
+  FILE_TYPE_NOT_ALLOWED: 'BLOG_FILE_TYPE_NOT_ALLOWED',
+  FILE_SIZE_EXCEEDED: 'BLOG_FILE_SIZE_EXCEEDED',
+  LIKE_DUPLICATE: 'BLOG_LIKE_DUPLICATE',
+  PROFILE_NOT_FOUND: 'BLOG_PROFILE_NOT_FOUND',
+} as const;
+Object.freeze(BLOG_ERROR);
+
+// 分页相关错误码
+export const PAGINATION_ERROR = {
+  INVALID_PAGE_SIZE: 'PAGINATION_INVALID_PAGE_SIZE',
+  INVALID_CURSOR: 'PAGINATION_INVALID_CURSOR',
+  SORT_FIELD_NOT_ALLOWED: 'PAGINATION_SORT_FIELD_NOT_ALLOWED',
+  DB_QUERY_FAILED: 'PAGINATION_DB_QUERY_FAILED',
+} as const;
+Object.freeze(PAGINATION_ERROR);
+
 // 类型定义
 export type AuthErrorCode = (typeof AUTH_ERROR)[keyof typeof AUTH_ERROR];
 export type AccountErrorCode = (typeof ACCOUNT_ERROR)[keyof typeof ACCOUNT_ERROR];
@@ -166,15 +194,7 @@ export type TimeErrorCode = (typeof TIME_ERROR)[keyof typeof TIME_ERROR];
 export type InputNormalizeErrorCode =
   (typeof INPUT_NORMALIZE_ERROR)[keyof typeof INPUT_NORMALIZE_ERROR];
 
-// 分页相关错误码
-export const PAGINATION_ERROR = {
-  INVALID_PAGE_SIZE: 'PAGINATION_INVALID_PAGE_SIZE',
-  INVALID_CURSOR: 'PAGINATION_INVALID_CURSOR',
-  SORT_FIELD_NOT_ALLOWED: 'PAGINATION_SORT_FIELD_NOT_ALLOWED',
-  DB_QUERY_FAILED: 'PAGINATION_DB_QUERY_FAILED',
-} as const;
-Object.freeze(PAGINATION_ERROR);
-
+export type BlogErrorCode = (typeof BLOG_ERROR)[keyof typeof BLOG_ERROR];
 export type PaginationErrorCode = (typeof PAGINATION_ERROR)[keyof typeof PAGINATION_ERROR];
 export type DomainErrorCode =
   | AuthErrorCode
@@ -186,6 +206,7 @@ export type DomainErrorCode =
   | AsyncTaskRecordErrorCode
   | TimeErrorCode
   | InputNormalizeErrorCode
+  | BlogErrorCode
   | PaginationErrorCode;
 
 // 类型守卫：统一判断是否为领域错误（兼容多包/反序列化场景）

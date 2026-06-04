@@ -22,6 +22,10 @@ Source of truth: This file defines boundary contract naming and shared vocabular
   例如事务 runner。
 - Module-owned boundary contract：只在模块需要隔离可替换 infrastructure 实现时使用。
 - Infrastructure 只实现或适配 boundary contract，不拥有业务决策。
+- Boundary contract 不可配合 `@Optional()` 注入。
+  若能力真的可选，要么契约存在并返回默认值（如 null / no-op 实现），
+  要么不要创建 boundary contract。
+  `@Optional()` 导致契约语义"半可选"，违反依赖倒置的确定性。
 
 归属跟随“谁拥有需要该能力的决策”，而不是跟随实现所在位置。
 

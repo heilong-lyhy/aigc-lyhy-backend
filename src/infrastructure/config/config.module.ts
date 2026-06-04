@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigFactory, ConfigModule, registerAs } from '@nestjs/config';
 import { parseBooleanInput } from '@core/common/normalize/normalize.helper';
 import { IncomingMessage, ServerResponse } from 'http';
+import { join } from 'path';
 import databaseConfig from './database.config';
 
 const isProductionEnv = (): boolean => process.env.NODE_ENV === 'production';
@@ -471,6 +472,27 @@ const paginationConfig = () => ({
   },
 });
 
+const blogStorageConfig: ConfigFactory = () => ({
+  blogStorage: {
+    uploadBaseDir: process.env.BLOG_UPLOAD_BASE_DIR || join(process.cwd(), 'uploads', 'blog'),
+    allowedMimeTypes: process.env.BLOG_ALLOWED_MIME_TYPES
+      ? process.env.BLOG_ALLOWED_MIME_TYPES.split(',').map((s) => s.trim())
+      : [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+          'text/markdown',
+        ],
+    maxFileSize: getIntEnvWithDefault('BLOG_MAX_FILE_SIZE', 10 * 1024 * 1024),
+  },
+});
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -490,6 +512,7 @@ const paginationConfig = () => ({
         emailDeliveryConfig,
         jwtConfig,
         paginationConfig,
+        blogStorageConfig,
       ],
     }),
   ],
