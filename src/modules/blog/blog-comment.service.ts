@@ -9,11 +9,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
+import sanitizeHtml from 'sanitize-html';
 import {
   BlogCommentStatus,
   type BatchUpdateBlogCommentStatusInput,
   type CreateBlogCommentInput,
   type UpdateBlogCommentStatusInput,
+  type BlogCommentView,
 } from './blog.types';
 import { BlogCommentEntity } from './entities/blog-comment.entity';
 import {
@@ -38,7 +40,7 @@ export class BlogCommentService {
   async createComment(
     input: CreateBlogCommentInput,
     transactionContext?: PersistenceTransactionContext,
-  ) {
+  ): Promise<BlogCommentView> {
     const repo = this.getCommentRepo(transactionContext);
 
     let nestingLevel = 0;
@@ -56,6 +58,33 @@ export class BlogCommentService {
     // 头像生成：通过 AvatarGenerator boundary contract 实现
     const authorAvatar = await this.avatarGenerator.generateAvatar(input.authorEmail);
 
+    // XSS 清洗：保留安全标签，移除危险脚本和属性
+    const sanitizedContent = sanitizeHtml(input.content, {
+      allowedTags: [
+        'b',
+        'i',
+        'em',
+        'strong',
+        'a',
+        'p',
+        'br',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'code',
+        'pre',
+        'del',
+        'ins',
+        'sup',
+        'sub',
+      ],
+      allowedAttributes: {
+        a: ['href', 'title', 'target', 'rel'],
+      },
+      allowedSchemes: ['http', 'https', 'mailto'],
+    });
+
     const entity = repo.create({
       postId: input.postId,
       parentId: input.parentId ?? null,
@@ -64,50 +93,61 @@ export class BlogCommentService {
       authorEmail: input.authorEmail,
       authorUrl: input.authorUrl ?? null,
       authorAvatar,
-      content: input.content,
+      content: sanitizedContent,
       nestingLevel,
     });
 
     const saved = await repo.save(entity);
-    return this.queryService.findCommentById(saved.id, transactionContext);
+    // 刚创建的记录必然存在
+    return this.queryService.findCommentById(
+      saved.id,
+      transactionContext,
+    ) as Promise<BlogCommentView>;
   }
 
   async updateCommentStatus(
     input: UpdateBlogCommentStatusInput,
     transactionContext?: PersistenceTransactionContext,
-  ) {
+  ): Promise<BlogCommentView> {
     const repo = this.getCommentRepo(transactionContext);
     const existing = await repo.findOne({ where: { id: input.id } });
     if (!existing) {
       throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '评论不存在');
     }
     await repo.update(input.id, { status: input.status });
-    return this.queryService.findCommentById(input.id, transactionContext);
+    // 更新后记录必然存在
+    return this.queryService.findCommentById(
+      input.id,
+      transactionContext,
+    ) as Promise<BlogCommentView>;
   }
 
   /**
    * 批量审核评论状态
    * 单次批量操作完成，不在循环中逐条更新
+   * 返回实际更新的行数
    */
   async batchUpdateCommentStatus(
     input: BatchUpdateBlogCommentStatusInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<void> {
-    if (input.ids.length === 0) return;
+  ): Promise<number> {
+    if (input.ids.length === 0) return 0;
     const repo = this.getCommentRepo(transactionContext);
-    await repo.update({ id: In(input.ids) }, { status: input.status });
+    const result = await repo.update({ id: In(input.ids) }, { status: input.status });
+    return result.affected ?? 0;
   }
 
   async softDeleteComment(
     id: number,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<void> {
+  ): Promise<number> {
     const repo = this.getCommentRepo(transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '评论不存在');
     }
     await repo.softRemove(entity);
+    return entity.postId;
   }
 
   /**

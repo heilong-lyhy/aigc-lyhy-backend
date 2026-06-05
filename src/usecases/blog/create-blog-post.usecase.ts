@@ -3,7 +3,6 @@
 // 持有事务边界，通过 TransactionRunner 开启事务
 // 通过 BlogPostService（聚合根入口）编排子实体写入，不直接调 BlogPostTagService
 
-import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import type { CreateBlogPostInput } from '@src/modules/blog/blog.types';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
@@ -25,10 +24,8 @@ export class CreateBlogPostUsecase {
     return this.transactionRunner.run(async (transactionContext) => {
       await this.postService.assertSlugUnique(input.slug, undefined, transactionContext);
 
+      // createPostWithTags 内部完成创建 + 存在性校验
       const view = await this.postService.createPostWithTags(input, transactionContext);
-      if (!view) {
-        throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '创建文章后未找到记录');
-      }
 
       return { post: view };
     });

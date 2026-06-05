@@ -8,6 +8,15 @@ import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.useca
 import { DeleteBlogPostUsecase } from '@src/usecases/blog/delete-blog-post.usecase';
 import { PublishBlogPostUsecase } from '@src/usecases/blog/publish-blog-post.usecase';
 import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-like.usecase';
+import { CreateBlogCategoryUsecase } from '@src/usecases/blog/create-blog-category.usecase';
+import { UpdateBlogCategoryUsecase } from '@src/usecases/blog/update-blog-category.usecase';
+import { DeleteBlogCategoryUsecase } from '@src/usecases/blog/delete-blog-category.usecase';
+import { CreateBlogTagUsecase } from '@src/usecases/blog/create-blog-tag.usecase';
+import { DeleteBlogTagUsecase } from '@src/usecases/blog/delete-blog-tag.usecase';
+import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment.usecase';
+import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
+import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
+import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
 
 @Module({
   imports: [BlogModule],
@@ -17,6 +26,15 @@ import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-l
     DeleteBlogPostUsecase,
     PublishBlogPostUsecase,
     ToggleBlogPostLikeUsecase,
+    CreateBlogCategoryUsecase,
+    UpdateBlogCategoryUsecase,
+    DeleteBlogCategoryUsecase,
+    CreateBlogTagUsecase,
+    DeleteBlogTagUsecase,
+    CreateBlogCommentUsecase,
+    UpdateBlogCommentStatusUsecase,
+    BatchUpdateBlogCommentStatusUsecase,
+    DeleteBlogCommentUsecase,
   ],
   exports: [
     CreateBlogPostUsecase,
@@ -24,6 +42,15 @@ import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-l
     DeleteBlogPostUsecase,
     PublishBlogPostUsecase,
     ToggleBlogPostLikeUsecase,
+    CreateBlogCategoryUsecase,
+    UpdateBlogCategoryUsecase,
+    DeleteBlogCategoryUsecase,
+    CreateBlogTagUsecase,
+    DeleteBlogTagUsecase,
+    CreateBlogCommentUsecase,
+    UpdateBlogCommentStatusUsecase,
+    BatchUpdateBlogCommentStatusUsecase,
+    DeleteBlogCommentUsecase,
   ],
 })
 export class BlogUsecasesModule {}

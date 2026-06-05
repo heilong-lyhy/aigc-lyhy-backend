@@ -62,7 +62,7 @@ describe('BlogLikeService', () => {
 
   describe('deleteLikesByPostId', () => {
     it('应删除指定文章的所有点赞', async () => {
-      mockLikeRepo.delete.mockResolvedValue(undefined as never);
+      mockLikeRepo.delete.mockResolvedValue(undefined);
 
       await service.deleteLikesByPostId(1);
 

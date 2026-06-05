@@ -165,7 +165,7 @@ describe('BlogFileService', () => {
       } as BlogFileEntity;
 
       fileRepo.findOne.mockResolvedValue(existing);
-      fileStorage.deleteFile.mockResolvedValue(undefined as never);
+      fileStorage.deleteFile.mockResolvedValue(undefined);
       fileRepo.softRemove.mockResolvedValue(existing);
 
       await service.deleteFile(1);

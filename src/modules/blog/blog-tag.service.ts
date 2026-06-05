@@ -9,7 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type { CreateBlogTagInput } from './blog.types';
+import type { CreateBlogTagInput, BlogTagView } from './blog.types';
 import { BlogTagEntity } from './entities/blog-tag.entity';
 import { BlogTagQueryService } from './queries/blog-tag.query.service';
 
@@ -21,14 +21,18 @@ export class BlogTagService {
     private readonly queryService: BlogTagQueryService,
   ) {}
 
-  async createTag(input: CreateBlogTagInput, transactionContext?: PersistenceTransactionContext) {
+  async createTag(
+    input: CreateBlogTagInput,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogTagView> {
     const repo = this.getTagRepo(transactionContext);
     const entity = repo.create({
       name: input.name,
       slug: input.slug,
     });
     const saved = await repo.save(entity);
-    return this.queryService.findTagById(saved.id, transactionContext);
+    // 刚创建的记录必然存在
+    return this.queryService.findTagById(saved.id, transactionContext) as Promise<BlogTagView>;
   }
 
   async softDeleteTag(
@@ -41,6 +45,42 @@ export class BlogTagService {
       throw new DomainError(BLOG_ERROR.TAG_NOT_FOUND, '标签不存在');
     }
     await repo.softRemove(entity);
+  }
+
+  // ─── 校验方法 ───
+
+  /**
+   * 断言标签下没有关联文章，存在时抛 DomainError(TAG_HAS_POSTS)
+   * 通过同域 QueryService 读取文章计数，写侧决策收敛到 service
+   */
+  async assertHasNoPostLinks(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const view = await this.queryService.findTagById(id, transactionContext);
+    if (!view) {
+      throw new DomainError(BLOG_ERROR.TAG_NOT_FOUND, '标签不存在');
+    }
+    if (view.postCount > 0) {
+      throw new DomainError(BLOG_ERROR.TAG_HAS_POSTS, '标签下存在文章，无法删除');
+    }
+  }
+
+  /**
+   * 断言标签 slug 唯一性，不唯一时抛 DomainError(TAG_SLUG_DUPLICATE)
+   * @param slug 待校验的 slug
+   * @param excludeId 排除的记录 ID（更新场景排除自身）
+   */
+  async assertSlugUnique(
+    slug: string,
+    excludeId?: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getTagRepo(transactionContext);
+    const existing = await repo.findOne({ where: { slug } });
+    if (existing && existing.id !== excludeId) {
+      throw new DomainError(BLOG_ERROR.TAG_SLUG_DUPLICATE, '标签 slug 已存在');
+    }
   }
 
   // ─── 内部工具 ───

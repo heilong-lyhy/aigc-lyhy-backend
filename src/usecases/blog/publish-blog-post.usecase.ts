@@ -3,7 +3,6 @@
 // 持有事务边界，通过 TransactionRunner 开启事务
 // 存在性校验和状态校验由 BlogPostService.publishPost 内部完成，usecase 不重复校验
 
-import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
 import {
@@ -22,10 +21,8 @@ export class PublishBlogPostUsecase {
 
   async execute(id: number): Promise<BlogPostWriteResult> {
     return this.transactionRunner.run(async (transactionContext) => {
+      // publishPost 内部校验存在性，不存在时抛 DomainError(POST_NOT_FOUND)
       const view = await this.postService.publishPost(id, transactionContext);
-      if (!view) {
-        throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '发布文章后未找到记录');
-      }
 
       return { post: view };
     });

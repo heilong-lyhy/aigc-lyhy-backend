@@ -86,7 +86,7 @@ describe('BlogProfileService', () => {
       } as BlogProfileEntity;
 
       profileRepo.findOne.mockResolvedValueOnce(existing);
-      profileRepo.update.mockResolvedValue(undefined as never);
+      profileRepo.update.mockResolvedValue(undefined);
       queryService.findProfileById.mockResolvedValue({
         id: 1,
         nickname: '新昵称',

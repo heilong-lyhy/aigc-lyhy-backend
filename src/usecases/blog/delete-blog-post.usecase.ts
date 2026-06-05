@@ -1,11 +1,12 @@
 // src/usecases/blog/delete-blog-post.usecase.ts
-// 删除文章用例：软删除文章 → 级联处理（标记关联评论为不可见，但不硬删）
+// 删除文章用例：软删除文章 → 级联处理（标记关联评论为不可见、清理点赞记录、重置互动计数）
 // 持有事务边界，通过 TransactionRunner 开启事务
 // 存在性校验由 BlogPostService.softDeletePost 内部完成，usecase 不重复校验
 
 import { Inject, Injectable } from '@nestjs/common';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
 import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import { BlogLikeService } from '@src/modules/blog/blog-like.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
@@ -20,6 +21,7 @@ export class DeleteBlogPostUsecase {
   constructor(
     private readonly postService: BlogPostService,
     private readonly commentService: BlogCommentService,
+    private readonly likeService: BlogLikeService,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
   ) {}
@@ -29,7 +31,10 @@ export class DeleteBlogPostUsecase {
       // 级联处理：标记关联评论为不可见（SPAM），但不硬删
       await this.commentService.markCommentsHiddenByPostId(id, transactionContext);
 
-      // softDeletePost 内部校验存在性，不存在时抛 DomainError(POST_NOT_FOUND)
+      // 级联处理：清理点赞记录
+      await this.likeService.deleteLikesByPostId(id, transactionContext);
+
+      // softDeletePost 内部校验存在性 + 重置互动计数 + 软删除
       await this.postService.softDeletePost(id, transactionContext);
 
       return { deleted: true };

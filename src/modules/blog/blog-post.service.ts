@@ -35,18 +35,21 @@ export class BlogPostService {
   async createPostWithTags(
     input: CreateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogPostDetailView | null> {
+  ): Promise<BlogPostDetailView> {
     const view = await this.createPost(input, transactionContext);
     if (!view) {
-      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '创建文章后未找到记录');
+      throw new DomainError(BLOG_ERROR.POST_CREATE_FAILED, '创建文章后未找到记录');
     }
 
     if (input.tagIds && input.tagIds.length > 0) {
       await this.postTagService.syncPostTags(view.id, input.tagIds, transactionContext);
     }
 
-    // 标签同步后重新读取完整 view（含 tags）
-    return this.queryService.findPostById(view.id, transactionContext);
+    // 标签同步后重新读取完整 view（含 tags），已确认 entity 存在
+    return this.queryService.findPostById(
+      view.id,
+      transactionContext,
+    ) as Promise<BlogPostDetailView>;
   }
 
   /**
@@ -57,18 +60,16 @@ export class BlogPostService {
     id: number,
     input: UpdateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogPostDetailView | null> {
-    const view = await this.updatePost(id, input, transactionContext);
-    if (!view) {
-      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
-    }
+  ): Promise<BlogPostDetailView> {
+    // updatePost 内部校验存在性，不存在时抛 DomainError(POST_NOT_FOUND)
+    await this.updatePost(id, input, transactionContext);
 
     if (input.tagIds !== undefined) {
       await this.postTagService.syncPostTags(id, input.tagIds, transactionContext);
     }
 
-    // 标签同步后重新读取完整 view（含 tags）
-    return this.queryService.findPostById(id, transactionContext);
+    // 标签同步后重新读取完整 view（含 tags），已确认 entity 存在
+    return this.queryService.findPostById(id, transactionContext) as Promise<BlogPostDetailView>;
   }
 
   async createPost(
@@ -132,7 +133,7 @@ export class BlogPostService {
   async publishPost(
     id: number,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogPostDetailView | null> {
+  ): Promise<BlogPostDetailView> {
     const repo = this.getRepo(transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
@@ -152,7 +153,8 @@ export class BlogPostService {
       publishedAt: new Date(),
     });
 
-    return this.queryService.findPostById(id, transactionContext);
+    // 已确认 entity 存在，findPostById 不会返回 null
+    return this.queryService.findPostById(id, transactionContext) as Promise<BlogPostDetailView>;
   }
 
   async softDeletePost(
@@ -164,6 +166,8 @@ export class BlogPostService {
     if (!entity) {
       throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
     }
+    // 重置互动计数（评论计数、点赞计数归零），须在 softRemove 之前执行
+    await repo.update(id, { commentCount: 0, likeCount: 0 });
     // 软删除时同步设置 status=DELETED，确保 BlogPostStatus.DELETED 语义可达
     entity.status = BlogPostStatus.DELETED;
     await repo.softRemove(entity);
@@ -210,6 +214,32 @@ export class BlogPostService {
   }
 
   /**
+   * 获取文章当前点赞数（写后读辅助方法，供同域 usecase 编排使用）
+   * 内部委托 QueryService，避免 usecase 直接依赖 QueryService 实现文件
+   */
+  async getLikeCount(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<number> {
+    const view = await this.queryService.findPostById(id, transactionContext);
+    return view?.likeCount ?? 0;
+  }
+
+  /**
+   * 断言文章存在，不存在时抛 DomainError(POST_NOT_FOUND)
+   * 供同域 usecase 编排使用，避免 usecase 直接依赖 QueryService
+   */
+  async assertPostExists(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const view = await this.queryService.findPostById(id, transactionContext);
+    if (!view) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+  }
+
+  /**
    * 断言 slug 唯一性，不唯一时抛 DomainError(SLUG_DUPLICATE)
    * @param slug 待校验的 slug
    * @param excludeId 排除的记录 ID（更新场景排除自身）
@@ -219,7 +249,8 @@ export class BlogPostService {
     excludeId?: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const existing = await this.queryService.findPostBySlug(slug, transactionContext);
+    const repo = this.getRepo(transactionContext);
+    const existing = await repo.findOne({ where: { slug } });
     if (existing && existing.id !== excludeId) {
       throw new DomainError(BLOG_ERROR.POST_SLUG_DUPLICATE, '文章 slug 已存在');
     }
