@@ -9,7 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type { UpdateBlogProfileInput } from './blog.types';
+import type { UpdateBlogProfileInput, BlogProfileView } from './blog.types';
 import { BlogProfileEntity } from './entities/blog-profile.entity';
 import { BlogProfileQueryService } from './queries/blog-profile.query.service';
 
@@ -32,7 +32,7 @@ export class BlogProfileService {
     id: number,
     input: UpdateBlogProfileInput,
     transactionContext?: PersistenceTransactionContext,
-  ) {
+  ): Promise<BlogProfileView> {
     const repo = this.getProfileRepo(transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
@@ -46,11 +46,11 @@ export class BlogProfileService {
     if (input.socialLinks !== undefined) patch.socialLinks = input.socialLinks;
 
     if (Object.keys(patch).length === 0) {
-      return this.queryService.findProfileById(id, transactionContext);
+      return this.queryService.findProfileById(id, transactionContext) as Promise<BlogProfileView>;
     }
 
     await repo.update(id, patch);
-    return this.queryService.findProfileById(id, transactionContext);
+    return this.queryService.findProfileById(id, transactionContext) as Promise<BlogProfileView>;
   }
 
   // ─── 内部工具 ───

@@ -108,8 +108,8 @@ describe('BlogFileService', () => {
       const result = await service.uploadFile(validInput);
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe(1);
-      expect(result!.storagePath).toBe('image/abc123.jpg');
+      expect(result.id).toBe(1);
+      expect(result.storagePath).toBe('image/abc123.jpg');
       expect(fileStorage.saveFile).toHaveBeenCalledWith(
         expect.objectContaining({ storedName: 'abc123.jpg' }),
       );
@@ -155,31 +155,41 @@ describe('BlogFileService', () => {
     });
   });
 
-  // ─── deleteFile ───
+  // ─── softDeleteFile ───
 
-  describe('deleteFile', () => {
-    it('应先删除物理文件再软删除数据库记录', async () => {
+  describe('softDeleteFile', () => {
+    it('应软删除数据库记录并返回 storagePath', async () => {
       const existing = {
         id: 1,
         storagePath: 'image/abc123.jpg',
       } as BlogFileEntity;
 
       fileRepo.findOne.mockResolvedValue(existing);
-      fileStorage.deleteFile.mockResolvedValue(undefined);
       fileRepo.softRemove.mockResolvedValue(existing);
 
-      await service.deleteFile(1);
+      const result = await service.softDeleteFile(1);
 
-      // 验证调用顺序：先删物理文件，再软删除
-      expect(fileStorage.deleteFile).toHaveBeenCalledWith('image/abc123.jpg');
+      expect(result).toBe('image/abc123.jpg');
       expect(fileRepo.softRemove).toHaveBeenCalledWith(existing);
     });
 
     it('文件不存在时应抛出 FILE_NOT_FOUND', async () => {
       fileRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.deleteFile(999)).rejects.toThrow(DomainError);
-      await expect(service.deleteFile(999)).rejects.toThrow('文件不存在');
+      await expect(service.softDeleteFile(999)).rejects.toThrow(DomainError);
+      await expect(service.softDeleteFile(999)).rejects.toThrow('文件不存在');
+    });
+  });
+
+  // ─── deletePhysicalFile ───
+
+  describe('deletePhysicalFile', () => {
+    it('应调用 FileStorageAdapter 删除物理文件', async () => {
+      fileStorage.deleteFile.mockResolvedValue(undefined);
+
+      await service.deletePhysicalFile('image/abc123.jpg');
+
+      expect(fileStorage.deleteFile).toHaveBeenCalledWith('image/abc123.jpg');
     });
   });
 });

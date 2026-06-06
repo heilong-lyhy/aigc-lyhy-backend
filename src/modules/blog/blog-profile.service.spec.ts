@@ -86,7 +86,7 @@ describe('BlogProfileService', () => {
       } as BlogProfileEntity;
 
       profileRepo.findOne.mockResolvedValueOnce(existing);
-      profileRepo.update.mockResolvedValue(undefined);
+      profileRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       queryService.findProfileById.mockResolvedValue({
         id: 1,
         nickname: '新昵称',
@@ -100,8 +100,8 @@ describe('BlogProfileService', () => {
       const result = await service.updateProfile(1, { nickname: '新昵称', bio: '个人简介' });
 
       expect(result).not.toBeNull();
-      expect(result!.nickname).toBe('新昵称');
-      expect(result!.bio).toBe('个人简介');
+      expect(result.nickname).toBe('新昵称');
+      expect(result.bio).toBe('个人简介');
       expect(queryService.findProfileById).toHaveBeenCalledWith(1, undefined);
     });
 
@@ -137,7 +137,7 @@ describe('BlogProfileService', () => {
       const result = await service.updateProfile(1, {});
 
       expect(result).not.toBeNull();
-      expect(result!.nickname).toBe('博主');
+      expect(result.nickname).toBe('博主');
       expect(profileRepo.update).not.toHaveBeenCalled();
     });
   });

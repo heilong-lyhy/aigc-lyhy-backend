@@ -1,6 +1,7 @@
 // src/modules/account/base/services/account.service.spec.ts
 
 import { DomainError } from '@core/common/errors/domain-error';
+import { PasswordPolicyService } from '@core/common/password/password-policy.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,6 +24,10 @@ describe('AccountService - 密码预处理功能', () => {
     // 模拟方法
   };
 
+  const mockPasswordPolicyService = {
+    validatePassword: jest.fn().mockReturnValue({ isValid: true, errors: [], strength: 80 }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +43,10 @@ describe('AccountService - 密码预处理功能', () => {
         {
           provide: AccountSecurityService,
           useValue: mockAccountSecurityService,
+        },
+        {
+          provide: PasswordPolicyService,
+          useValue: mockPasswordPolicyService,
         },
       ],
     }).compile();

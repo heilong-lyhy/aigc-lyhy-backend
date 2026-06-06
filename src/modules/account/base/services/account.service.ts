@@ -9,6 +9,7 @@ import {
 } from '@app-types/models/account.types';
 import { Gender, type GeographicInfo, UserState } from '@app-types/models/user-info.types';
 import { ACCOUNT_ERROR, DomainError } from '@core/common/errors/domain-error';
+import { PasswordPolicyService } from '@core/common/password/password-policy.service';
 import { validatePasswordNormalize } from '@core/common/password/normalize-password';
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
 import { Injectable } from '@nestjs/common';
@@ -81,11 +82,11 @@ export interface AccountLockResult {
 @Injectable()
 export class AccountService {
   constructor(
-    // private readonly passwordHelper: PasswordPbkdf2Helper, // 移除这行
     @InjectRepository(AccountEntity)
     private readonly accountRepository: Repository<AccountEntity>,
     @InjectRepository(UserInfoEntity)
     private readonly userInfoRepository: Repository<UserInfoEntity>,
+    private readonly passwordPolicyService: PasswordPolicyService,
   ) {}
 
   // =========================================================
@@ -146,6 +147,52 @@ export class AccountService {
     const repository = this.getAccountRepository(params.transactionContext);
     await repository.update(params.accountId, {
       loginPassword: params.passwordHash,
+      updatedAt: new Date(),
+    });
+  }
+
+  /**
+   * 修改密码：校验旧密码 → 密码策略校验 → 哈希新密码 → 更新密码哈希
+   * 聚合根写入口，封装 Account 聚合内密码修改的完整逻辑
+   */
+  async changePassword(params: {
+    accountId: number;
+    currentPassword: string;
+    newPassword: string;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<void> {
+    const repository = this.getAccountRepository(params.transactionContext);
+    const account = await repository.findOne({ where: { id: params.accountId } });
+    if (!account) {
+      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
+    }
+
+    // 旧密码验证
+    const isCurrentPasswordValid = AccountService.verifyPassword(
+      params.currentPassword,
+      account.loginPassword,
+      account.createdAt,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_MISMATCH, '当前密码不正确');
+    }
+
+    // 新密码策略校验
+    const validation = this.passwordPolicyService.validatePassword(params.newPassword);
+    if (!validation.isValid) {
+      throw new DomainError(
+        ACCOUNT_ERROR.ACCOUNT_PASSWORD_POLICY_VIOLATION,
+        `密码不符合安全要求: ${validation.errors.join(', ')}`,
+      );
+    }
+
+    // 哈希新密码并更新
+    const hashedPassword = AccountService.hashPasswordWithTimestamp(
+      params.newPassword,
+      account.createdAt,
+    );
+    await repository.update(params.accountId, {
+      loginPassword: hashedPassword,
       updatedAt: new Date(),
     });
   }

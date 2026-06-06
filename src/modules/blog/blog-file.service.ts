@@ -10,7 +10,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type { UploadBlogFileInput } from './blog.types';
+import type { UploadBlogFileInput, BlogFileView } from './blog.types';
 import {
   BLOG_FILE_STORAGE_TOKEN,
   type FileStorageAdapter,
@@ -41,7 +41,7 @@ export class BlogFileService {
   async uploadFile(
     input: UploadBlogFileInput & { buffer: Buffer },
     transactionContext?: PersistenceTransactionContext,
-  ) {
+  ): Promise<BlogFileView> {
     // 文件类型白名单校验
     if (!this.allowedMimeTypes.includes(input.mimeType)) {
       throw new DomainError(BLOG_ERROR.FILE_TYPE_NOT_ALLOWED, '不支持的文件类型');
@@ -72,20 +72,35 @@ export class BlogFileService {
     });
 
     const saved = await repo.save(entity);
-    return this.queryService.getFileById(saved.id, transactionContext);
+    // 刚创建的记录必然存在
+    return this.queryService.getFileById(saved.id, transactionContext) as Promise<BlogFileView>;
   }
 
-  async deleteFile(id: number, transactionContext?: PersistenceTransactionContext): Promise<void> {
+  /**
+   * 软删除文件记录（事务内操作）
+   * 仅删除数据库记录，不删除物理文件
+   * @returns 被删除文件的 storagePath，供调用方在事务提交后删除物理文件
+   */
+  async softDeleteFile(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<string> {
     const repo = this.getFileRepo(transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.FILE_NOT_FOUND, '文件不存在');
     }
-
-    // 先从存储后端删除物理文件
-    await this.fileStorage.deleteFile(entity.storagePath);
-    // 再软删除数据库记录
     await repo.softRemove(entity);
+    return entity.storagePath;
+  }
+
+  /**
+   * 删除物理文件（事务外操作，不可回滚）
+   * 物理文件删除失败不影响数据库记录的软删除状态
+   * 孤儿文件可通过定期清理任务处理
+   */
+  async deletePhysicalFile(storagePath: string): Promise<void> {
+    await this.fileStorage.deleteFile(storagePath);
   }
 
   // ─── 内部工具 ───

@@ -1,6 +1,8 @@
 // src/usecases/blog/blog-usecases.module.ts
 // 博客领域 Usecases 模块：注册所有 blog usecases，导入 BlogModule
+// change-blog-admin-password 跨域依赖 AccountModule
 
+import { AccountModule } from '@src/modules/account/account.module';
 import { BlogModule } from '@src/modules/blog/blog.module';
 import { Module } from '@nestjs/common';
 import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.usecase';
@@ -17,9 +19,13 @@ import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment
 import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
 import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
+import { UploadBlogFileUsecase } from '@src/usecases/blog/upload-blog-file.usecase';
+import { DeleteBlogFileUsecase } from '@src/usecases/blog/delete-blog-file.usecase';
+import { UpdateBlogProfileUsecase } from '@src/usecases/blog/update-blog-profile.usecase';
+import { ChangeBlogAdminPasswordUsecase } from '@src/usecases/blog/change-blog-admin-password.usecase';
 
 @Module({
-  imports: [BlogModule],
+  imports: [BlogModule, AccountModule.forRoot()],
   providers: [
     CreateBlogPostUsecase,
     UpdateBlogPostUsecase,
@@ -35,6 +41,10 @@ import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment
     UpdateBlogCommentStatusUsecase,
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,
+    UploadBlogFileUsecase,
+    DeleteBlogFileUsecase,
+    UpdateBlogProfileUsecase,
+    ChangeBlogAdminPasswordUsecase,
   ],
   exports: [
     CreateBlogPostUsecase,
@@ -51,6 +61,10 @@ import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment
     UpdateBlogCommentStatusUsecase,
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,
+    UploadBlogFileUsecase,
+    DeleteBlogFileUsecase,
+    UpdateBlogProfileUsecase,
+    ChangeBlogAdminPasswordUsecase,
   ],
 })
 export class BlogUsecasesModule {}
