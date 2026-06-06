@@ -295,7 +295,7 @@ describe('BlogPostService', () => {
       } as BlogPostEntity;
 
       postRepo.findOne.mockResolvedValue(existing);
-      postRepo.update.mockResolvedValue(undefined);
+      postRepo.update.mockResolvedValue(undefined as never);
       queryService.findPostById
         .mockResolvedValueOnce({ id: 1, title: '新标题', status: BlogPostStatus.DRAFT })
         .mockResolvedValueOnce({
@@ -322,7 +322,7 @@ describe('BlogPostService', () => {
       } as BlogPostEntity;
 
       postRepo.findOne.mockResolvedValue(existing);
-      postRepo.update.mockResolvedValue(undefined);
+      postRepo.update.mockResolvedValue(undefined as never);
       queryService.findPostById.mockResolvedValue({ id: 1, title: '标题' });
 
       await service.updatePostWithTags(1, { title: '新标题' });
@@ -356,7 +356,7 @@ describe('BlogPostService', () => {
 
   describe('incrementViewCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue(undefined as never);
       await service.incrementViewCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'viewCount', 1);
     });
@@ -364,7 +364,7 @@ describe('BlogPostService', () => {
 
   describe('incrementCommentCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue(undefined as never);
       await service.incrementCommentCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'commentCount', 1);
     });
@@ -372,7 +372,7 @@ describe('BlogPostService', () => {
 
   describe('decrementCommentCount', () => {
     it('应调用 decrement', async () => {
-      postRepo.decrement.mockResolvedValue(undefined);
+      postRepo.decrement.mockResolvedValue(undefined as never);
       await service.decrementCommentCount(1);
       expect(postRepo.decrement).toHaveBeenCalledWith({ id: 1 }, 'commentCount', 1);
     });
@@ -380,7 +380,7 @@ describe('BlogPostService', () => {
 
   describe('incrementLikeCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue(undefined as never);
       await service.incrementLikeCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'likeCount', 1);
     });
@@ -388,7 +388,7 @@ describe('BlogPostService', () => {
 
   describe('decrementLikeCount', () => {
     it('应调用 decrement', async () => {
-      postRepo.decrement.mockResolvedValue(undefined);
+      postRepo.decrement.mockResolvedValue(undefined as never);
       await service.decrementLikeCount(1);
       expect(postRepo.decrement).toHaveBeenCalledWith({ id: 1 }, 'likeCount', 1);
     });
@@ -399,7 +399,7 @@ describe('BlogPostService', () => {
       const entity = { id: 1, status: BlogPostStatus.DRAFT } as BlogPostEntity;
       postRepo.findOne.mockResolvedValue(entity);
       postRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
-      postRepo.softRemove.mockResolvedValue(undefined);
+      postRepo.softRemove.mockResolvedValue(undefined as never);
 
       await service.softDeletePost(1);
 

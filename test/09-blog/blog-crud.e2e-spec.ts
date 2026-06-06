@@ -12,10 +12,12 @@ import { BlogTagService } from '../../src/modules/blog/blog-tag.service';
 import { BlogCommentService } from '../../src/modules/blog/blog-comment.service';
 import { BlogLikeService } from '../../src/modules/blog/blog-like.service';
 import { BlogProfileService } from '../../src/modules/blog/blog-profile.service';
+import { BlogFileService } from '../../src/modules/blog/blog-file.service';
 import { BlogPostQueryService } from '../../src/modules/blog/queries/blog-post.query.service';
 import { BlogCategoryQueryService } from '../../src/modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '../../src/modules/blog/queries/blog-tag.query.service';
-import { BlogPostStatus, BlogCommentStatus } from '../../src/modules/blog/blog.types';
+import { BlogProfileQueryService } from '../../src/modules/blog/queries/blog-profile.query.service';
+import { BlogPostStatus, BlogCommentStatus, BlogFileType } from '../../src/modules/blog/blog.types';
 import { BlogCommentEntity } from '../../src/modules/blog/entities/blog-comment.entity';
 import { DomainError } from '../../src/core/common/errors/domain-error';
 import { initGraphQLSchema } from '../../src/adapters/api/graphql/schema/schema.init';
@@ -29,9 +31,11 @@ describe('Blog CRUD (e2e)', () => {
   let commentService: BlogCommentService;
   let likeService: BlogLikeService;
   let profileService: BlogProfileService;
+  let fileService: BlogFileService;
   let postQueryService: BlogPostQueryService;
   let categoryQueryService: BlogCategoryQueryService;
   let tagQueryService: BlogTagQueryService;
+  let profileQueryService: BlogProfileQueryService;
 
   beforeAll(async () => {
     initGraphQLSchema();
@@ -50,9 +54,11 @@ describe('Blog CRUD (e2e)', () => {
     commentService = moduleFixture.get<BlogCommentService>(BlogCommentService);
     likeService = moduleFixture.get<BlogLikeService>(BlogLikeService);
     profileService = moduleFixture.get<BlogProfileService>(BlogProfileService);
+    fileService = moduleFixture.get<BlogFileService>(BlogFileService);
     postQueryService = moduleFixture.get<BlogPostQueryService>(BlogPostQueryService);
     categoryQueryService = moduleFixture.get<BlogCategoryQueryService>(BlogCategoryQueryService);
     tagQueryService = moduleFixture.get<BlogTagQueryService>(BlogTagQueryService);
+    profileQueryService = moduleFixture.get<BlogProfileQueryService>(BlogProfileQueryService);
 
     await app.init();
   }, 30000);
@@ -435,6 +441,111 @@ describe('Blog CRUD (e2e)', () => {
       expect(views).toHaveLength(2);
       expect(views[0].categoryName).toBe('技术');
       expect(views[1].categoryName).toBe('生活');
+    });
+  });
+
+  // ─── File upload/delete ───
+
+  describe('File upload & delete', () => {
+    it('应上传文件并查询到记录', async () => {
+      const uploaded = await fileService.uploadFile({
+        originalName: 'test.jpg',
+        mimeType: 'image/jpeg',
+        fileSize: 1024,
+        storedName: 'test-abc123.jpg',
+        fileType: BlogFileType.IMAGE,
+        buffer: Buffer.from('fake-image-data'),
+      });
+
+      expect(uploaded.id).toBeDefined();
+      expect(uploaded.originalName).toBe('test.jpg');
+      expect(uploaded.mimeType).toBe('image/jpeg');
+      expect(uploaded.storagePath).toContain('test-abc123.jpg');
+    });
+
+    it('应软删除文件记录并返回 storagePath', async () => {
+      const uploaded = await fileService.uploadFile({
+        originalName: 'delete-test.png',
+        mimeType: 'image/png',
+        fileSize: 2048,
+        storedName: 'delete-test-abc.png',
+        fileType: BlogFileType.IMAGE,
+        buffer: Buffer.from('fake-png-data'),
+      });
+
+      const storagePath = await fileService.softDeleteFile(uploaded.id);
+      expect(storagePath).toContain('delete-test-abc.png');
+    });
+
+    it('删除不存在的文件时应抛出 FILE_NOT_FOUND', async () => {
+      await expect(fileService.softDeleteFile(99999)).rejects.toThrow(DomainError);
+    });
+
+    it('上传不支持的 MIME 类型时应抛出 FILE_TYPE_NOT_ALLOWED', async () => {
+      await expect(
+        fileService.uploadFile({
+          originalName: 'malware.exe',
+          mimeType: 'application/x-executable',
+          fileSize: 1024,
+          storedName: 'malware.exe',
+          fileType: BlogFileType.OTHER,
+          buffer: Buffer.from('evil'),
+        }),
+      ).rejects.toThrow(DomainError);
+    });
+
+    it('上传超大文件时应抛出 FILE_SIZE_EXCEEDED', async () => {
+      await expect(
+        fileService.uploadFile({
+          originalName: 'huge.jpg',
+          mimeType: 'image/jpeg',
+          fileSize: 100 * 1024 * 1024, // 100MB
+          storedName: 'huge.jpg',
+          fileType: BlogFileType.IMAGE,
+          buffer: Buffer.from('x'),
+        }),
+      ).rejects.toThrow(DomainError);
+    });
+  });
+
+  // ─── Profile update (extended) ───
+
+  describe('Profile update (extended)', () => {
+    it('应更新 socialLinks 字段', async () => {
+      const created = await profileService.createProfile('博主');
+      const socialLinks = {
+        github: 'https://github.com/test',
+        twitter: 'https://twitter.com/test',
+      };
+
+      const updated = await profileService.updateProfile(created!.id, { socialLinks });
+
+      expect(updated.socialLinks).toEqual(socialLinks);
+    });
+
+    it('应清空可选字段（传 null）', async () => {
+      const created = await profileService.createProfile('博主');
+      const withBio = await profileService.updateProfile(created!.id, { bio: '有简介' });
+      expect(withBio.bio).toBe('有简介');
+
+      const cleared = await profileService.updateProfile(created!.id, { bio: null });
+      expect(cleared.bio).toBeNull();
+    });
+
+    it('更新不存在的 profile 时应抛出 PROFILE_NOT_FOUND', async () => {
+      await expect(profileService.updateProfile(99999, { nickname: '不存在' })).rejects.toThrow(
+        DomainError,
+      );
+    });
+
+    it('应通过 QueryService 查询到更新后的 profile', async () => {
+      const created = await profileService.createProfile('博主');
+      await profileService.updateProfile(created!.id, { nickname: '新昵称', bio: '新简介' });
+
+      const view = await profileQueryService.findProfileById(created!.id);
+      expect(view).not.toBeNull();
+      expect(view!.nickname).toBe('新昵称');
+      expect(view!.bio).toBe('新简介');
     });
   });
 });
