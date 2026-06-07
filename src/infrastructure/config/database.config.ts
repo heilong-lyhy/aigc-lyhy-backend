@@ -1,34 +1,6 @@
 // src/infrastructure/config/database.config.ts
 import { ConfigFactory } from '@nestjs/config';
-
-const getOptionalEnv = (key: string): string | undefined => {
-  const value = process.env[key];
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : undefined;
-};
-
-const parseStrictInteger = (raw: string): number => {
-  const normalized = raw.trim();
-  if (!/^-?\d+$/.test(normalized)) {
-    return Number.NaN;
-  }
-  return Number(normalized);
-};
-
-const getIntEnvWithDefault = (key: string, defaultValue: number): number => {
-  const value = getOptionalEnv(key);
-  if (!value) {
-    return defaultValue;
-  }
-  const parsed = parseStrictInteger(value);
-  if (!Number.isInteger(parsed)) {
-    throw new Error(`${key} must be a valid integer`);
-  }
-  return parsed;
-};
+import { getIntEnvWithDefault } from './env.helpers';
 
 /**
  * 数据库配置工厂函数

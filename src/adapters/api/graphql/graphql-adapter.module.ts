@@ -15,6 +15,9 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 
+// Blog GraphQL Adapter Module
+import { BlogGraphQLAdapterModule } from './blog/blog-graphql-adapter.module';
+
 // Resolvers
 import { AccountResolver } from './account/account.resolver';
 import { AiResolver } from './ai/ai.resolver';
@@ -55,6 +58,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VerificationRecordUsecasesModule,
     VerificationUsecasesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    BlogGraphQLAdapterModule,
   ],
   providers: [
     {

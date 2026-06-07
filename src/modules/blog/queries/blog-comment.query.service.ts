@@ -2,12 +2,30 @@
 // 评论读侧 QueryService：读取、输出规范化，不写、不开事务
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import { BlogCommentStatus, type BlogCommentView } from '../blog.types';
+import type { BlogCommentView } from '../blog.types';
 import { BlogCommentEntity } from '../entities/blog-comment.entity';
+
+export interface BlogCommentPaginationParams {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly sortBy?: string;
+  readonly sortOrder?: 'ASC' | 'DESC';
+  readonly postId?: number;
+  readonly status?: BlogCommentStatus;
+}
+
+export interface BlogCommentByPostPaginationParams {
+  readonly postId: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly sortBy?: string;
+  readonly sortOrder?: 'ASC' | 'DESC';
+}
 
 @Injectable()
 export class BlogCommentQueryService {
@@ -65,9 +83,37 @@ export class BlogCommentQueryService {
     });
   }
 
-  // ─── 内部工具 ───
+  /**
+   * 创建评论分页查询 QueryBuilder（管理端，供 Usecase 编排分页）
+   */
+  createCommentQueryBuilder(params: BlogCommentPaginationParams) {
+    const qb = this.commentRepo.createQueryBuilder('comment');
 
-  private toView(entity: BlogCommentEntity): BlogCommentView {
+    if (params.postId !== undefined) {
+      qb.andWhere('comment.post_id = :postId', { postId: params.postId });
+    }
+
+    if (params.status !== undefined) {
+      qb.andWhere('comment.status = :status', { status: params.status });
+    }
+
+    return qb;
+  }
+
+  /**
+   * 创建指定文章评论分页查询 QueryBuilder（公开，仅已审核通过的评论，供 Usecase 编排分页）
+   */
+  createCommentByPostQueryBuilder(params: BlogCommentByPostPaginationParams) {
+    return this.commentRepo
+      .createQueryBuilder('comment')
+      .where('comment.post_id = :postId', { postId: params.postId })
+      .andWhere('comment.status = :status', { status: BlogCommentStatus.APPROVED });
+  }
+
+  /**
+   * 将 Entity 映射为 View（供 Usecase 分页后调用）
+   */
+  toView(entity: BlogCommentEntity): BlogCommentView {
     return {
       id: entity.id,
       postId: entity.postId,

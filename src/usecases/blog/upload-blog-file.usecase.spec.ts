@@ -1,7 +1,7 @@
 // src/usecases/blog/upload-blog-file.usecase.spec.ts
 
 import { DomainError } from '@core/common/errors/domain-error';
-import { BlogFileType } from '@src/modules/blog/blog.types';
+import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileService } from '@src/modules/blog/blog-file.service';
 import { UploadBlogFileUsecase } from './upload-blog-file.usecase';
 

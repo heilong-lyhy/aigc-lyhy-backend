@@ -4,7 +4,7 @@ import { DomainError } from '@core/common/errors/domain-error';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BlogFileType } from './blog.types';
+import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileEntity } from './entities/blog-file.entity';
 import { BlogFileService } from './blog-file.service';
 import { BlogFileQueryService } from './queries/blog-file.query.service';

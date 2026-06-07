@@ -4,6 +4,7 @@
 
 import { AccountModule } from '@src/modules/account/account.module';
 import { BlogModule } from '@src/modules/blog/blog.module';
+import { PaginationModule } from '@src/modules/common/pagination.module';
 import { Module } from '@nestjs/common';
 import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.usecase';
 import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.usecase';
@@ -23,10 +24,26 @@ import { UploadBlogFileUsecase } from '@src/usecases/blog/upload-blog-file.useca
 import { DeleteBlogFileUsecase } from '@src/usecases/blog/delete-blog-file.usecase';
 import { UpdateBlogProfileUsecase } from '@src/usecases/blog/update-blog-profile.usecase';
 import { ChangeBlogAdminPasswordUsecase } from '@src/usecases/blog/change-blog-admin-password.usecase';
+import {
+  GetBlogPostByIdUsecase,
+  GetBlogPostBySlugUsecase,
+  ListBlogPostsUsecase,
+  ListBlogPublishedPostsUsecase,
+  ListBlogCategoriesUsecase,
+  GetBlogCategoryTreeUsecase,
+  ListBlogTagsUsecase,
+  ListBlogCommentsUsecase,
+  ListBlogCommentsByPostUsecase,
+  HasLikedBlogPostUsecase,
+  ListBlogFilesUsecase,
+  GetBlogProfileUsecase,
+  GetBlogDashboardStatsUsecase,
+} from '@src/usecases/blog/blog-read.usecase';
 
 @Module({
-  imports: [BlogModule, AccountModule.forRoot()],
+  imports: [BlogModule, AccountModule.forRoot(), PaginationModule],
   providers: [
+    // 写 usecases
     CreateBlogPostUsecase,
     UpdateBlogPostUsecase,
     DeleteBlogPostUsecase,
@@ -45,8 +62,23 @@ import { ChangeBlogAdminPasswordUsecase } from '@src/usecases/blog/change-blog-a
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
     ChangeBlogAdminPasswordUsecase,
+    // 读 usecases
+    GetBlogPostByIdUsecase,
+    GetBlogPostBySlugUsecase,
+    ListBlogPostsUsecase,
+    ListBlogPublishedPostsUsecase,
+    ListBlogCategoriesUsecase,
+    GetBlogCategoryTreeUsecase,
+    ListBlogTagsUsecase,
+    ListBlogCommentsUsecase,
+    ListBlogCommentsByPostUsecase,
+    HasLikedBlogPostUsecase,
+    ListBlogFilesUsecase,
+    GetBlogProfileUsecase,
+    GetBlogDashboardStatsUsecase,
   ],
   exports: [
+    // 写 usecases
     CreateBlogPostUsecase,
     UpdateBlogPostUsecase,
     DeleteBlogPostUsecase,
@@ -65,6 +97,20 @@ import { ChangeBlogAdminPasswordUsecase } from '@src/usecases/blog/change-blog-a
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
     ChangeBlogAdminPasswordUsecase,
+    // 读 usecases
+    GetBlogPostByIdUsecase,
+    GetBlogPostBySlugUsecase,
+    ListBlogPostsUsecase,
+    ListBlogPublishedPostsUsecase,
+    ListBlogCategoriesUsecase,
+    GetBlogCategoryTreeUsecase,
+    ListBlogTagsUsecase,
+    ListBlogCommentsUsecase,
+    ListBlogCommentsByPostUsecase,
+    HasLikedBlogPostUsecase,
+    ListBlogFilesUsecase,
+    GetBlogProfileUsecase,
+    GetBlogDashboardStatsUsecase,
   ],
 })
 export class BlogUsecasesModule {}

@@ -10,8 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import sanitizeHtml from 'sanitize-html';
+import { BlogCommentStatus } from '@app-types/models/blog.types';
 import {
-  BlogCommentStatus,
   type BatchUpdateBlogCommentStatusInput,
   type CreateBlogCommentInput,
   type UpdateBlogCommentStatusInput,

@@ -9,8 +9,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
+import { BlogPostStatus } from '@app-types/models/blog.types';
 import {
-  BlogPostStatus,
   type CreateBlogPostInput,
   type UpdateBlogPostInput,
   type BlogPostDetailView,

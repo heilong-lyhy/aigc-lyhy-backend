@@ -4,7 +4,7 @@ import { DomainError } from '@core/common/errors/domain-error';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BlogCommentStatus } from './blog.types';
+import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { BlogCommentEntity } from './entities/blog-comment.entity';
 import { BlogCommentService } from './blog-comment.service';
 import { BlogCommentQueryService } from './queries/blog-comment.query.service';

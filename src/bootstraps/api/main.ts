@@ -22,11 +22,22 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance() as unknown as Express;
   expressApp.disable('x-powered-by');
 
+  // 获取 ConfigService 实例（提前获取，供 graphql-upload 等中间件使用）
+  const configService = app.get<ConfigService>(ConfigService);
+
+  // 启用 GraphQL 文件上传中间件（graphql-upload v17 ESM-only，使用动态导入）
+  const logger = app.get(Logger);
+  try {
+    const mod = await import('graphql-upload/graphqlUploadExpress.mjs');
+    const maxFileSize = configService.get<number>('blogStorage.maxFileSize', 10 * 1024 * 1024);
+    app.use(mod.default({ maxFileSize, maxFiles: 1 }));
+  } catch (error: unknown) {
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.warn(`graphql-upload 中间件加载失败，文件上传 mutation 将不可用: ${reason}`);
+  }
+
   // 启用 class-validator 的依赖注入支持
   useContainer(app.select(ApiModule), { fallbackOnErrors: true });
-
-  // 获取 ConfigService 实例
-  const configService = app.get<ConfigService>(ConfigService);
 
   // 全局启用 CORS（按配置限制来源与凭据）
   const corsEnabled = configService.get<boolean>('server.cors.enabled', true);
@@ -46,9 +57,6 @@ async function bootstrap() {
       maxAge: 600,
     });
   }
-
-  // 获取 PinoLogger 实例
-  const logger = app.get(Logger);
 
   // 从配置服务中获取服务器配置
   const host = configService.get<string>('server.host', '127.0.0.1');

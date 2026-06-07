@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BlogPostStatus } from '../blog.types';
+import { BlogPostStatus } from '@app-types/models/blog.types';
 
 @Entity('blog_post')
 @Index('uk_blog_post_slug', ['slug'], { unique: true })

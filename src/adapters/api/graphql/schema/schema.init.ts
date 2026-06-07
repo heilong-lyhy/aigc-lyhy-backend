@@ -50,46 +50,24 @@ export function initGraphQLSchema(): {
   }
 
   try {
-    // 注册枚举类型
-    registerEnums();
+    // 注册枚举类型（返回已注册的枚举名称列表，消除双源真相）
+    const enumResult = registerEnums();
 
     // 注册标量类型
     const scalarResult = registerScalars();
 
-    // 由于 registerEnums 不再返回枚举列表，使用预期枚举列表
-    const enumList = [
-      'AccountStatus',
-      'AudienceTypeEnum',
-      'EmploymentStatus',
-      'IdentityTypeEnum',
-      'LoginTypeEnum',
-      'ThirdPartyProviderEnum',
-      'RegisterTypeEnum',
-      'Gender',
-      'UserState',
-      'SubjectType',
-      'VerificationRecordStatus',
-      'VerificationRecordType',
-      'OrderDirection',
-      'PaginationMode',
-      'SortDirection',
-      'MagicItemCraftTaskStatus',
-      'MagicItemCraftTaskType',
-      'MagicItemCraftTaskQualityLevel',
-    ];
-
     // 生成 Schema 指纹
-    const fingerprint = generateSchemaFingerprint(enumList, scalarResult.scalars);
+    const fingerprint = generateSchemaFingerprint(enumResult.enums, scalarResult.scalars);
 
     // 计算总类型数
-    const totalTypes = enumList.length + scalarResult.scalars.length;
+    const totalTypes = enumResult.enums.length + scalarResult.scalars.length;
 
     // 标记为已初始化
     inited = true;
 
     return {
       success: true,
-      enums: enumList,
+      enums: enumResult.enums,
       scalars: scalarResult.scalars,
       fingerprint,
       message: `成功注册 ${totalTypes} 个 GraphQL 类型`,

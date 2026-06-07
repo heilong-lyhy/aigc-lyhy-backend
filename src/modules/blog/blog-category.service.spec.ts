@@ -211,7 +211,7 @@ describe('BlogCategoryService', () => {
     });
 
     it('父分类存在时应正常通过', async () => {
-      categoryRepo.findOne.mockResolvedValue({ id: 10 } as BlogCategoryEntity);
+      categoryRepo.findOne.mockResolvedValue({ id: 10 });
       await expect(service.assertParentExists(10)).resolves.toBeUndefined();
     });
 
@@ -234,8 +234,8 @@ describe('BlogCategoryService', () => {
     it('父级链中包含自身时应抛出 CATEGORY_PARENT_INVALID', async () => {
       // parentId=3 → parentId=2 → parentId=1(=categoryId) 形成环
       categoryRepo.findOne
-        .mockResolvedValueOnce({ id: 3, parentId: 2 } as BlogCategoryEntity)
-        .mockResolvedValueOnce({ id: 2, parentId: 1 } as BlogCategoryEntity);
+        .mockResolvedValueOnce({ id: 3, parentId: 2 })
+        .mockResolvedValueOnce({ id: 2, parentId: 1 });
 
       await expect(service.assertNoCircularParent(1, 3)).rejects.toThrow(DomainError);
     });
@@ -243,19 +243,19 @@ describe('BlogCategoryService', () => {
     it('脏数据导致环（A→B→A）时应抛出 CATEGORY_PARENT_INVALID', async () => {
       // parentId=2 → parentId=3 → parentId=2 形成环（非自引用，但 visited 检测到重复）
       categoryRepo.findOne
-        .mockResolvedValueOnce({ id: 2, parentId: 3 } as BlogCategoryEntity)
-        .mockResolvedValueOnce({ id: 3, parentId: 2 } as BlogCategoryEntity);
+        .mockResolvedValueOnce({ id: 2, parentId: 3 })
+        .mockResolvedValueOnce({ id: 3, parentId: 2 });
 
       await expect(service.assertNoCircularParent(1, 2)).rejects.toThrow(DomainError);
     });
 
     it('正常父级链（无环）时应正常通过', async () => {
-      categoryRepo.findOne.mockResolvedValueOnce({ id: 2, parentId: null } as BlogCategoryEntity);
+      categoryRepo.findOne.mockResolvedValueOnce({ id: 2, parentId: null });
       await expect(service.assertNoCircularParent(1, 2)).resolves.toBeUndefined();
     });
 
     it('祖先链中遇到不存在的分类时应中断遍历并正常通过', async () => {
-      categoryRepo.findOne.mockResolvedValueOnce({ id: 2, parentId: 99 } as BlogCategoryEntity);
+      categoryRepo.findOne.mockResolvedValueOnce({ id: 2, parentId: 99 });
       categoryRepo.findOne.mockResolvedValueOnce(null);
       await expect(service.assertNoCircularParent(1, 2)).resolves.toBeUndefined();
     });
@@ -281,12 +281,12 @@ describe('BlogCategoryService', () => {
       categoryRepo.findOne.mockResolvedValue({
         id: 2,
         slug: 'existing-slug',
-      } as BlogCategoryEntity);
+      });
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
     });
 
     it('slug 已存在但等于排除 ID 时应正常通过', async () => {
-      categoryRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' } as BlogCategoryEntity);
+      categoryRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
       await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
     });
   });

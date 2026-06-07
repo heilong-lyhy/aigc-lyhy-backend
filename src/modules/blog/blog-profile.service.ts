@@ -53,6 +53,16 @@ export class BlogProfileService {
     return this.queryService.findProfileById(id, transactionContext) as Promise<BlogProfileView>;
   }
 
+  /**
+   * 获取博主信息（单例，写后读辅助方法，供同域 usecase 编排使用）
+   * 内部委托 QueryService，避免 usecase 直接依赖 QueryService 实现文件
+   */
+  async getProfile(
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogProfileView | null> {
+    return this.queryService.getProfile(transactionContext);
+  }
+
   // ─── 内部工具 ───
 
   private getProfileRepo(

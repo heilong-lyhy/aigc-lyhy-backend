@@ -3,6 +3,7 @@
 // 分页列表查询由 Usecase 调用 PaginationService 编排，QueryService 只提供基础读取与视图映射
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { BlogPostStatus } from '@app-types/models/blog.types';
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
@@ -11,6 +12,16 @@ import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.type
 import { BlogPostEntity } from '../entities/blog-post.entity';
 import { BlogCategoryQueryService } from './blog-category.query.service';
 import { BlogTagQueryService } from './blog-tag.query.service';
+
+export interface BlogPostPaginationParams {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly sortBy?: string;
+  readonly sortOrder?: 'ASC' | 'DESC';
+  readonly status?: BlogPostStatus;
+  readonly categoryId?: number;
+  readonly title?: string;
+}
 
 @Injectable()
 export class BlogPostQueryService {
@@ -89,6 +100,26 @@ export class BlogPostQueryService {
     );
 
     return ids.map((id) => viewMap.get(id)).filter((v): v is BlogPostView => v !== undefined);
+  }
+
+  /**
+   * 创建文章分页查询 QueryBuilder（供 Usecase 调用 PaginationService 编排分页）
+   * 已应用软删除过滤和可选的状态/分类/标题筛选
+   */
+  createPostQueryBuilder(params: BlogPostPaginationParams) {
+    const qb = this.postRepo.createQueryBuilder('post').where('post.deleted_at IS NULL');
+
+    if (params.status !== undefined) {
+      qb.andWhere('post.status = :status', { status: params.status });
+    }
+    if (params.categoryId !== undefined) {
+      qb.andWhere('post.category_id = :categoryId', { categoryId: params.categoryId });
+    }
+    if (params.title !== undefined) {
+      qb.andWhere('post.title LIKE :title', { title: `%${params.title}%` });
+    }
+
+    return qb;
   }
 
   // ─── 视图映射 ───

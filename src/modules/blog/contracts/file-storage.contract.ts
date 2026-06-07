@@ -2,7 +2,7 @@
 // Module-owned boundary contract：博客文件存储能力
 // Blog 模块需要隔离可替换的文件存储实现（本地/OSS/S3），由 infrastructure 层提供具体实现
 
-import type { BlogFileType } from '../blog.types';
+import type { BlogFileType } from '@app-types/models/blog.types';
 
 /** DI token for FileStorageAdapter */
 export const BLOG_FILE_STORAGE_TOKEN = Symbol('FileStorageAdapter');

@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BlogFileType } from '../blog.types';
+import { BlogFileType } from '@app-types/models/blog.types';
 
 @Entity('blog_file')
 @Index('idx_blog_file_deleted_at', ['deletedAt'])

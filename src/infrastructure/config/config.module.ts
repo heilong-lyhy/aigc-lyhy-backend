@@ -5,54 +5,15 @@ import { parseBooleanInput } from '@core/common/normalize/normalize.helper';
 import { IncomingMessage, ServerResponse } from 'http';
 import { join } from 'path';
 import databaseConfig from './database.config';
+import {
+  getOptionalEnv,
+  getRequiredEnv,
+  getRequiredIntEnv,
+  getIntEnvWithDefault,
+  parseStrictInteger,
+} from './env.helpers';
 
 const isProductionEnv = (): boolean => process.env.NODE_ENV === 'production';
-
-const getOptionalEnv = (key: string): string | undefined => {
-  const value = process.env[key];
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : undefined;
-};
-
-const getRequiredEnv = (key: string): string => {
-  const value = getOptionalEnv(key);
-  if (!value) {
-    throw new Error(`${key} is required`);
-  }
-  return value;
-};
-
-const parseStrictInteger = (raw: string): number => {
-  const normalized = raw.trim();
-  if (!/^-?\d+$/.test(normalized)) {
-    return Number.NaN;
-  }
-  return Number(normalized);
-};
-
-const getRequiredIntEnv = (key: string): number => {
-  const value = getRequiredEnv(key);
-  const parsed = parseStrictInteger(value);
-  if (!Number.isInteger(parsed)) {
-    throw new Error(`${key} must be a valid integer`);
-  }
-  return parsed;
-};
-
-const getIntEnvWithDefault = (key: string, defaultValue: number): number => {
-  const value = getOptionalEnv(key);
-  if (!value) {
-    return defaultValue;
-  }
-  const parsed = parseStrictInteger(value);
-  if (!Number.isInteger(parsed)) {
-    throw new Error(`${key} must be a valid integer`);
-  }
-  return parsed;
-};
 
 const getBooleanEnvWithDefault = (key: string, defaultValue: boolean): boolean => {
   const raw = process.env[key];

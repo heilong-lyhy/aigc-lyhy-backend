@@ -10,30 +10,10 @@
 // - BlogFile 聚合根：BlogFileEntity（独立聚合根）
 // - BlogProfile 聚合根：BlogProfileEntity（独立聚合根，单例）
 
-// ─── 领域枚举（L2：同域共享，未跨域复用不上提到 src/types） ───
+// ─── 领域枚举（L1：跨域共享，真源在 src/types/models/blog.types.ts） ───
+// 枚举统一从 @app-types/models/blog.types 导入，不在 L2 再导出
 
-/** 文章状态 */
-export enum BlogPostStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ARCHIVED = 'ARCHIVED',
-  DELETED = 'DELETED',
-}
-
-/** 评论审核状态 */
-export enum BlogCommentStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  SPAM = 'SPAM',
-}
-
-/** 博客文件类型 */
-export enum BlogFileType {
-  IMAGE = 'IMAGE',
-  DOCUMENT = 'DOCUMENT',
-  OTHER = 'OTHER',
-}
+import { BlogPostStatus, BlogCommentStatus, BlogFileType } from '@app-types/models/blog.types';
 
 // ─── View 类型 ───
 

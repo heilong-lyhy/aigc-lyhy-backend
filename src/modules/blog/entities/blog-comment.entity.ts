@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BlogCommentStatus } from '../blog.types';
+import { BlogCommentStatus } from '@app-types/models/blog.types';
 
 @Entity('blog_comment')
 @Index('idx_blog_comment_post_id', ['postId'])
