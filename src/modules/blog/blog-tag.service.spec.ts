@@ -63,8 +63,8 @@ describe('BlogTagService', () => {
 
       const result = await service.createTag({ name: 'TypeScript', slug: 'typescript' });
 
-      expect(result!.id).toBe(1);
-      expect(result!.name).toBe('TypeScript');
+      expect(result.id).toBe(1);
+      expect(result.name).toBe('TypeScript');
       expect(queryService.findTagById).toHaveBeenCalledWith(1, undefined);
     });
   });
@@ -84,6 +84,53 @@ describe('BlogTagService', () => {
 
       await expect(service.softDeleteTag(999)).rejects.toThrow(DomainError);
       await expect(service.softDeleteTag(999)).rejects.toThrow('标签不存在');
+    });
+  });
+
+  // ─── assertSlugUnique ───
+
+  describe('assertSlugUnique', () => {
+    it('slug 不存在时应正常通过', async () => {
+      tagRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.assertSlugUnique('new-slug')).resolves.toBeUndefined();
+    });
+
+    it('slug 已存在且非排除 ID 时应抛出 TAG_SLUG_DUPLICATE', async () => {
+      tagRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' });
+
+      await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
+      await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow('标签 slug 已存在');
+    });
+
+    it('slug 已存在但等于排除 ID 时应正常通过', async () => {
+      tagRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
+
+      await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
+    });
+  });
+
+  // ─── assertHasNoPostLinks ───
+
+  describe('assertHasNoPostLinks', () => {
+    it('标签下无文章时应正常通过', async () => {
+      queryService.findTagById.mockResolvedValue({ id: 1, postCount: 0 });
+
+      await expect(service.assertHasNoPostLinks(1)).resolves.toBeUndefined();
+    });
+
+    it('标签下有文章时应抛出 TAG_HAS_POSTS', async () => {
+      queryService.findTagById.mockResolvedValue({ id: 1, postCount: 3 });
+
+      await expect(service.assertHasNoPostLinks(1)).rejects.toThrow(DomainError);
+      await expect(service.assertHasNoPostLinks(1)).rejects.toThrow('标签下存在文章，无法删除');
+    });
+
+    it('标签不存在时应抛出 TAG_NOT_FOUND', async () => {
+      queryService.findTagById.mockResolvedValue(null);
+
+      await expect(service.assertHasNoPostLinks(999)).rejects.toThrow(DomainError);
+      await expect(service.assertHasNoPostLinks(999)).rejects.toThrow('标签不存在');
     });
   });
 });

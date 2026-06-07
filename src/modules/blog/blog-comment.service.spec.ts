@@ -313,4 +313,19 @@ describe('BlogCommentService', () => {
       await expect(service.softDeleteComment(999)).rejects.toThrow(DomainError);
     });
   });
+
+  // ─── markCommentsHiddenByPostId ───
+
+  describe('markCommentsHiddenByPostId', () => {
+    it('应将指定文章下所有评论标记为 SPAM', async () => {
+      commentRepo.update.mockResolvedValue({ affected: 5, raw: [], generatedMaps: [] });
+
+      await service.markCommentsHiddenByPostId(1);
+
+      expect(commentRepo.update).toHaveBeenCalledWith(
+        { postId: 1 },
+        { status: BlogCommentStatus.SPAM },
+      );
+    });
+  });
 });

@@ -548,4 +548,68 @@ describe('Blog CRUD (e2e)', () => {
       expect(view!.bio).toBe('新简介');
     });
   });
+
+  // ─── 错误路径 ───
+
+  describe('错误路径', () => {
+    it('重复 slug 创建文章应抛出错误', async () => {
+      await postService.createPost({ title: '第一篇', slug: 'dup-slug', content: '内容' });
+
+      await expect(
+        postService.createPost({ title: '第二篇', slug: 'dup-slug', content: '内容' }),
+      ).rejects.toThrow(DomainError);
+    });
+
+    it('重复 slug 创建分类应抛出错误', async () => {
+      await categoryService.createCategory({ name: '技术', slug: 'dup-cat' });
+
+      await expect(
+        categoryService.createCategory({ name: '技术2', slug: 'dup-cat' }),
+      ).rejects.toThrow(DomainError);
+    });
+
+    it('重复 slug 创建标签应抛出错误', async () => {
+      await tagService.createTag({ name: 'TypeScript', slug: 'dup-tag' });
+
+      await expect(tagService.createTag({ name: 'TS', slug: 'dup-tag' })).rejects.toThrow(
+        DomainError,
+      );
+    });
+
+    it('删除有文章的分类应抛出 CATEGORY_HAS_POSTS', async () => {
+      const cat = await categoryService.createCategory({ name: '有文章', slug: 'has-posts' });
+      await postService.createPost({
+        title: '分类文章',
+        slug: 'cat-post',
+        content: '内容',
+        categoryId: cat.id,
+      });
+
+      await expect(categoryService.assertHasNoPosts(cat.id)).rejects.toThrow(DomainError);
+    });
+
+    it('删除有文章的标签应抛出 TAG_HAS_POSTS', async () => {
+      const tag = await tagService.createTag({ name: '有文章标签', slug: 'has-posts-tag' });
+      await postService.createPost({
+        title: '标签文章',
+        slug: 'tag-post',
+        content: '内容',
+        tagIds: [tag.id],
+      });
+
+      await expect(tagService.assertHasNoPostLinks(tag.id)).rejects.toThrow(DomainError);
+    });
+
+    it('更新不存在的文章应抛出 POST_NOT_FOUND', async () => {
+      await expect(postService.updatePost(99999, { title: '不存在' })).rejects.toThrow(DomainError);
+    });
+
+    it('发布不存在的文章应抛出 POST_NOT_FOUND', async () => {
+      await expect(postService.publishPost(99999)).rejects.toThrow(DomainError);
+    });
+
+    it('删除不存在的文章应抛出 POST_NOT_FOUND', async () => {
+      await expect(postService.softDeletePost(99999)).rejects.toThrow(DomainError);
+    });
+  });
 });

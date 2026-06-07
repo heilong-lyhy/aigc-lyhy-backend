@@ -295,7 +295,7 @@ describe('BlogPostService', () => {
       } as BlogPostEntity;
 
       postRepo.findOne.mockResolvedValue(existing);
-      postRepo.update.mockResolvedValue(undefined);
+      postRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       queryService.findPostById
         .mockResolvedValueOnce({ id: 1, title: '新标题', status: BlogPostStatus.DRAFT })
         .mockResolvedValueOnce({
@@ -322,7 +322,7 @@ describe('BlogPostService', () => {
       } as BlogPostEntity;
 
       postRepo.findOne.mockResolvedValue(existing);
-      postRepo.update.mockResolvedValue(undefined);
+      postRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       queryService.findPostById.mockResolvedValue({ id: 1, title: '标题' });
 
       await service.updatePostWithTags(1, { title: '新标题' });
@@ -356,7 +356,7 @@ describe('BlogPostService', () => {
 
   describe('incrementViewCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.incrementViewCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'viewCount', 1);
     });
@@ -364,7 +364,7 @@ describe('BlogPostService', () => {
 
   describe('incrementCommentCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.incrementCommentCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'commentCount', 1);
     });
@@ -372,7 +372,7 @@ describe('BlogPostService', () => {
 
   describe('decrementCommentCount', () => {
     it('应调用 decrement', async () => {
-      postRepo.decrement.mockResolvedValue(undefined);
+      postRepo.decrement.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.decrementCommentCount(1);
       expect(postRepo.decrement).toHaveBeenCalledWith({ id: 1 }, 'commentCount', 1);
     });
@@ -380,7 +380,7 @@ describe('BlogPostService', () => {
 
   describe('incrementLikeCount', () => {
     it('应调用 increment', async () => {
-      postRepo.increment.mockResolvedValue(undefined);
+      postRepo.increment.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.incrementLikeCount(1);
       expect(postRepo.increment).toHaveBeenCalledWith({ id: 1 }, 'likeCount', 1);
     });
@@ -388,7 +388,7 @@ describe('BlogPostService', () => {
 
   describe('decrementLikeCount', () => {
     it('应调用 decrement', async () => {
-      postRepo.decrement.mockResolvedValue(undefined);
+      postRepo.decrement.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.decrementLikeCount(1);
       expect(postRepo.decrement).toHaveBeenCalledWith({ id: 1 }, 'likeCount', 1);
     });
@@ -399,7 +399,7 @@ describe('BlogPostService', () => {
       const entity = { id: 1, status: BlogPostStatus.DRAFT } as BlogPostEntity;
       postRepo.findOne.mockResolvedValue(entity);
       postRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
-      postRepo.softRemove.mockResolvedValue(undefined);
+      postRepo.softRemove.mockResolvedValue(entity);
 
       await service.softDeletePost(1);
 
@@ -408,6 +408,108 @@ describe('BlogPostService', () => {
       // 再软删除
       expect(entity.status).toBe(BlogPostStatus.DELETED);
       expect(postRepo.softRemove).toHaveBeenCalledWith(entity);
+    });
+  });
+
+  // ─── assertPostExists ───
+
+  describe('assertPostExists', () => {
+    it('文章存在时应正常通过', async () => {
+      queryService.findPostById.mockResolvedValue({ id: 1, title: '存在' });
+
+      await expect(service.assertPostExists(1)).resolves.toBeUndefined();
+    });
+
+    it('文章不存在时应抛出 POST_NOT_FOUND', async () => {
+      queryService.findPostById.mockResolvedValue(null);
+
+      await expect(service.assertPostExists(999)).rejects.toThrow(DomainError);
+      await expect(service.assertPostExists(999)).rejects.toThrow('文章不存在');
+    });
+  });
+
+  // ─── assertSlugUnique ───
+
+  describe('assertSlugUnique', () => {
+    it('slug 不存在时应正常通过', async () => {
+      postRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.assertSlugUnique('new-slug')).resolves.toBeUndefined();
+    });
+
+    it('slug 已存在且非排除 ID 时应抛出 POST_SLUG_DUPLICATE', async () => {
+      postRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' });
+
+      await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
+      await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow('文章 slug 已存在');
+    });
+
+    it('slug 已存在但等于排除 ID 时应正常通过', async () => {
+      postRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
+
+      await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
+    });
+  });
+
+  // ─── publishPost ───
+
+  describe('publishPost', () => {
+    it('应成功发布草稿文章并设置 publishedAt', async () => {
+      const entity = {
+        id: 1,
+        status: BlogPostStatus.DRAFT,
+      } as BlogPostEntity;
+
+      postRepo.findOne.mockResolvedValue(entity);
+      postRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      queryService.findPostById.mockResolvedValue({
+        id: 1,
+        status: BlogPostStatus.PUBLISHED,
+        publishedAt: new Date(),
+      });
+
+      const result = await service.publishPost(1);
+
+      expect(result.status).toBe(BlogPostStatus.PUBLISHED);
+      expect(postRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ status: BlogPostStatus.PUBLISHED }),
+      );
+      expect(postRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ publishedAt: expect.any(Date) }),
+      );
+    });
+
+    it('文章不存在时应抛出 POST_NOT_FOUND', async () => {
+      postRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.publishPost(999)).rejects.toThrow(DomainError);
+      await expect(service.publishPost(999)).rejects.toThrow('文章不存在');
+    });
+
+    it('文章已发布时应抛出 POST_ALREADY_PUBLISHED', async () => {
+      const entity = {
+        id: 1,
+        status: BlogPostStatus.PUBLISHED,
+      } as BlogPostEntity;
+
+      postRepo.findOne.mockResolvedValue(entity);
+
+      await expect(service.publishPost(1)).rejects.toThrow(DomainError);
+      await expect(service.publishPost(1)).rejects.toThrow('文章已发布，无需重复发布');
+    });
+
+    it('已删除的文章不能发布', async () => {
+      const entity = {
+        id: 1,
+        status: BlogPostStatus.DELETED,
+      } as BlogPostEntity;
+
+      postRepo.findOne.mockResolvedValue(entity);
+
+      await expect(service.publishPost(1)).rejects.toThrow(DomainError);
+      await expect(service.publishPost(1)).rejects.toThrow('已删除的文章不能发布');
     });
   });
 });

@@ -290,4 +290,28 @@ describe('BlogCategoryService', () => {
       await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
     });
   });
+
+  // ─── assertHasNoPosts ───
+
+  describe('assertHasNoPosts', () => {
+    it('分类下无文章时应正常通过', async () => {
+      queryService.findCategoryById.mockResolvedValue({ id: 1, postCount: 0 });
+
+      await expect(service.assertHasNoPosts(1)).resolves.toBeUndefined();
+    });
+
+    it('分类下有文章时应抛出 CATEGORY_HAS_POSTS', async () => {
+      queryService.findCategoryById.mockResolvedValue({ id: 1, postCount: 3 });
+
+      await expect(service.assertHasNoPosts(1)).rejects.toThrow(DomainError);
+      await expect(service.assertHasNoPosts(1)).rejects.toThrow('分类下存在文章，无法删除');
+    });
+
+    it('分类不存在时应抛出 CATEGORY_NOT_FOUND', async () => {
+      queryService.findCategoryById.mockResolvedValue(null);
+
+      await expect(service.assertHasNoPosts(999)).rejects.toThrow(DomainError);
+      await expect(service.assertHasNoPosts(999)).rejects.toThrow('分类不存在');
+    });
+  });
 });
