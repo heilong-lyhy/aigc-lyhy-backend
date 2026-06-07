@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { GetBlogDashboardStatsUsecase } from '@src/usecases/blog/blog-read.usecase';
 import { BlogDashboardObjectType } from './dto/blog-dashboard.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -13,6 +14,7 @@ import { Roles } from '../decorators/roles.decorator';
 export class BlogDashboardResolver {
   constructor(private readonly getBlogDashboardStatsUsecase: GetBlogDashboardStatsUsecase) {}
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogDashboardObjectType, { description: '查询博客仪表盘统计' })

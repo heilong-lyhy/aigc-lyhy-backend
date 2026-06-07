@@ -1,6 +1,6 @@
 // src/usecases/blog/delete-blog-file.usecase.spec.ts
 
-import { DomainError } from '@core/common/errors/domain-error';
+import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogFileService } from '@src/modules/blog/blog-file.service';
 import { DeleteBlogFileUsecase } from './delete-blog-file.usecase';
 
@@ -37,7 +37,9 @@ describe('DeleteBlogFileUsecase', () => {
   });
 
   it('文件不存在时事务内应抛出 DomainError', async () => {
-    fileService.softDeleteFile.mockRejectedValue(new DomainError('FILE_NOT_FOUND', '文件不存在'));
+    fileService.softDeleteFile.mockRejectedValue(
+      new DomainError(BLOG_ERROR.FILE_NOT_FOUND, '文件不存在'),
+    );
 
     await expect(usecase.execute(999)).rejects.toThrow(DomainError);
     // 物理文件不应被删除

@@ -1,6 +1,6 @@
 // src/usecases/blog/upload-blog-file.usecase.spec.ts
 
-import { DomainError } from '@core/common/errors/domain-error';
+import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileService } from '@src/modules/blog/blog-file.service';
 import { UploadBlogFileUsecase } from './upload-blog-file.usecase';
@@ -48,7 +48,7 @@ describe('UploadBlogFileUsecase', () => {
 
   it('文件类型不在白名单时应抛出 DomainError', async () => {
     fileService.uploadFile.mockRejectedValue(
-      new DomainError('FILE_TYPE_NOT_ALLOWED', '不支持的文件类型'),
+      new DomainError(BLOG_ERROR.FILE_TYPE_NOT_ALLOWED, '不支持的文件类型'),
     );
 
     await expect(
@@ -58,7 +58,7 @@ describe('UploadBlogFileUsecase', () => {
 
   it('文件大小超过限制时应抛出 DomainError', async () => {
     fileService.uploadFile.mockRejectedValue(
-      new DomainError('FILE_SIZE_EXCEEDED', '文件大小超过限制'),
+      new DomainError(BLOG_ERROR.FILE_SIZE_EXCEEDED, '文件大小超过限制'),
     );
 
     await expect(usecase.execute({ ...validInput, fileSize: 20 * 1024 * 1024 })).rejects.toThrow(

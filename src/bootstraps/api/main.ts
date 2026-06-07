@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { useContainer } from 'class-validator';
 import type { Express } from 'express';
+import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { initGraphQLSchema } from '@src/adapters/api/graphql/schema/schema.init';
 import { ApiModule } from '@src/bootstraps/api/api.module';
@@ -18,12 +19,34 @@ async function bootstrap() {
   const app = await NestFactory.create(ApiModule);
   app.enableShutdownHooks();
 
-  // 隐匿技术栈：移除 Express 默认的 X-Powered-By 响应头
+  // 获取 ConfigService 实例（提前获取，供 Helmet、graphql-upload、CORS 等统一使用）
+  const configService = app.get<ConfigService>(ConfigService);
+
+  // 安全头：Helmet 中间件（CSP 需兼容 GraphQL Playground，按环境调整）
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  const isDev = nodeEnv !== 'production';
+  app.use(
+    helmet({
+      contentSecurityPolicy: isDev
+        ? false
+        : {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:'],
+              connectSrc: ["'self'"],
+              frameSrc: ["'none'"],
+              objectSrc: ["'none'"],
+            },
+          },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
+  // 隐匿技术栈：移除 Express 默认的 X-Powered-By 响应头（Helmet 已覆盖，保留双保险）
   const expressApp = app.getHttpAdapter().getInstance() as unknown as Express;
   expressApp.disable('x-powered-by');
-
-  // 获取 ConfigService 实例（提前获取，供 graphql-upload 等中间件使用）
-  const configService = app.get<ConfigService>(ConfigService);
 
   // 启用 GraphQL 文件上传中间件（graphql-upload v17 ESM-only，使用动态导入）
   const logger = app.get(Logger);
@@ -61,7 +84,6 @@ async function bootstrap() {
   // 从配置服务中获取服务器配置
   const host = configService.get<string>('server.host', '127.0.0.1');
   const port = configService.get<number>('server.port', 3000);
-  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
   await app.listen(port, host);
 

@@ -15,6 +15,9 @@ const GROUPS = {
       '07-pagination-sort-search/pagination.e2e-spec.ts',
       '07-pagination-sort-search/search.e2e-spec.ts',
       '07-pagination-sort-search/sort.e2e-spec.ts',
+      '09-blog/blog-crud.e2e-spec.ts',
+      '09-blog/blog-query-integration.e2e-spec.ts',
+      '09-blog/blog-graphql.e2e-spec.ts',
     ],
     needs: {
       mysql: true,

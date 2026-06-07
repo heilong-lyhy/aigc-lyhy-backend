@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.usecase';
 import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.usecase';
 import { DeleteBlogPostUsecase } from '@src/usecases/blog/delete-blog-post.usecase';
@@ -69,6 +70,7 @@ export class BlogPostResolver {
 
   // ─── 管理端查询 ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogPostsListResponse, { description: '查询文章列表（管理端，支持筛选）' })
@@ -92,6 +94,7 @@ export class BlogPostResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogPostDetailObjectType, { description: '创建文章' })
@@ -114,6 +117,7 @@ export class BlogPostResolver {
     return post;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogPostDetailObjectType, { description: '更新文章' })
@@ -136,6 +140,7 @@ export class BlogPostResolver {
     return post;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除文章' })
@@ -146,6 +151,7 @@ export class BlogPostResolver {
     return deleted;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogPostDetailObjectType, { description: '发布文章' })

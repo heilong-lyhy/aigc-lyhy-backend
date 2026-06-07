@@ -18,6 +18,7 @@ import {
 import { BlogPostEntity } from './entities/blog-post.entity';
 import { BlogPostTagService } from './blog-post-tag.service';
 import { BlogPostQueryService } from './queries/blog-post.query.service';
+import { sanitizeBlogContent } from './sanitize-html.helper';
 
 @Injectable()
 export class BlogPostService {
@@ -81,8 +82,9 @@ export class BlogPostService {
       title: input.title,
       slug: input.slug,
       excerpt: input.excerpt ?? null,
-      content: input.content,
-      renderedContent: input.renderedContent ?? null,
+      content: sanitizeBlogContent(input.content),
+      renderedContent:
+        input.renderedContent !== undefined ? sanitizeBlogContent(input.renderedContent) : null,
       coverImage: input.coverImage ?? null,
       status: input.status ?? BlogPostStatus.DRAFT,
       categoryId: input.categoryId ?? null,
@@ -110,8 +112,9 @@ export class BlogPostService {
     if (input.title !== undefined) patch.title = input.title;
     if (input.slug !== undefined) patch.slug = input.slug;
     if (input.excerpt !== undefined) patch.excerpt = input.excerpt;
-    if (input.content !== undefined) patch.content = input.content;
-    if (input.renderedContent !== undefined) patch.renderedContent = input.renderedContent;
+    if (input.content !== undefined) patch.content = sanitizeBlogContent(input.content);
+    if (input.renderedContent !== undefined)
+      patch.renderedContent = sanitizeBlogContent(input.renderedContent);
     if (input.coverImage !== undefined) patch.coverImage = input.coverImage;
     if (input.status !== undefined) patch.status = input.status;
     if (input.categoryId !== undefined) patch.categoryId = input.categoryId;

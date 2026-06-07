@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtPayload } from '@app-types/jwt.types';
 import { UpdateBlogProfileUsecase } from '@src/usecases/blog/update-blog-profile.usecase';
 import { ChangeBlogAdminPasswordUsecase } from '@src/usecases/blog/change-blog-admin-password.usecase';
@@ -32,6 +33,7 @@ export class BlogProfileResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogProfileObjectType, { description: '更新博主信息' })
@@ -47,6 +49,7 @@ export class BlogProfileResolver {
     return profile;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Int, { description: '修改博客管理员密码' })

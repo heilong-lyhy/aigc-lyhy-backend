@@ -9,7 +9,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
-import sanitizeHtml from 'sanitize-html';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import {
   type BatchUpdateBlogCommentStatusInput,
@@ -23,6 +22,7 @@ import {
   type AvatarGenerator,
 } from './contracts/avatar-generator.contract';
 import { BlogCommentQueryService } from './queries/blog-comment.query.service';
+import { sanitizeBlogContent } from './sanitize-html.helper';
 
 /** 评论最大嵌套层级 */
 const MAX_NESTING_LEVEL = 5;
@@ -59,31 +59,7 @@ export class BlogCommentService {
     const authorAvatar = await this.avatarGenerator.generateAvatar(input.authorEmail);
 
     // XSS 清洗：保留安全标签，移除危险脚本和属性
-    const sanitizedContent = sanitizeHtml(input.content, {
-      allowedTags: [
-        'b',
-        'i',
-        'em',
-        'strong',
-        'a',
-        'p',
-        'br',
-        'ul',
-        'ol',
-        'li',
-        'blockquote',
-        'code',
-        'pre',
-        'del',
-        'ins',
-        'sup',
-        'sub',
-      ],
-      allowedAttributes: {
-        a: ['href', 'title', 'target', 'rel'],
-      },
-      allowedSchemes: ['http', 'https', 'mailto'],
-    });
+    const sanitizedContent = sanitizeBlogContent(input.content);
 
     const entity = repo.create({
       postId: input.postId,

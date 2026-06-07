@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogCategoryUsecase } from '@src/usecases/blog/create-blog-category.usecase';
 import { UpdateBlogCategoryUsecase } from '@src/usecases/blog/update-blog-category.usecase';
 import { DeleteBlogCategoryUsecase } from '@src/usecases/blog/delete-blog-category.usecase';
@@ -41,6 +42,7 @@ export class BlogCategoryResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCategoryObjectType, { description: '创建分类' })
@@ -57,6 +59,7 @@ export class BlogCategoryResolver {
     return category;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCategoryObjectType, { description: '更新分类' })
@@ -73,6 +76,7 @@ export class BlogCategoryResolver {
     return category;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除分类' })

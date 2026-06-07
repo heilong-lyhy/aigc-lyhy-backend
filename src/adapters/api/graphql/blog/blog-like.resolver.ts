@@ -2,6 +2,7 @@
 // 点赞 GraphQL Resolver：输入解析、权限接入与输出封装
 
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Throttle } from '@nestjs/throttler';
 import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-like.usecase';
 import { HasLikedBlogPostUsecase } from '@src/usecases/blog/blog-read.usecase';
 
@@ -12,6 +13,9 @@ export class BlogLikeResolver {
     private readonly hasLikedBlogPostUsecase: HasLikedBlogPostUsecase,
   ) {}
 
+  // ─── 公开 Mutation ───
+
+  @Throttle({ publicWrite: { limit: 10, ttl: 60_000 } })
   @Mutation(() => Boolean, { description: '点赞/取消点赞文章' })
   async toggleBlogPostLike(
     @Args('postId', { type: () => Int, description: '文章 ID' }) postId: number,
@@ -21,6 +25,8 @@ export class BlogLikeResolver {
     const { liked } = await this.toggleBlogPostLikeUsecase.execute(postId, userIdentifier);
     return liked;
   }
+
+  // ─── 公开查询 ───
 
   @Query(() => Boolean, { description: '判断用户是否已对文章点赞' })
   async hasLikedBlogPost(

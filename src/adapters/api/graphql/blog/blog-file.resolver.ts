@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { UploadBlogFileUsecase } from '@src/usecases/blog/upload-blog-file.usecase';
 import { DeleteBlogFileUsecase } from '@src/usecases/blog/delete-blog-file.usecase';
 import { ListBlogFilesUsecase } from '@src/usecases/blog/blog-read.usecase';
@@ -25,6 +26,7 @@ export class BlogFileResolver {
 
   // ─── 管理端查询 ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogFilesListResponse, { description: '查询文件列表（管理端）' })
@@ -46,6 +48,7 @@ export class BlogFileResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogFileObjectType, { description: '上传文件' })
@@ -64,6 +67,7 @@ export class BlogFileResolver {
     return file;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除文件' })

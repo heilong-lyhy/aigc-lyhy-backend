@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment.usecase';
 import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
 import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
@@ -35,6 +36,7 @@ export class BlogCommentResolver {
 
   // ─── 管理端查询 ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogCommentsListResponse, { description: '查询评论列表（管理端，支持筛选）' })
@@ -81,6 +83,7 @@ export class BlogCommentResolver {
 
   // ─── 公开 Mutation ───
 
+  @Throttle({ publicWrite: { limit: 10, ttl: 60_000 } })
   @Mutation(() => BlogCommentObjectType, { description: '创建评论（公开）' })
   async createBlogComment(
     @Args('input') input: CreateBlogCommentInput,
@@ -99,6 +102,7 @@ export class BlogCommentResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCommentObjectType, { description: '更新评论审核状态' })
@@ -112,6 +116,7 @@ export class BlogCommentResolver {
     return comment;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Int, { description: '批量更新评论审核状态' })
@@ -125,6 +130,7 @@ export class BlogCommentResolver {
     return updatedCount;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除评论' })

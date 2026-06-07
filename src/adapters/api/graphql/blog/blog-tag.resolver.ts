@@ -3,6 +3,7 @@
 
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogTagUsecase } from '@src/usecases/blog/create-blog-tag.usecase';
 import { DeleteBlogTagUsecase } from '@src/usecases/blog/delete-blog-tag.usecase';
 import { ListBlogTagsUsecase } from '@src/usecases/blog/blog-read.usecase';
@@ -28,6 +29,7 @@ export class BlogTagResolver {
 
   // ─── 管理端 Mutation ───
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogTagObjectType, { description: '创建标签' })
@@ -39,6 +41,7 @@ export class BlogTagResolver {
     return tag;
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除标签' })

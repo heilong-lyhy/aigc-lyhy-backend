@@ -8,6 +8,7 @@ import { GqlAllExceptionsFilter } from '@src/infrastructure/graphql/filters/grap
 import { AppGraphQLModule } from '@src/infrastructure/graphql/graphql.module';
 import { LoggerModule } from '@src/infrastructure/logger/logger.module';
 import { MiddlewareModule } from '@src/infrastructure/middleware/middleware.module';
+import { AppThrottlerModule } from '@src/infrastructure/throttler/throttler.module';
 import { AccountModule } from '@src/modules/account/account.module';
 import { AuthModule } from '@src/modules/auth/auth.module';
 import { PasswordModule } from '@src/modules/common/password/password.module';
@@ -21,6 +22,7 @@ import { ApiService } from './api.service';
     AppConfigModule,
     LoggerModule,
     MiddlewareModule,
+    AppThrottlerModule,
     DatabaseModule,
     TypeOrmTransactionModule,
     AppGraphQLModule,

@@ -3,6 +3,7 @@ import { ExceptionPayload } from '@app-types/errors/exception-payload.types';
 import {
   ACCOUNT_ERROR,
   AUTH_ERROR,
+  BLOG_ERROR,
   DomainError,
   isDomainError,
   JWT_ERROR,
@@ -32,6 +33,8 @@ function mapHttpToGqlCode(status: number): string {
       return 'NOT_FOUND';
     case 409:
       return 'CONFLICT';
+    case 429:
+      return 'TOO_MANY_REQUESTS';
     default:
       return 'INTERNAL_SERVER_ERROR';
   }
@@ -86,10 +89,15 @@ function buildGraphQLErrorFromHttpException(
     (typeof exception.message === 'string' ? exception.message : 'Request failed');
   const finalMessage = isProdEnv ? '请求失败' : passthroughMessage;
 
+  // 4xx 客户端错误保留真实 code（如 TOO_MANY_REQUESTS、UNAUTHENTICATED），
+  // 前端需要据此做分支处理；5xx 服务端错误在生产环境统一为 INTERNAL_SERVER_ERROR
+  const mappedCode = code ?? mapHttpToGqlCode(status);
+  const finalCode = isProdEnv && status >= 500 ? 'INTERNAL_SERVER_ERROR' : mappedCode;
+
   return new GraphQLError(finalMessage, {
     path: getGqlPath(host),
     extensions: {
-      code: isProdEnv ? 'INTERNAL_SERVER_ERROR' : (code ?? mapHttpToGqlCode(status)),
+      code: finalCode,
       httpStatus: status,
       ...(isProdEnv ? {} : errorCode ? { errorCode } : {}),
       ...(isProdEnv ? {} : errorMessage ? { errorMessage } : {}),
@@ -173,6 +181,28 @@ function mapDomainErrorToGqlCode(errorCode: string): string {
     [PAGINATION_ERROR.INVALID_CURSOR]: 'BAD_USER_INPUT',
     [PAGINATION_ERROR.SORT_FIELD_NOT_ALLOWED]: 'BAD_USER_INPUT',
     [PAGINATION_ERROR.DB_QUERY_FAILED]: 'INTERNAL_SERVER_ERROR',
+
+    // 博客相关错误
+    [BLOG_ERROR.POST_NOT_FOUND]: 'NOT_FOUND',
+    [BLOG_ERROR.POST_SLUG_DUPLICATE]: 'CONFLICT',
+    [BLOG_ERROR.POST_ALREADY_PUBLISHED]: 'CONFLICT',
+    [BLOG_ERROR.POST_DELETED]: 'NOT_FOUND',
+    [BLOG_ERROR.POST_CREATE_FAILED]: 'INTERNAL_SERVER_ERROR',
+    [BLOG_ERROR.CATEGORY_NOT_FOUND]: 'NOT_FOUND',
+    [BLOG_ERROR.CATEGORY_SLUG_DUPLICATE]: 'CONFLICT',
+    [BLOG_ERROR.CATEGORY_HAS_POSTS]: 'CONFLICT',
+    [BLOG_ERROR.CATEGORY_PARENT_INVALID]: 'BAD_USER_INPUT',
+    [BLOG_ERROR.TAG_NOT_FOUND]: 'NOT_FOUND',
+    [BLOG_ERROR.TAG_SLUG_DUPLICATE]: 'CONFLICT',
+    [BLOG_ERROR.TAG_HAS_POSTS]: 'CONFLICT',
+    [BLOG_ERROR.COMMENT_NOT_FOUND]: 'NOT_FOUND',
+    [BLOG_ERROR.COMMENT_NESTING_EXCEEDED]: 'BAD_USER_INPUT',
+    [BLOG_ERROR.FILE_UPLOAD_FAILED]: 'INTERNAL_SERVER_ERROR',
+    [BLOG_ERROR.FILE_NOT_FOUND]: 'NOT_FOUND',
+    [BLOG_ERROR.FILE_TYPE_NOT_ALLOWED]: 'BAD_USER_INPUT',
+    [BLOG_ERROR.FILE_SIZE_EXCEEDED]: 'BAD_USER_INPUT',
+    [BLOG_ERROR.LIKE_DUPLICATE]: 'CONFLICT',
+    [BLOG_ERROR.PROFILE_NOT_FOUND]: 'NOT_FOUND',
   };
 
   // 返回映射结果，如果没有找到则返回默认值
