@@ -18,6 +18,7 @@ describe('BlogTagService', () => {
     save: jest.fn(),
     create: jest.fn(),
     softRemove: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockQueryService = {
@@ -97,14 +98,14 @@ describe('BlogTagService', () => {
     });
 
     it('slug 已存在且非排除 ID 时应抛出 TAG_SLUG_DUPLICATE', async () => {
-      tagRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' } as BlogTagEntity);
+      tagRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' });
 
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow('标签 slug 已存在');
     });
 
     it('slug 已存在但等于排除 ID 时应正常通过', async () => {
-      tagRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' } as BlogTagEntity);
+      tagRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
 
       await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
     });
@@ -131,6 +132,72 @@ describe('BlogTagService', () => {
 
       await expect(service.assertHasNoPostLinks(999)).rejects.toThrow(DomainError);
       await expect(service.assertHasNoPostLinks(999)).rejects.toThrow('标签不存在');
+    });
+  });
+
+  // ─── updateTag ───
+
+  describe('updateTag', () => {
+    it('应成功更新标签名称并委托 QueryService 返回视图', async () => {
+      tagRepo.findOne.mockResolvedValue({
+        id: 1,
+        name: '旧名称',
+        slug: 'old-slug',
+      });
+      tagRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      queryService.findTagById.mockResolvedValue({
+        id: 1,
+        name: '新名称',
+        slug: 'old-slug',
+        postCount: 0,
+      });
+
+      const result = await service.updateTag(1, { name: '新名称' });
+
+      expect(result.name).toBe('新名称');
+      expect(tagRepo.update).toHaveBeenCalledWith(1, { name: '新名称' });
+      expect(queryService.findTagById).toHaveBeenCalledWith(1, undefined);
+    });
+
+    it('应成功更新标签 slug', async () => {
+      tagRepo.findOne.mockResolvedValue({
+        id: 1,
+        name: 'TypeScript',
+        slug: 'old-slug',
+      });
+      tagRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      queryService.findTagById.mockResolvedValue({
+        id: 1,
+        name: 'TypeScript',
+        slug: 'new-slug',
+        postCount: 0,
+      });
+
+      const result = await service.updateTag(1, { slug: 'new-slug' });
+
+      expect(result.slug).toBe('new-slug');
+      expect(tagRepo.update).toHaveBeenCalledWith(1, { slug: 'new-slug' });
+    });
+
+    it('无字段变更时不应执行 update，直接返回当前视图', async () => {
+      queryService.findTagById.mockResolvedValue({
+        id: 1,
+        name: 'TypeScript',
+        slug: 'typescript',
+        postCount: 0,
+      });
+
+      const result = await service.updateTag(1, {});
+
+      expect(tagRepo.update).not.toHaveBeenCalled();
+      expect(result.name).toBe('TypeScript');
+    });
+
+    it('标签不存在时应抛出 TAG_NOT_FOUND', async () => {
+      tagRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.updateTag(999, { name: '不存在' })).rejects.toThrow(DomainError);
+      await expect(service.updateTag(999, { name: '不存在' })).rejects.toThrow('标签不存在');
     });
   });
 });

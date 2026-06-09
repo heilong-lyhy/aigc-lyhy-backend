@@ -6,8 +6,10 @@ import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogTagUsecase } from '@src/usecases/blog/create-blog-tag.usecase';
 import { DeleteBlogTagUsecase } from '@src/usecases/blog/delete-blog-tag.usecase';
+import { UpdateBlogTagUsecase } from '@src/usecases/blog/update-blog-tag.usecase';
 import { ListBlogTagsUsecase } from '@src/usecases/blog/blog-read.usecase';
 import { BlogTagObjectType } from './dto/blog-tag.dto';
+import { UpdateBlogTagInput } from './dto/update-blog-tag.input';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
@@ -17,6 +19,7 @@ export class BlogTagResolver {
   constructor(
     private readonly listBlogTagsUsecase: ListBlogTagsUsecase,
     private readonly createBlogTagUsecase: CreateBlogTagUsecase,
+    private readonly updateBlogTagUsecase: UpdateBlogTagUsecase,
     private readonly deleteBlogTagUsecase: DeleteBlogTagUsecase,
   ) {}
 
@@ -38,6 +41,18 @@ export class BlogTagResolver {
     @Args('slug', { type: () => String, description: 'URL slug' }) slug: string,
   ): Promise<BlogTagObjectType> {
     const { tag } = await this.createBlogTagUsecase.execute({ name, slug });
+    return tag;
+  }
+
+  @SkipThrottle()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => BlogTagObjectType, { description: '更新标签' })
+  async updateBlogTag(@Args('input') input: UpdateBlogTagInput): Promise<BlogTagObjectType> {
+    const { tag } = await this.updateBlogTagUsecase.execute(input.id, {
+      name: input.name,
+      slug: input.slug,
+    });
     return tag;
   }
 

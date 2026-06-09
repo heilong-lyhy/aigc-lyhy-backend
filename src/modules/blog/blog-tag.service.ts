@@ -1,6 +1,6 @@
 // src/modules/blog/blog-tag.service.ts
 // 标签聚合根写服务
-// 职责：标签的创建、软删除；不含跨聚合根编排
+// 职责：标签的创建、更新、软删除；不含跨聚合根编排
 // View 映射委托 BlogTagQueryService，避免 toView 重复
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
@@ -9,7 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type { CreateBlogTagInput, BlogTagView } from './blog.types';
+import type { CreateBlogTagInput, UpdateBlogTagInput, BlogTagView } from './blog.types';
 import { BlogTagEntity } from './entities/blog-tag.entity';
 import { BlogTagQueryService } from './queries/blog-tag.query.service';
 
@@ -45,6 +45,32 @@ export class BlogTagService {
       throw new DomainError(BLOG_ERROR.TAG_NOT_FOUND, '标签不存在');
     }
     await repo.softRemove(entity);
+  }
+
+  async updateTag(
+    id: number,
+    input: UpdateBlogTagInput,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogTagView> {
+    const repo = this.getTagRepo(transactionContext);
+
+    const entity = await repo.findOne({ where: { id } });
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.TAG_NOT_FOUND, '标签不存在');
+    }
+
+    const patch: Partial<BlogTagEntity> = {};
+
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.slug !== undefined) patch.slug = input.slug;
+
+    if (Object.keys(patch).length === 0) {
+      return this.queryService.findTagById(id, transactionContext) as Promise<BlogTagView>;
+    }
+
+    await repo.update(id, patch);
+    // 已确认 entity 存在，findTagById 不会返回 null
+    return this.queryService.findTagById(id, transactionContext) as Promise<BlogTagView>;
   }
 
   // ─── 校验方法 ───

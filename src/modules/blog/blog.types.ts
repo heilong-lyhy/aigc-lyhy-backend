@@ -207,6 +207,15 @@ export interface CreateBlogTagInput {
   readonly slug: string;
 }
 
+/**
+ * 更新标签输入
+ * - 字段省略或 undefined 表示不修改该字段
+ */
+export interface UpdateBlogTagInput {
+  readonly name?: string;
+  readonly slug?: string;
+}
+
 export interface CreateBlogCommentInput {
   readonly postId: number;
   readonly parentId?: number;

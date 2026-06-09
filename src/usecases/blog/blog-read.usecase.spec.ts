@@ -15,6 +15,7 @@ import {
   GetBlogDashboardStatsUsecase,
 } from './blog-read.usecase';
 import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
+import { BlogPostService } from '@src/modules/blog/blog-post.service';
 import { BlogCategoryQueryService } from '@src/modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '@src/modules/blog/queries/blog-tag.query.service';
 import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.service';
@@ -74,10 +75,15 @@ describe('GetBlogPostByIdUsecase', () => {
 describe('GetBlogPostBySlugUsecase', () => {
   let usecase: GetBlogPostBySlugUsecase;
   let postQueryService: { findPostBySlug: jest.Mock };
+  let postService: { incrementViewCount: jest.Mock };
 
   beforeEach(() => {
     postQueryService = { findPostBySlug: jest.fn() };
-    usecase = new GetBlogPostBySlugUsecase(postQueryService as unknown as BlogPostQueryService);
+    postService = { incrementViewCount: jest.fn().mockResolvedValue(undefined) };
+    usecase = new GetBlogPostBySlugUsecase(
+      postQueryService as unknown as BlogPostQueryService,
+      postService as unknown as BlogPostService,
+    );
   });
 
   it('应通过 slug 查询文章', async () => {
@@ -104,6 +110,45 @@ describe('GetBlogPostBySlugUsecase', () => {
     const result = await usecase.execute('draft', { publishedOnly: true });
 
     expect(result).toBeNull();
+  });
+
+  it('publishedOnly=true 且文章存在时应调用 incrementViewCount', async () => {
+    const view = { id: 1, slug: 'test-post', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostBySlug.mockResolvedValue(view);
+
+    await usecase.execute('test-post', { publishedOnly: true });
+
+    expect(postService.incrementViewCount).toHaveBeenCalledWith(1);
+  });
+
+  it('文章不存在时不应调用 incrementViewCount', async () => {
+    postQueryService.findPostBySlug.mockResolvedValue(null);
+
+    await usecase.execute('nonexistent');
+
+    expect(postService.incrementViewCount).not.toHaveBeenCalled();
+  });
+
+  it('incrementViewCount 失败时不应影响详情返回且应记录警告日志', async () => {
+    const view = { id: 1, slug: 'test-post', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostBySlug.mockResolvedValue(view);
+    postService.incrementViewCount.mockRejectedValue(new Error('DB error'));
+
+    const loggerWarnSpy = jest.spyOn(usecase['logger'], 'warn');
+
+    const result = await usecase.execute('test-post', { publishedOnly: true });
+
+    expect(result).toEqual(view);
+    expect(loggerWarnSpy).toHaveBeenCalledWith(expect.stringContaining('阅读量自增失败 postId=1'));
+  });
+
+  it('非 publishedOnly 时不应调用 incrementViewCount', async () => {
+    const view = { id: 1, slug: 'test-post', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostBySlug.mockResolvedValue(view);
+
+    await usecase.execute('test-post');
+
+    expect(postService.incrementViewCount).not.toHaveBeenCalled();
   });
 });
 

@@ -15,6 +15,7 @@ import { CreateBlogCategoryUsecase } from '@src/usecases/blog/create-blog-catego
 import { UpdateBlogCategoryUsecase } from '@src/usecases/blog/update-blog-category.usecase';
 import { DeleteBlogCategoryUsecase } from '@src/usecases/blog/delete-blog-category.usecase';
 import { CreateBlogTagUsecase } from '@src/usecases/blog/create-blog-tag.usecase';
+import { UpdateBlogTagUsecase } from '@src/usecases/blog/update-blog-tag.usecase';
 import { DeleteBlogTagUsecase } from '@src/usecases/blog/delete-blog-tag.usecase';
 import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment.usecase';
 import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
@@ -53,6 +54,7 @@ import {
     UpdateBlogCategoryUsecase,
     DeleteBlogCategoryUsecase,
     CreateBlogTagUsecase,
+    UpdateBlogTagUsecase,
     DeleteBlogTagUsecase,
     CreateBlogCommentUsecase,
     UpdateBlogCommentStatusUsecase,
@@ -88,6 +90,7 @@ import {
     UpdateBlogCategoryUsecase,
     DeleteBlogCategoryUsecase,
     CreateBlogTagUsecase,
+    UpdateBlogTagUsecase,
     DeleteBlogTagUsecase,
     CreateBlogCommentUsecase,
     UpdateBlogCommentStatusUsecase,

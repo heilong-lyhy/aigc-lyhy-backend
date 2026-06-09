@@ -421,14 +421,14 @@ describe('BlogPostService', () => {
     });
 
     it('slug 已存在且非排除 ID 时应抛出 POST_SLUG_DUPLICATE', async () => {
-      postRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' } as BlogPostEntity);
+      postRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' });
 
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow('文章 slug 已存在');
     });
 
     it('slug 已存在但等于排除 ID 时应正常通过', async () => {
-      postRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' } as BlogPostEntity);
+      postRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
 
       await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
     });
