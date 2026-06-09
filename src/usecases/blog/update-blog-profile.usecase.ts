@@ -6,6 +6,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { BlogProfileService } from '@src/modules/blog/blog-profile.service';
+import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import type { BlogProfileView, UpdateBlogProfileInput } from '@src/modules/blog/blog.types';
 import {
@@ -21,14 +22,15 @@ export interface UpdateBlogProfileResult {
 export class UpdateBlogProfileUsecase {
   constructor(
     private readonly profileService: BlogProfileService,
+    private readonly profileQueryService: BlogProfileQueryService,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async execute(input: UpdateBlogProfileInput): Promise<UpdateBlogProfileResult> {
     return this.transactionRunner.run(async (transactionContext) => {
-      // 博主信息为单例，通过 Service 委托 QueryService 获取 ID，避免 usecase 直接依赖 QueryService
-      const profile = await this.profileService.getProfile(transactionContext);
+      // 博主信息为单例，直接通过 QueryService 获取 ID
+      const profile = await this.profileQueryService.getProfile(transactionContext);
       if (!profile) {
         throw new DomainError(BLOG_ERROR.PROFILE_NOT_FOUND, '博主信息不存在');
       }

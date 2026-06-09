@@ -2,11 +2,13 @@
 
 import { DomainError } from '@core/common/errors/domain-error';
 import { BlogProfileService } from '@src/modules/blog/blog-profile.service';
+import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
 import { UpdateBlogProfileUsecase } from './update-blog-profile.usecase';
 
 describe('UpdateBlogProfileUsecase', () => {
   let usecase: UpdateBlogProfileUsecase;
-  let profileService: { getProfile: jest.Mock; updateProfile: jest.Mock };
+  let profileService: { updateProfile: jest.Mock };
+  let profileQueryService: { getProfile: jest.Mock };
   let transactionRunner: { run: jest.Mock };
 
   const mockProfileView = {
@@ -21,26 +23,29 @@ describe('UpdateBlogProfileUsecase', () => {
 
   beforeEach(() => {
     profileService = {
-      getProfile: jest.fn(),
       updateProfile: jest.fn(),
+    };
+    profileQueryService = {
+      getProfile: jest.fn(),
     };
     transactionRunner = {
       run: jest.fn((cb) => cb({})),
     };
     usecase = new UpdateBlogProfileUsecase(
       profileService as unknown as BlogProfileService,
+      profileQueryService as unknown as BlogProfileQueryService,
       transactionRunner,
     );
   });
 
   it('应在事务内更新博主信息并返回结果', async () => {
-    profileService.getProfile.mockResolvedValue({ id: 1 });
+    profileQueryService.getProfile.mockResolvedValue({ id: 1 });
     profileService.updateProfile.mockResolvedValue(mockProfileView);
 
     const result = await usecase.execute({ nickname: '博主', bio: '个人简介' });
 
     expect(result.profile).toBe(mockProfileView);
-    expect(profileService.getProfile).toHaveBeenCalledWith(expect.anything());
+    expect(profileQueryService.getProfile).toHaveBeenCalledWith(expect.anything());
     expect(profileService.updateProfile).toHaveBeenCalledWith(
       1,
       { nickname: '博主', bio: '个人简介' },
@@ -49,13 +54,13 @@ describe('UpdateBlogProfileUsecase', () => {
   });
 
   it('博主信息不存在时应抛出 DomainError', async () => {
-    profileService.getProfile.mockResolvedValue(null);
+    profileQueryService.getProfile.mockResolvedValue(null);
 
     await expect(usecase.execute({ nickname: '不存在' })).rejects.toThrow(DomainError);
   });
 
   it('无字段变更时应直接返回当前视图', async () => {
-    profileService.getProfile.mockResolvedValue({ id: 1 });
+    profileQueryService.getProfile.mockResolvedValue({ id: 1 });
     profileService.updateProfile.mockResolvedValue(mockProfileView);
 
     const result = await usecase.execute({});
@@ -65,7 +70,7 @@ describe('UpdateBlogProfileUsecase', () => {
   });
 
   it('应通过 TransactionRunner 执行事务', async () => {
-    profileService.getProfile.mockResolvedValue({ id: 1 });
+    profileQueryService.getProfile.mockResolvedValue({ id: 1 });
     profileService.updateProfile.mockResolvedValue(mockProfileView);
 
     await usecase.execute({ nickname: '新昵称' });

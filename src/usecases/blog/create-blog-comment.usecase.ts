@@ -6,7 +6,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { CreateBlogCommentInput, BlogCommentView } from '@src/modules/blog/blog.types';
 import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
@@ -21,14 +23,18 @@ export class CreateBlogCommentUsecase {
   constructor(
     private readonly commentService: BlogCommentService,
     private readonly postService: BlogPostService,
+    private readonly postQueryService: BlogPostQueryService,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async execute(input: CreateBlogCommentInput): Promise<CreateBlogCommentResult> {
     return this.transactionRunner.run(async (transactionContext) => {
-      // 文章存在性校验：通过 BlogPostService 断言，避免 usecase 直接依赖 QueryService
-      await this.postService.assertPostExists(input.postId, transactionContext);
+      // 文章存在性校验：轻量检查，避免 findPostById 触发完整 buildDetailView 的 N+1
+      const exists = await this.postQueryService.postExists(input.postId, transactionContext);
+      if (!exists) {
+        throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+      }
 
       // createComment 内部完成嵌套层级校验（parentId 存在性 + nestingLevel 上限）
       const view = await this.commentService.createComment(input, transactionContext);

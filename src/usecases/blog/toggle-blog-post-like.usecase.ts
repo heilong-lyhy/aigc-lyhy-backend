@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BlogLikeService } from '@src/modules/blog/blog-like.service';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
@@ -21,6 +22,7 @@ export class ToggleBlogPostLikeUsecase {
   constructor(
     private readonly likeService: BlogLikeService,
     private readonly postService: BlogPostService,
+    private readonly postQueryService: BlogPostQueryService,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
   ) {}
@@ -39,8 +41,8 @@ export class ToggleBlogPostLikeUsecase {
         await this.postService.decrementLikeCount(postId, transactionContext);
       }
 
-      // 写后读：通过 BlogPostService 获取当前点赞数
-      const likeCount = await this.postService.getLikeCount(postId, transactionContext);
+      // 写后读：轻量获取当前点赞数，避免 findPostById 触发 buildDetailView 的 N+1
+      const likeCount = await this.postQueryService.getLikeCount(postId, transactionContext);
 
       return { liked, likeCount };
     });

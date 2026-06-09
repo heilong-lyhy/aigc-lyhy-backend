@@ -217,32 +217,6 @@ export class BlogPostService {
   }
 
   /**
-   * 获取文章当前点赞数（写后读辅助方法，供同域 usecase 编排使用）
-   * 内部委托 QueryService，避免 usecase 直接依赖 QueryService 实现文件
-   */
-  async getLikeCount(
-    id: number,
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<number> {
-    const view = await this.queryService.findPostById(id, transactionContext);
-    return view?.likeCount ?? 0;
-  }
-
-  /**
-   * 断言文章存在，不存在时抛 DomainError(POST_NOT_FOUND)
-   * 供同域 usecase 编排使用，避免 usecase 直接依赖 QueryService
-   */
-  async assertPostExists(
-    id: number,
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<void> {
-    const view = await this.queryService.findPostById(id, transactionContext);
-    if (!view) {
-      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
-    }
-  }
-
-  /**
    * 断言 slug 唯一性，不唯一时抛 DomainError(SLUG_DUPLICATE)
    * @param slug 待校验的 slug
    * @param excludeId 排除的记录 ID（更新场景排除自身）

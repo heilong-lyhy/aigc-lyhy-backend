@@ -36,17 +36,6 @@ export class BlogFileQueryService {
   }
 
   /**
-   * 查询文件列表（分页由 Usecase 编排 PaginationService）
-   */
-  async listFiles(transactionContext?: PersistenceTransactionContext): Promise<BlogFileView[]> {
-    const repo = this.getFileRepo(transactionContext);
-    const entities = await repo.find({
-      order: { createdAt: 'DESC' },
-    });
-    return entities.map((e) => this.toView(e));
-  }
-
-  /**
    * 创建文件分页查询 QueryBuilder（供 Usecase 编排分页）
    */
   createFileQueryBuilder(params: BlogFilePaginationParams) {

@@ -3,7 +3,7 @@
 
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 
-@ObjectType({ description: '标签' })
+@ObjectType('BlogTag', { description: '标签' })
 export class BlogTagObjectType {
   @Field(() => ID, { description: '标签 ID' })
   id!: number;

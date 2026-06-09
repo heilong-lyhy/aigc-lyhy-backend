@@ -20,7 +20,7 @@ import { BlogPostArgs } from './dto/blog-post.args';
 import { BlogPostsArgs } from './dto/blog-posts.args';
 import { CreateBlogPostInput } from './dto/create-blog-post.input';
 import { UpdateBlogPostInput } from './dto/update-blog-post.input';
-import { BlogPaginationArgs } from './dto/blog-pagination.args';
+import { BlogPublishedPostsArgs } from './dto/blog-published-posts.args';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
@@ -53,12 +53,15 @@ export class BlogPostResolver {
   }
 
   @Query(() => BlogPostsListResponse, { description: '查询已发布文章列表（公开）' })
-  async blogPublishedPosts(@Args() args: BlogPaginationArgs): Promise<BlogPostsListResponse> {
+  async blogPublishedPosts(@Args() args: BlogPublishedPostsArgs): Promise<BlogPostsListResponse> {
     const result = await this.listBlogPublishedPostsUsecase.execute({
       page: args.page,
       pageSize: args.limit,
       sortBy: args.sortBy,
       sortOrder: args.sortOrder,
+      categoryId: args.categoryId,
+      title: args.title,
+      tagId: args.tagId,
     });
     return {
       list: [...result.items],

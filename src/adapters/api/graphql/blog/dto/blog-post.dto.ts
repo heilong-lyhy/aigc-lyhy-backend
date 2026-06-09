@@ -4,7 +4,7 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 
-@ObjectType({ description: '文章' })
+@ObjectType('BlogPost', { description: '文章' })
 export class BlogPostObjectType {
   @Field(() => ID, { description: '文章 ID' })
   id!: number;

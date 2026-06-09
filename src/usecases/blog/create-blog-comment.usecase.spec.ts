@@ -4,12 +4,14 @@ import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
 import { CreateBlogCommentUsecase } from './create-blog-comment.usecase';
 
 describe('CreateBlogCommentUsecase', () => {
   let usecase: CreateBlogCommentUsecase;
   let commentService: { createComment: jest.Mock };
-  let postService: { assertPostExists: jest.Mock; incrementCommentCount: jest.Mock };
+  let postService: { incrementCommentCount: jest.Mock };
+  let postQueryService: { postExists: jest.Mock };
   let transactionRunner: { run: jest.Mock };
 
   const mockCommentView = {
@@ -31,8 +33,10 @@ describe('CreateBlogCommentUsecase', () => {
       createComment: jest.fn(),
     };
     postService = {
-      assertPostExists: jest.fn(),
       incrementCommentCount: jest.fn(),
+    };
+    postQueryService = {
+      postExists: jest.fn(),
     };
     transactionRunner = {
       run: jest.fn((cb) => cb({})),
@@ -40,11 +44,13 @@ describe('CreateBlogCommentUsecase', () => {
     usecase = new CreateBlogCommentUsecase(
       commentService as unknown as BlogCommentService,
       postService as unknown as BlogPostService,
+      postQueryService as unknown as BlogPostQueryService,
       transactionRunner,
     );
   });
 
   it('应在事务内创建评论并更新计数', async () => {
+    postQueryService.postExists.mockResolvedValue(true);
     commentService.createComment.mockResolvedValue(mockCommentView);
 
     const result = await usecase.execute({
@@ -55,7 +61,7 @@ describe('CreateBlogCommentUsecase', () => {
     });
 
     expect(result.comment).toBe(mockCommentView);
-    expect(postService.assertPostExists).toHaveBeenCalledWith(1, expect.anything());
+    expect(postQueryService.postExists).toHaveBeenCalledWith(1, expect.anything());
     expect(commentService.createComment).toHaveBeenCalledWith(
       expect.objectContaining({ postId: 1, content: '评论内容' }),
       expect.anything(),
@@ -64,9 +70,7 @@ describe('CreateBlogCommentUsecase', () => {
   });
 
   it('文章不存在时应抛出 DomainError', async () => {
-    postService.assertPostExists.mockRejectedValue(
-      new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在'),
-    );
+    postQueryService.postExists.mockResolvedValue(false);
 
     await expect(
       usecase.execute({
@@ -82,6 +86,7 @@ describe('CreateBlogCommentUsecase', () => {
   });
 
   it('嵌套层级超过上限时应抛出 DomainError', async () => {
+    postQueryService.postExists.mockResolvedValue(true);
     commentService.createComment.mockRejectedValue(
       new DomainError(BLOG_ERROR.COMMENT_NESTING_EXCEEDED, '评论嵌套层级超过上限'),
     );
@@ -98,6 +103,7 @@ describe('CreateBlogCommentUsecase', () => {
   });
 
   it('应通过 TransactionRunner 执行事务', async () => {
+    postQueryService.postExists.mockResolvedValue(true);
     commentService.createComment.mockResolvedValue(mockCommentView);
 
     await usecase.execute({

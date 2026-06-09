@@ -1,0 +1,355 @@
+// src/usecases/blog/blog-read.usecase.spec.ts
+// 博客读操作 usecase 单元测试：验证编排逻辑（分页、publishedOnly 过滤、委托调用）
+
+import { BlogPostStatus } from '@app-types/models/blog.types';
+import {
+  GetBlogPostByIdUsecase,
+  GetBlogPostBySlugUsecase,
+  ListBlogPostsUsecase,
+  ListBlogPublishedPostsUsecase,
+  ListBlogCategoriesUsecase,
+  GetBlogCategoryTreeUsecase,
+  ListBlogTagsUsecase,
+  HasLikedBlogPostUsecase,
+  GetBlogProfileUsecase,
+  GetBlogDashboardStatsUsecase,
+} from './blog-read.usecase';
+import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
+import { BlogCategoryQueryService } from '@src/modules/blog/queries/blog-category.query.service';
+import { BlogTagQueryService } from '@src/modules/blog/queries/blog-tag.query.service';
+import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.service';
+import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
+import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
+import { PaginationService } from '@src/modules/common/pagination.service';
+
+// ─── GetBlogPostByIdUsecase ───
+
+describe('GetBlogPostByIdUsecase', () => {
+  let usecase: GetBlogPostByIdUsecase;
+  let postQueryService: { findPostById: jest.Mock };
+
+  beforeEach(() => {
+    postQueryService = { findPostById: jest.fn() };
+    usecase = new GetBlogPostByIdUsecase(postQueryService as unknown as BlogPostQueryService);
+  });
+
+  it('应返回文章详情', async () => {
+    const view = { id: 1, title: '文章', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostById.mockResolvedValue(view);
+
+    const result = await usecase.execute(1);
+
+    expect(result).toEqual(view);
+  });
+
+  it('文章不存在时应返回 null', async () => {
+    postQueryService.findPostById.mockResolvedValue(null);
+
+    const result = await usecase.execute(999);
+
+    expect(result).toBeNull();
+  });
+
+  it('publishedOnly=true 时非发布文章应返回 null', async () => {
+    const view = { id: 1, title: '草稿', status: BlogPostStatus.DRAFT };
+    postQueryService.findPostById.mockResolvedValue(view);
+
+    const result = await usecase.execute(1, { publishedOnly: true });
+
+    expect(result).toBeNull();
+  });
+
+  it('publishedOnly=true 时发布文章应正常返回', async () => {
+    const view = { id: 1, title: '已发布', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostById.mockResolvedValue(view);
+
+    const result = await usecase.execute(1, { publishedOnly: true });
+
+    expect(result).toEqual(view);
+  });
+});
+
+// ─── GetBlogPostBySlugUsecase ───
+
+describe('GetBlogPostBySlugUsecase', () => {
+  let usecase: GetBlogPostBySlugUsecase;
+  let postQueryService: { findPostBySlug: jest.Mock };
+
+  beforeEach(() => {
+    postQueryService = { findPostBySlug: jest.fn() };
+    usecase = new GetBlogPostBySlugUsecase(postQueryService as unknown as BlogPostQueryService);
+  });
+
+  it('应通过 slug 查询文章', async () => {
+    const view = { id: 1, slug: 'test-post', status: BlogPostStatus.PUBLISHED };
+    postQueryService.findPostBySlug.mockResolvedValue(view);
+
+    const result = await usecase.execute('test-post');
+
+    expect(result).toEqual(view);
+  });
+
+  it('slug 不存在时应返回 null', async () => {
+    postQueryService.findPostBySlug.mockResolvedValue(null);
+
+    const result = await usecase.execute('nonexistent');
+
+    expect(result).toBeNull();
+  });
+
+  it('publishedOnly=true 时非发布文章应返回 null', async () => {
+    const view = { id: 1, slug: 'draft', status: BlogPostStatus.DRAFT };
+    postQueryService.findPostBySlug.mockResolvedValue(view);
+
+    const result = await usecase.execute('draft', { publishedOnly: true });
+
+    expect(result).toBeNull();
+  });
+});
+
+// ─── ListBlogPostsUsecase ───
+
+describe('ListBlogPostsUsecase', () => {
+  let usecase: ListBlogPostsUsecase;
+  let postQueryService: {
+    createPostQueryBuilder: jest.Mock;
+    findPostsByIdsForViewMapping: jest.Mock;
+  };
+  let paginationService: { paginateQuery: jest.Mock };
+
+  beforeEach(() => {
+    postQueryService = {
+      createPostQueryBuilder: jest.fn(),
+      findPostsByIdsForViewMapping: jest.fn(),
+    };
+    paginationService = { paginateQuery: jest.fn() };
+    usecase = new ListBlogPostsUsecase(
+      postQueryService as unknown as BlogPostQueryService,
+      paginationService as unknown as PaginationService,
+    );
+  });
+
+  it('应编排分页查询并返回视图列表', async () => {
+    const mockQb = {};
+    postQueryService.createPostQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [{ id: 1 }, { id: 2 }],
+      total: 2,
+      page: 1,
+      pageSize: 10,
+    });
+    postQueryService.findPostsByIdsForViewMapping.mockResolvedValue([
+      { id: 1, title: '文章1' },
+      { id: 2, title: '文章2' },
+    ]);
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].title).toBe('文章1');
+    expect(result.total).toBe(2);
+  });
+
+  it('分页结果为空时不应调用 findPostsByIdsForViewMapping', async () => {
+    const mockQb = {};
+    postQueryService.createPostQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(0);
+    expect(postQueryService.findPostsByIdsForViewMapping).not.toHaveBeenCalled();
+  });
+});
+
+// ─── ListBlogPublishedPostsUsecase ───
+
+describe('ListBlogPublishedPostsUsecase', () => {
+  let usecase: ListBlogPublishedPostsUsecase;
+  let listBlogPostsUsecase: { execute: jest.Mock };
+
+  beforeEach(() => {
+    listBlogPostsUsecase = { execute: jest.fn() };
+    usecase = new ListBlogPublishedPostsUsecase(
+      listBlogPostsUsecase as unknown as ListBlogPostsUsecase,
+    );
+  });
+
+  it('应强制设置 status=PUBLISHED 并委托 ListBlogPostsUsecase', async () => {
+    const expectedResult = { items: [], total: 0, page: 1, pageSize: 10 };
+    listBlogPostsUsecase.execute.mockResolvedValue(expectedResult);
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(listBlogPostsUsecase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ status: BlogPostStatus.PUBLISHED }),
+    );
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('应透传 categoryId 和 title 筛选', async () => {
+    listBlogPostsUsecase.execute.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 10 });
+
+    await usecase.execute({ page: 1, pageSize: 10, categoryId: 5, title: '关键词' });
+
+    expect(listBlogPostsUsecase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: BlogPostStatus.PUBLISHED,
+        categoryId: 5,
+        title: '关键词',
+      }),
+    );
+  });
+});
+
+// ─── ListBlogCategoriesUsecase ───
+
+describe('ListBlogCategoriesUsecase', () => {
+  let usecase: ListBlogCategoriesUsecase;
+  let categoryQueryService: { listAllCategories: jest.Mock };
+
+  beforeEach(() => {
+    categoryQueryService = { listAllCategories: jest.fn() };
+    usecase = new ListBlogCategoriesUsecase(
+      categoryQueryService as unknown as BlogCategoryQueryService,
+    );
+  });
+
+  it('应委托 QueryService 返回分类列表', async () => {
+    const categories = [{ id: 1, name: '技术' }];
+    categoryQueryService.listAllCategories.mockResolvedValue(categories);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(categories);
+  });
+});
+
+// ─── GetBlogCategoryTreeUsecase ───
+
+describe('GetBlogCategoryTreeUsecase', () => {
+  let usecase: GetBlogCategoryTreeUsecase;
+  let categoryQueryService: { getCategoryTree: jest.Mock };
+
+  beforeEach(() => {
+    categoryQueryService = { getCategoryTree: jest.fn() };
+    usecase = new GetBlogCategoryTreeUsecase(
+      categoryQueryService as unknown as BlogCategoryQueryService,
+    );
+  });
+
+  it('应委托 QueryService 返回分类树', async () => {
+    const tree = [{ id: 1, name: '技术', children: [] }];
+    categoryQueryService.getCategoryTree.mockResolvedValue(tree);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(tree);
+  });
+});
+
+// ─── ListBlogTagsUsecase ───
+
+describe('ListBlogTagsUsecase', () => {
+  let usecase: ListBlogTagsUsecase;
+  let tagQueryService: { listAllTags: jest.Mock };
+
+  beforeEach(() => {
+    tagQueryService = { listAllTags: jest.fn() };
+    usecase = new ListBlogTagsUsecase(tagQueryService as unknown as BlogTagQueryService);
+  });
+
+  it('应委托 QueryService 返回标签列表', async () => {
+    const tags = [{ id: 1, name: 'TypeScript', postCount: 3 }];
+    tagQueryService.listAllTags.mockResolvedValue(tags);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(tags);
+  });
+});
+
+// ─── HasLikedBlogPostUsecase ───
+
+describe('HasLikedBlogPostUsecase', () => {
+  let usecase: HasLikedBlogPostUsecase;
+  let likeQueryService: { hasLiked: jest.Mock };
+
+  beforeEach(() => {
+    likeQueryService = { hasLiked: jest.fn() };
+    usecase = new HasLikedBlogPostUsecase(likeQueryService as unknown as BlogLikeQueryService);
+  });
+
+  it('已点赞时应返回 true', async () => {
+    likeQueryService.hasLiked.mockResolvedValue(true);
+
+    const result = await usecase.execute(1, 'user1');
+
+    expect(result).toBe(true);
+  });
+
+  it('未点赞时应返回 false', async () => {
+    likeQueryService.hasLiked.mockResolvedValue(false);
+
+    const result = await usecase.execute(1, 'user1');
+
+    expect(result).toBe(false);
+  });
+});
+
+// ─── GetBlogProfileUsecase ───
+
+describe('GetBlogProfileUsecase', () => {
+  let usecase: GetBlogProfileUsecase;
+  let profileQueryService: { getProfile: jest.Mock };
+
+  beforeEach(() => {
+    profileQueryService = { getProfile: jest.fn() };
+    usecase = new GetBlogProfileUsecase(profileQueryService as unknown as BlogProfileQueryService);
+  });
+
+  it('存在时应返回博主信息', async () => {
+    const profile = { id: 1, nickname: '博主' };
+    profileQueryService.getProfile.mockResolvedValue(profile);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(profile);
+  });
+
+  it('不存在时应返回 null', async () => {
+    profileQueryService.getProfile.mockResolvedValue(null);
+
+    const result = await usecase.execute();
+
+    expect(result).toBeNull();
+  });
+});
+
+// ─── GetBlogDashboardStatsUsecase ───
+
+describe('GetBlogDashboardStatsUsecase', () => {
+  let usecase: GetBlogDashboardStatsUsecase;
+  let dashboardQueryService: { getDashboardStats: jest.Mock };
+
+  beforeEach(() => {
+    dashboardQueryService = { getDashboardStats: jest.fn() };
+    usecase = new GetBlogDashboardStatsUsecase(
+      dashboardQueryService as unknown as BlogDashboardQueryService,
+    );
+  });
+
+  it('应委托 QueryService 返回仪表盘统计', async () => {
+    const stats = { totalPosts: 10, totalViews: 100 };
+    dashboardQueryService.getDashboardStats.mockResolvedValue(stats);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(stats);
+  });
+});

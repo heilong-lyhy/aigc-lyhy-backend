@@ -6,7 +6,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
-import type { BlogLikeView } from '../blog.types';
 import { BlogLikeEntity } from '../entities/blog-like.entity';
 
 @Injectable()
@@ -29,42 +28,7 @@ export class BlogLikeQueryService {
     return count > 0;
   }
 
-  /**
-   * 统计指定文章的点赞数
-   */
-  async countLikesByPostId(
-    postId: number,
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<number> {
-    const repo = this.getLikeRepo(transactionContext);
-    return repo.count({ where: { postId } });
-  }
-
-  /**
-   * 查询指定文章的点赞列表（分页由 Usecase 编排）
-   */
-  async listLikesByPostId(
-    postId: number,
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogLikeView[]> {
-    const repo = this.getLikeRepo(transactionContext);
-    const entities = await repo.find({
-      where: { postId },
-      order: { createdAt: 'DESC' },
-    });
-    return entities.map((e) => this.toView(e));
-  }
-
   // ─── 内部工具 ───
-
-  private toView(entity: BlogLikeEntity): BlogLikeView {
-    return {
-      id: entity.id,
-      postId: entity.postId,
-      userIdentifier: entity.userIdentifier,
-      createdAt: entity.createdAt,
-    };
-  }
 
   private getLikeRepo(
     transactionContext?: PersistenceTransactionContext,

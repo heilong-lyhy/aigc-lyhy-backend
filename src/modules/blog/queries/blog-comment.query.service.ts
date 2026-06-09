@@ -45,45 +45,6 @@ export class BlogCommentQueryService {
   }
 
   /**
-   * 查询指定文章下的评论列表（分页由 Usecase 编排 PaginationService）
-   * 默认只返回已审核通过的评论
-   */
-  async listCommentsByPostId(
-    postId: number,
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCommentView[]> {
-    const repo = this.getCommentRepo(transactionContext);
-    const entities = await repo.find({
-      where: { postId, status: BlogCommentStatus.APPROVED },
-      order: { createdAt: 'ASC' },
-    });
-    return entities.map((e) => this.toView(e));
-  }
-
-  /**
-   * 管理端查询所有评论（含待审核），分页由 Usecase 编排
-   */
-  async listAllComments(
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<BlogCommentView[]> {
-    const repo = this.getCommentRepo(transactionContext);
-    const entities = await repo.find({
-      order: { createdAt: 'DESC' },
-    });
-    return entities.map((e) => this.toView(e));
-  }
-
-  /**
-   * 统计待审核评论数
-   */
-  async countPendingComments(transactionContext?: PersistenceTransactionContext): Promise<number> {
-    const repo = this.getCommentRepo(transactionContext);
-    return repo.count({
-      where: { status: BlogCommentStatus.PENDING },
-    });
-  }
-
-  /**
    * 创建评论分页查询 QueryBuilder（管理端，供 Usecase 编排分页）
    */
   createCommentQueryBuilder(params: BlogCommentPaginationParams) {

@@ -320,8 +320,11 @@ describe('Blog GraphQL (e2e)', () => {
         },
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('UNAUTHENTICATED');
       expect(res.status).toBe(200); // GraphQL 返回 200 但有 errors
     });
   });
@@ -512,12 +515,15 @@ describe('Blog GraphQL (e2e)', () => {
         },
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('UNAUTHENTICATED');
     });
   });
 
-  // ─── 点赞 ───
+  // ─── 错误路径 ───
 
   describe('点赞', () => {
     let publishedPostId: number;
@@ -691,9 +697,11 @@ describe('Blog GraphQL (e2e)', () => {
       });
 
       const body = res.body as {
-        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
       };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('CONFLICT');
+      expect(body.errors![0].extensions?.errorCode).toBe('POST_SLUG_DUPLICATE');
     });
 
     it('删除不存在的文章应返回错误', async () => {
@@ -708,8 +716,12 @@ describe('Blog GraphQL (e2e)', () => {
         token: adminToken,
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('NOT_FOUND');
+      expect(body.errors![0].extensions?.errorCode).toBe('POST_NOT_FOUND');
     });
 
     it('发布已发布文章应返回错误', async () => {
@@ -758,8 +770,12 @@ describe('Blog GraphQL (e2e)', () => {
         token: adminToken,
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('CONFLICT');
+      expect(body.errors![0].extensions?.errorCode).toBe('POST_ALREADY_PUBLISHED');
     });
 
     it('创建分类重复 slug 应返回错误', async () => {
@@ -785,8 +801,12 @@ describe('Blog GraphQL (e2e)', () => {
         token: adminToken,
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('CONFLICT');
+      expect(body.errors![0].extensions?.errorCode).toBe('CATEGORY_SLUG_DUPLICATE');
     });
 
     it('删除有文章的分类应返回错误', async () => {
@@ -831,8 +851,12 @@ describe('Blog GraphQL (e2e)', () => {
         token: adminToken,
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('CONFLICT');
+      expect(body.errors![0].extensions?.errorCode).toBe('CATEGORY_HAS_POSTS');
     });
 
     it('创建标签重复 slug 应返回错误', async () => {
@@ -858,8 +882,77 @@ describe('Blog GraphQL (e2e)', () => {
         token: adminToken,
       });
 
-      const body = res.body as { errors?: Array<{ message: string }> };
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
       expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('CONFLICT');
+      expect(body.errors![0].extensions?.errorCode).toBe('TAG_SLUG_DUPLICATE');
+    });
+
+    it('对不存在的文章提交评论应返回错误', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation CreateBlogComment($input: CreateBlogCommentInput!) {
+            createBlogComment(input: $input) { id }
+          }
+        `,
+        variables: {
+          input: {
+            postId: 99999,
+            authorName: '访客',
+            authorEmail: 'visitor@example.com',
+            content: '评论不存在的文章',
+          },
+        },
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('NOT_FOUND');
+      expect(body.errors![0].extensions?.errorCode).toBe('POST_NOT_FOUND');
+    });
+
+    it('对不存在的文章点赞应返回错误', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation ToggleBlogPostLike($postId: Int!, $userIdentifier: String!) {
+            toggleBlogPostLike(postId: $postId, userIdentifier: $userIdentifier)
+          }
+        `,
+        variables: { postId: 99999, userIdentifier: 'user:test' },
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('NOT_FOUND');
+      expect(body.errors![0].extensions?.errorCode).toBe('POST_NOT_FOUND');
+    });
+
+    it('审核不存在的评论应返回错误', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation UpdateBlogCommentStatus($input: UpdateBlogCommentStatusInput!) {
+            updateBlogCommentStatus(input: $input) { id }
+          }
+        `,
+        variables: { input: { id: 99999, status: 'APPROVED' } },
+        token: adminToken,
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string; errorCode?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('NOT_FOUND');
+      expect(body.errors![0].extensions?.errorCode).toBe('COMMENT_NOT_FOUND');
     });
   });
 });

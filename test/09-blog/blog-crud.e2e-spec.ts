@@ -611,5 +611,54 @@ describe('Blog CRUD (e2e)', () => {
     it('删除不存在的文章应抛出 POST_NOT_FOUND', async () => {
       await expect(postService.softDeletePost(99999)).rejects.toThrow(DomainError);
     });
+
+    it('更新不存在的评论应抛出 COMMENT_NOT_FOUND', async () => {
+      await expect(
+        commentService.updateCommentStatus({ id: 99999, status: BlogCommentStatus.APPROVED }),
+      ).rejects.toThrow(DomainError);
+    });
+
+    it('软删除不存在的评论应抛出 COMMENT_NOT_FOUND', async () => {
+      await expect(commentService.softDeleteComment(99999)).rejects.toThrow(DomainError);
+    });
+
+    it('更新不存在的博主信息应抛出 PROFILE_NOT_FOUND', async () => {
+      await expect(profileService.updateProfile(99999, { nickname: '不存在' })).rejects.toThrow(
+        DomainError,
+      );
+    });
+
+    it('评论嵌套超过上限时应抛出 COMMENT_NESTING_EXCEEDED', async () => {
+      const post = await postService.createPost({
+        title: '嵌套测试',
+        slug: 'nesting-test',
+        content: '内容',
+      });
+
+      // 手动插入 nestingLevel=5 的评论来模拟边界
+      const commentRepo = dataSource.getRepository(BlogCommentEntity);
+      const level5 = commentRepo.create({
+        postId: post.id,
+        parentId: null,
+        replyToId: null,
+        authorName: '深层',
+        authorEmail: 'deep@example.com',
+        authorAvatar: null,
+        content: '第5层',
+        status: BlogCommentStatus.APPROVED,
+        nestingLevel: 5,
+      });
+      await commentRepo.save(level5);
+
+      await expect(
+        commentService.createComment({
+          postId: post.id,
+          parentId: level5.id,
+          authorName: '越界',
+          authorEmail: 'overflow@example.com',
+          content: '第6层',
+        }),
+      ).rejects.toThrow(DomainError);
+    });
   });
 });

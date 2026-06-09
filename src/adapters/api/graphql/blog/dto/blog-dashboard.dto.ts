@@ -3,7 +3,7 @@
 
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 
-@ObjectType({ description: '博客仪表盘统计' })
+@ObjectType('BlogDashboard', { description: '博客仪表盘统计' })
 export class BlogDashboardObjectType {
   @Field(() => Int, { description: '文章总数' })
   totalPosts!: number;

@@ -123,13 +123,11 @@ export class ListBlogPublishedPostsUsecase {
   constructor(private readonly listBlogPostsUsecase: ListBlogPostsUsecase) {}
 
   async execute(
-    params: Omit<BlogPostPaginationParams, 'status' | 'categoryId' | 'title'>,
+    params: Omit<BlogPostPaginationParams, 'status'>,
   ): Promise<PaginatedResult<BlogPostView>> {
     return this.listBlogPostsUsecase.execute({
       ...params,
       status: BlogPostStatus.PUBLISHED,
-      categoryId: undefined,
-      title: undefined,
     });
   }
 }

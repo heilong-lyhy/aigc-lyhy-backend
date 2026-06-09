@@ -3,6 +3,7 @@
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogLikeService } from '@src/modules/blog/blog-like.service';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
 import { ToggleBlogPostLikeUsecase } from './toggle-blog-post-like.usecase';
 
 describe('ToggleBlogPostLikeUsecase', () => {
@@ -11,8 +12,8 @@ describe('ToggleBlogPostLikeUsecase', () => {
   let postService: {
     incrementLikeCount: jest.Mock;
     decrementLikeCount: jest.Mock;
-    getLikeCount: jest.Mock;
   };
+  let postQueryService: { getLikeCount: jest.Mock };
   let transactionRunner: { run: jest.Mock };
 
   beforeEach(() => {
@@ -22,6 +23,8 @@ describe('ToggleBlogPostLikeUsecase', () => {
     postService = {
       incrementLikeCount: jest.fn(),
       decrementLikeCount: jest.fn(),
+    };
+    postQueryService = {
       getLikeCount: jest.fn(),
     };
     transactionRunner = {
@@ -30,13 +33,14 @@ describe('ToggleBlogPostLikeUsecase', () => {
     usecase = new ToggleBlogPostLikeUsecase(
       likeService as unknown as BlogLikeService,
       postService as unknown as BlogPostService,
+      postQueryService as unknown as BlogPostQueryService,
       transactionRunner,
     );
   });
 
   it('点赞时应返回 liked=true 并递增 likeCount', async () => {
     likeService.toggleLike.mockResolvedValue({ liked: true });
-    postService.getLikeCount.mockResolvedValue(1);
+    postQueryService.getLikeCount.mockResolvedValue(1);
 
     const result = await usecase.execute(1, 'user:1');
 
@@ -48,7 +52,7 @@ describe('ToggleBlogPostLikeUsecase', () => {
 
   it('取消点赞时应返回 liked=false 并递减 likeCount', async () => {
     likeService.toggleLike.mockResolvedValue({ liked: false });
-    postService.getLikeCount.mockResolvedValue(0);
+    postQueryService.getLikeCount.mockResolvedValue(0);
 
     const result = await usecase.execute(1, 'user:1');
 
@@ -68,7 +72,7 @@ describe('ToggleBlogPostLikeUsecase', () => {
 
   it('应通过 TransactionRunner 执行事务', async () => {
     likeService.toggleLike.mockResolvedValue({ liked: true });
-    postService.getLikeCount.mockResolvedValue(1);
+    postQueryService.getLikeCount.mockResolvedValue(1);
 
     await usecase.execute(1, 'user:1');
 

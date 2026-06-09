@@ -4,7 +4,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import GraphQLJSON from 'graphql-type-json';
 
-@ObjectType({ description: '博主信息' })
+@ObjectType('BlogProfile', { description: '博主信息' })
 export class BlogProfileObjectType {
   @Field(() => ID, { description: '博主信息 ID' })
   id!: number;

@@ -21,6 +21,7 @@ export interface BlogPostPaginationParams {
   readonly status?: BlogPostStatus;
   readonly categoryId?: number;
   readonly title?: string;
+  readonly tagId?: number;
 }
 
 @Injectable()
@@ -41,6 +42,32 @@ export class BlogPostQueryService {
     const entity = await repo.findOne({ where: { id } });
     if (!entity) return null;
     return this.buildDetailView(entity, transactionContext);
+  }
+
+  /**
+   * 轻量存在性检查：仅判断文章是否存在，不触发 buildDetailView 的关联查询
+   * 供同域 usecase 做存在性校验使用，避免 N+1
+   */
+  async postExists(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<boolean> {
+    const repo = this.getPostRepo(transactionContext);
+    const count = await repo.count({ where: { id } });
+    return count > 0;
+  }
+
+  /**
+   * 轻量级写后读：仅获取文章当前点赞数，不触发 buildDetailView 的关联查询
+   * 供同域 usecase 写后读使用，避免 N+1
+   */
+  async getLikeCount(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<number> {
+    const repo = this.getPostRepo(transactionContext);
+    const entity = await repo.findOne({ where: { id }, select: { likeCount: true } });
+    return entity?.likeCount ?? 0;
   }
 
   async findPostBySlug(
@@ -117,6 +144,12 @@ export class BlogPostQueryService {
     }
     if (params.title !== undefined) {
       qb.andWhere('post.title LIKE :title', { title: `%${params.title}%` });
+    }
+    if (params.tagId !== undefined) {
+      qb.andWhere(
+        'EXISTS (SELECT 1 FROM blog_post_tag pt WHERE pt.post_id = post.id AND pt.tag_id = :tagId)',
+        { tagId: params.tagId },
+      );
     }
 
     return qb;

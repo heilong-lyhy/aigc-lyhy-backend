@@ -4,7 +4,7 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { BlogPostObjectType } from './blog-post.dto';
 
-@ObjectType({ description: '文章列表' })
+@ObjectType('BlogPostsListResponse', { description: '文章列表' })
 export class BlogPostsListResponse {
   @Field(() => [BlogPostObjectType], { description: '文章列表' })
   list!: BlogPostObjectType[];
