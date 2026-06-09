@@ -72,6 +72,18 @@ describe('BlogPostQueryService', () => {
       );
       mockTagQueryService.findTagsByPostId.mockResolvedValue([{ id: 1, name: 'TypeScript' }]);
 
+      // findPrevPost / findNextPost 使用 createQueryBuilder
+      const mockNeighborQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockNeighborQb);
+
       const result = await service.findPostById(1);
 
       expect(result).not.toBeNull();
@@ -79,6 +91,8 @@ describe('BlogPostQueryService', () => {
       expect(result!.title).toBe('测试文章');
       expect(result!.categoryName).toBe('技术');
       expect(result!.tags).toHaveLength(1);
+      expect(result!.prevPost).toBeNull();
+      expect(result!.nextPost).toBeNull();
       expect(mockPostRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
@@ -94,6 +108,16 @@ describe('BlogPostQueryService', () => {
       const noCategoryEntity = { ...mockPostEntity, categoryId: null };
       mockPostRepo.findOne.mockResolvedValue(noCategoryEntity);
       mockTagQueryService.findTagsByPostId.mockResolvedValue([]);
+      const mockNeighborQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockNeighborQb);
 
       const result = await service.findPostById(1);
 
@@ -157,6 +181,16 @@ describe('BlogPostQueryService', () => {
         Object.fromEntries([[10, '技术']]),
       );
       mockTagQueryService.findTagsByPostId.mockResolvedValue([]);
+      const mockNeighborQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockNeighborQb);
 
       const result = await service.findPostBySlug('test-post');
 
@@ -371,6 +405,104 @@ describe('BlogPostQueryService', () => {
 
       expect(result).toEqual({});
       expect(mockPostRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── findPrevPost / findNextPost ───
+
+  describe('findPrevPost', () => {
+    it('存在时应返回相邻文章简要视图', async () => {
+      const publishedAt = new Date('2024-06-01');
+      const id = 3;
+      const mockQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 2, title: '前一篇', slug: 'prev-post' }),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findPrevPost(publishedAt, id);
+
+      expect(result).toEqual({ id: 2, title: '前一篇', slug: 'prev-post' });
+      expect(mockQb.where).toHaveBeenCalledWith('post.deleted_at IS NULL');
+      expect(mockQb.andWhere).toHaveBeenCalledWith('post.status = :status', {
+        status: BlogPostStatus.PUBLISHED,
+      });
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        '(post.published_at < :publishedAt OR (post.published_at = :publishedAt AND post.id < :id))',
+        { publishedAt, id },
+      );
+      expect(mockQb.orderBy).toHaveBeenCalledWith('post.published_at', 'DESC');
+      expect(mockQb.addOrderBy).toHaveBeenCalledWith('post.id', 'DESC');
+    });
+
+    it('不存在时应返回 null', async () => {
+      const mockQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findPrevPost(new Date('2024-01-01'), 1);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findNextPost', () => {
+    it('存在时应返回相邻文章简要视图', async () => {
+      const publishedAt = new Date('2024-06-01');
+      const id = 3;
+      const mockQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 4, title: '后一篇', slug: 'next-post' }),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findNextPost(publishedAt, id);
+
+      expect(result).toEqual({ id: 4, title: '后一篇', slug: 'next-post' });
+      expect(mockQb.where).toHaveBeenCalledWith('post.deleted_at IS NULL');
+      expect(mockQb.andWhere).toHaveBeenCalledWith('post.status = :status', {
+        status: BlogPostStatus.PUBLISHED,
+      });
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        '(post.published_at > :publishedAt OR (post.published_at = :publishedAt AND post.id > :id))',
+        { publishedAt, id },
+      );
+      expect(mockQb.orderBy).toHaveBeenCalledWith('post.published_at', 'ASC');
+      expect(mockQb.addOrderBy).toHaveBeenCalledWith('post.id', 'ASC');
+    });
+
+    it('不存在时应返回 null', async () => {
+      const mockQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findNextPost(new Date('2024-12-31'), 99);
+
+      expect(result).toBeNull();
     });
   });
 });

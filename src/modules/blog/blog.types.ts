@@ -36,6 +36,13 @@ export interface BlogPostView {
   readonly updatedAt: Date;
 }
 
+/** 相邻文章简要视图（上一篇/下一篇） */
+export interface BlogPostNeighborView {
+  readonly id: number;
+  readonly title: string;
+  readonly slug: string;
+}
+
 /** 文章详情视图（含 Markdown content、标签列表、评论统计） */
 export interface BlogPostDetailView {
   readonly id: number;
@@ -54,6 +61,8 @@ export interface BlogPostDetailView {
   readonly commentCount: number;
   readonly isPinned: boolean;
   readonly publishedAt: Date | null;
+  readonly prevPost: BlogPostNeighborView | null;
+  readonly nextPost: BlogPostNeighborView | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -97,6 +106,7 @@ export interface BlogCommentView {
   readonly content: string;
   readonly status: BlogCommentStatus;
   readonly nestingLevel: number;
+  readonly isAdminReply: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -223,7 +233,10 @@ export interface CreateBlogCommentInput {
   readonly authorName: string;
   readonly authorEmail: string;
   readonly authorUrl?: string;
+  readonly authorAvatar?: string | null;
   readonly content: string;
+  readonly isAdminReply?: boolean;
+  readonly initialStatus?: BlogCommentStatus;
 }
 
 export interface UpdateBlogCommentStatusInput {

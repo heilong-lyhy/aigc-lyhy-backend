@@ -13,8 +13,8 @@
 | 1.2 公开文章列表标签筛选 | 已完成 | 无 | 2026-06-08 | 2026-06-08 | EXISTS 子查询，tagId 索引已存在 |
 | 1.3 阅读量自增 | 已完成 | 无 | 2026-06-09 | 2026-06-09 | fire-and-forget，失败不影响详情返回 |
 | 1.4 标签更新 Mutation | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 参考 update-blog-category 模板，复用 assertSlugUnique(slug, excludeId) |
-| 1.5 评论管理回复 Mutation | 待开始 | 无 | | | 阻塞：前端 2.4；需数据库迁移 |
-| 2.1 上一篇/下一篇 | 待开始 | 无 | | | 阻塞：前端 2.1 |
+| 1.5 评论管理回复 Mutation | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 新增 isAdminReply 字段、ReplyBlogCommentUsecase、replyBlogComment mutation；管理员回复自动审核通过 |
+| 2.1 上一篇/下一篇 | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 基于 publishedAt + id 双排序，BlogPostDetailView 内置 prevPost/nextPost |
 | 2.2 友情链接功能 | 待开始 | 无 | | | 阻塞：前端 2.5；需数据库迁移 |
 | 2.3 评论隐藏 | 待开始 | 无 | | | 阻塞：前端 3.3；需数据库迁移 |
 | 3.1 软删除/回收站 | 待开始 | 无 | | | 阻塞：前端 3.2 |

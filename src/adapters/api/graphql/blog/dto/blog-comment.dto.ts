@@ -33,6 +33,9 @@ export class BlogCommentObjectType {
   @Field(() => Int, { description: '嵌套层级' })
   nestingLevel!: number;
 
+  @Field(() => Boolean, { description: '是否为管理员回复' })
+  isAdminReply!: boolean;
+
   @Field(() => Date, { description: '创建时间' })
   createdAt!: Date;
 

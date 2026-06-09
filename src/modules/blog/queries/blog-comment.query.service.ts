@@ -85,6 +85,7 @@ export class BlogCommentQueryService {
       content: entity.content,
       status: entity.status,
       nestingLevel: entity.nestingLevel,
+      isAdminReply: entity.isAdminReply,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

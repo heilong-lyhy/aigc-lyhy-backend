@@ -220,6 +220,81 @@ describe('BlogCommentService', () => {
       expect(result).not.toBeNull();
       expect(result.nestingLevel).toBe(5);
     });
+
+    it('传入 authorAvatar 时应使用传入值而非 AvatarGenerator', async () => {
+      const savedEntity = {
+        id: 1,
+        postId: 1,
+        parentId: null,
+        replyToId: null,
+        authorName: '博主',
+        authorEmail: 'admin@blog',
+        authorUrl: null,
+        authorAvatar: 'https://example.com/custom-avatar.png',
+        content: '管理员回复',
+        status: BlogCommentStatus.PENDING,
+        nestingLevel: 0,
+        isAdminReply: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as BlogCommentEntity;
+
+      commentRepo.create.mockReturnValue(savedEntity);
+      commentRepo.save.mockResolvedValue(savedEntity);
+      queryService.findCommentById.mockResolvedValue({
+        id: 1,
+        authorAvatar: 'https://example.com/custom-avatar.png',
+        isAdminReply: true,
+      });
+
+      await service.createComment({
+        ...baseInput,
+        authorAvatar: 'https://example.com/custom-avatar.png',
+        isAdminReply: true,
+      });
+
+      // AvatarGenerator 不应被调用
+      expect(avatarGenerator.generateAvatar).not.toHaveBeenCalled();
+    });
+
+    it('传入 initialStatus 时应以指定状态创建评论', async () => {
+      const savedEntity = {
+        id: 1,
+        postId: 1,
+        parentId: null,
+        replyToId: null,
+        authorName: '博主',
+        authorEmail: 'admin@blog',
+        authorUrl: null,
+        authorAvatar: 'avatar-url',
+        content: '管理员回复',
+        status: BlogCommentStatus.APPROVED,
+        nestingLevel: 0,
+        isAdminReply: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as BlogCommentEntity;
+
+      mockAvatarGenerator.generateAvatar.mockResolvedValue('avatar-url');
+      commentRepo.create.mockReturnValue(savedEntity);
+      commentRepo.save.mockResolvedValue(savedEntity);
+      queryService.findCommentById.mockResolvedValue({
+        id: 1,
+        status: BlogCommentStatus.APPROVED,
+        isAdminReply: true,
+      });
+
+      const result = await service.createComment({
+        ...baseInput,
+        isAdminReply: true,
+        initialStatus: BlogCommentStatus.APPROVED,
+      });
+
+      expect(commentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ status: BlogCommentStatus.APPROVED }),
+      );
+      expect(result.status).toBe(BlogCommentStatus.APPROVED);
+    });
   });
 
   // ─── updateCommentStatus ───

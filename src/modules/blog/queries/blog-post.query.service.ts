@@ -155,17 +155,79 @@ export class BlogPostQueryService {
     return qb;
   }
 
+  /**
+   * 查找下一篇已发布文章（publishedAt 严格大于当前文章，或 publishedAt 相同且 id 严格大于）
+   * 按 publishedAt ASC, id ASC 排序取第一条
+   */
+  async findNextPost(
+    publishedAt: Date,
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<Pick<BlogPostView, 'id' | 'title' | 'slug'> | null> {
+    const repo = this.getPostRepo(transactionContext);
+    const entity = await repo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.title', 'post.slug'])
+      .where('post.deleted_at IS NULL')
+      .andWhere('post.status = :status', { status: BlogPostStatus.PUBLISHED })
+      .andWhere(
+        '(post.published_at > :publishedAt OR (post.published_at = :publishedAt AND post.id > :id))',
+        { publishedAt, id },
+      )
+      .orderBy('post.published_at', 'ASC')
+      .addOrderBy('post.id', 'ASC')
+      .limit(1)
+      .getOne();
+
+    if (!entity) return null;
+    return { id: entity.id, title: entity.title, slug: entity.slug };
+  }
+
+  /**
+   * 查找上一篇已发布文章（publishedAt 严格小于当前文章，或 publishedAt 相同且 id 严格小于）
+   * 按 publishedAt DESC, id DESC 排序取第一条
+   */
+  async findPrevPost(
+    publishedAt: Date,
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<Pick<BlogPostView, 'id' | 'title' | 'slug'> | null> {
+    const repo = this.getPostRepo(transactionContext);
+    const entity = await repo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.title', 'post.slug'])
+      .where('post.deleted_at IS NULL')
+      .andWhere('post.status = :status', { status: BlogPostStatus.PUBLISHED })
+      .andWhere(
+        '(post.published_at < :publishedAt OR (post.published_at = :publishedAt AND post.id < :id))',
+        { publishedAt, id },
+      )
+      .orderBy('post.published_at', 'DESC')
+      .addOrderBy('post.id', 'DESC')
+      .limit(1)
+      .getOne();
+
+    if (!entity) return null;
+    return { id: entity.id, title: entity.title, slug: entity.slug };
+  }
+
   // ─── 视图映射 ───
 
   private async buildDetailView(
     entity: BlogPostEntity,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogPostDetailView> {
-    const [categoryMap, tags] = await Promise.all([
+    const [categoryMap, tags, prevPost, nextPost] = await Promise.all([
       entity.categoryId
         ? this.categoryQueryService.findCategoryNamesByIds([entity.categoryId], transactionContext)
         : Promise.resolve({} as Record<number, string>),
       this.getPostTags(entity.id, transactionContext),
+      entity.publishedAt
+        ? this.findPrevPost(entity.publishedAt, entity.id, transactionContext)
+        : Promise.resolve(null),
+      entity.publishedAt
+        ? this.findNextPost(entity.publishedAt, entity.id, transactionContext)
+        : Promise.resolve(null),
     ]);
 
     const categoryName = entity.categoryId ? (categoryMap[entity.categoryId] ?? null) : null;
@@ -187,6 +249,8 @@ export class BlogPostQueryService {
       commentCount: entity.commentCount,
       isPinned: entity.isPinned,
       publishedAt: entity.publishedAt,
+      prevPost,
+      nextPost,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

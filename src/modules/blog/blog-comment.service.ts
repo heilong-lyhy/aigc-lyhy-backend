@@ -55,8 +55,9 @@ export class BlogCommentService {
       }
     }
 
-    // 头像生成：通过 AvatarGenerator boundary contract 实现
-    const authorAvatar = await this.avatarGenerator.generateAvatar(input.authorEmail);
+    // 头像：优先使用调用方传入的头像（如管理员回复使用博主头像），否则通过 AvatarGenerator 生成
+    const authorAvatar =
+      input.authorAvatar ?? (await this.avatarGenerator.generateAvatar(input.authorEmail));
 
     // XSS 清洗：保留安全标签，移除危险脚本和属性
     const sanitizedContent = sanitizeBlogContent(input.content);
@@ -71,6 +72,8 @@ export class BlogCommentService {
       authorAvatar,
       content: sanitizedContent,
       nestingLevel,
+      isAdminReply: input.isAdminReply ?? false,
+      status: input.initialStatus ?? BlogCommentStatus.PENDING,
     });
 
     const saved = await repo.save(entity);

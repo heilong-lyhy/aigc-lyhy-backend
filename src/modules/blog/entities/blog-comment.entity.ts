@@ -84,6 +84,14 @@ export class BlogCommentEntity {
   })
   nestingLevel!: number;
 
+  @Column({
+    name: 'is_admin_reply',
+    type: 'boolean',
+    default: false,
+    comment: '是否为管理员回复',
+  })
+  isAdminReply!: boolean;
+
   @DeleteDateColumn({
     name: 'deleted_at',
     type: 'timestamp',

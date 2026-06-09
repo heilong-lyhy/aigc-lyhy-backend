@@ -5,6 +5,18 @@ import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import { BlogTagObjectType } from './blog-tag.dto';
 
+@ObjectType('BlogPostNeighbor', { description: '相邻文章简要信息' })
+export class BlogPostNeighborObjectType {
+  @Field(() => ID, { description: '文章 ID' })
+  id!: number;
+
+  @Field(() => String, { description: '标题' })
+  title!: string;
+
+  @Field(() => String, { description: 'URL slug' })
+  slug!: string;
+}
+
 @ObjectType('BlogPostDetail', { description: '文章详情' })
 export class BlogPostDetailObjectType {
   @Field(() => ID, { description: '文章 ID' })
@@ -54,6 +66,12 @@ export class BlogPostDetailObjectType {
 
   @Field(() => Date, { description: '发布时间', nullable: true })
   publishedAt!: Date | null;
+
+  @Field(() => BlogPostNeighborObjectType, { description: '上一篇', nullable: true })
+  prevPost!: BlogPostNeighborObjectType | null;
+
+  @Field(() => BlogPostNeighborObjectType, { description: '下一篇', nullable: true })
+  nextPost!: BlogPostNeighborObjectType | null;
 
   @Field(() => Date, { description: '创建时间' })
   createdAt!: Date;

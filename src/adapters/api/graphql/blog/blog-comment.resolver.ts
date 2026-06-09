@@ -8,6 +8,7 @@ import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment
 import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
 import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
+import { ReplyBlogCommentUsecase } from '@src/usecases/blog/reply-blog-comment.usecase';
 import {
   ListBlogCommentsUsecase,
   ListBlogCommentsByPostUsecase,
@@ -17,6 +18,7 @@ import { BlogCommentsListResponse } from './dto/blog-comments.list';
 import { BlogCommentsArgs } from './dto/blog-comments.args';
 import { BlogPaginationArgs } from './dto/blog-pagination.args';
 import { CreateBlogCommentInput } from './dto/create-blog-comment.input';
+import { ReplyBlogCommentInput } from './dto/reply-blog-comment.input';
 import { UpdateBlogCommentStatusInput } from './dto/update-blog-comment-status.input';
 import { BatchUpdateBlogCommentStatusInput } from './dto/batch-update-blog-comment-status.input';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -29,6 +31,7 @@ export class BlogCommentResolver {
     private readonly listBlogCommentsUsecase: ListBlogCommentsUsecase,
     private readonly listBlogCommentsByPostUsecase: ListBlogCommentsByPostUsecase,
     private readonly createBlogCommentUsecase: CreateBlogCommentUsecase,
+    private readonly replyBlogCommentUsecase: ReplyBlogCommentUsecase,
     private readonly updateBlogCommentStatusUsecase: UpdateBlogCommentStatusUsecase,
     private readonly batchUpdateBlogCommentStatusUsecase: BatchUpdateBlogCommentStatusUsecase,
     private readonly deleteBlogCommentUsecase: DeleteBlogCommentUsecase,
@@ -101,6 +104,22 @@ export class BlogCommentResolver {
   }
 
   // ─── 管理端 Mutation ───
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => BlogCommentObjectType, { description: '管理员回复评论' })
+  async replyBlogComment(
+    @Args('input') input: ReplyBlogCommentInput,
+  ): Promise<BlogCommentObjectType> {
+    const { comment } = await this.replyBlogCommentUsecase.execute({
+      postId: input.postId,
+      content: input.content,
+      parentId: input.parentId,
+      replyToId: input.replyToId,
+    });
+    return comment;
+  }
 
   @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)

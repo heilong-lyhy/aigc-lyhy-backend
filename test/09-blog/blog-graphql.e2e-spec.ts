@@ -528,6 +528,97 @@ describe('Blog GraphQL (e2e)', () => {
       expect(body.errors).toBeDefined();
       expect(body.errors![0].extensions?.code).toBe('UNAUTHENTICATED');
     });
+
+    it('管理员应能回复评论（直接 APPROVED）', async () => {
+      // 先创建一条访客评论
+      const createRes = await postGql({
+        app,
+        query: `
+          mutation CreateBlogComment($input: CreateBlogCommentInput!) {
+            createBlogComment(input: $input) { id }
+          }
+        `,
+        variables: {
+          input: {
+            postId: publishedPostId,
+            authorName: '提问者',
+            authorEmail: 'questioner@example.com',
+            content: '请问这个问题怎么解决？',
+          },
+        },
+      }).expect(200);
+
+      const parentCommentId = Number(
+        (createRes.body as { data: { createBlogComment: { id: number } } }).data.createBlogComment
+          .id,
+      );
+
+      // 管理员回复
+      const replyRes = await postGql({
+        app,
+        query: `
+          mutation ReplyBlogComment($input: ReplyBlogCommentInput!) {
+            replyBlogComment(input: $input) {
+              id
+              authorName
+              content
+              status
+              isAdminReply
+              parentId
+            }
+          }
+        `,
+        variables: {
+          input: {
+            postId: publishedPostId,
+            content: '这是管理员的回复',
+            parentId: parentCommentId,
+          },
+        },
+        token: adminToken,
+      }).expect(200);
+
+      const body = replyRes.body as {
+        data: {
+          replyBlogComment: {
+            id: number;
+            authorName: string;
+            content: string;
+            status: string;
+            isAdminReply: boolean;
+            parentId: number | null;
+          };
+        };
+      };
+      expect(body.data.replyBlogComment.authorName).toBeTruthy();
+      expect(body.data.replyBlogComment.content).toBe('这是管理员的回复');
+      expect(body.data.replyBlogComment.status).toBe('APPROVED');
+      expect(body.data.replyBlogComment.isAdminReply).toBe(true);
+      expect(body.data.replyBlogComment.parentId).toBe(parentCommentId);
+    });
+
+    it('未认证用户不能回复评论', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation ReplyBlogComment($input: ReplyBlogCommentInput!) {
+            replyBlogComment(input: $input) { id }
+          }
+        `,
+        variables: {
+          input: {
+            postId: publishedPostId,
+            content: '未认证回复',
+          },
+        },
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('UNAUTHENTICATED');
+    });
   });
 
   // ─── 错误路径 ───
@@ -2276,6 +2367,109 @@ describe('Blog GraphQL (e2e)', () => {
 
       const body = res.body as { data: { blogPostBySlug: null } };
       expect(body.data.blogPostBySlug).toBeNull();
+    });
+
+    it('blogPostBySlug 应返回 prevPost 和 nextPost', async () => {
+      // 使用唯一前缀避免 slug 冲突
+      const prefix = `neighbor-${Date.now()}`;
+      const posts: Array<{ id: number; slug: string }> = [];
+      for (let i = 1; i <= 3; i++) {
+        const createRes = await postGql({
+          app,
+          query: `
+            mutation CreateBlogPost($input: CreateBlogPostInput!) {
+              createBlogPost(input: $input) { id slug }
+            }
+          `,
+          variables: {
+            input: {
+              title: `相邻文章${i}`,
+              slug: `${prefix}-${i}`,
+              content: `内容${i}`,
+            },
+          },
+          token: adminToken,
+        }).expect(200);
+
+        const body = createRes.body as {
+          data: { createBlogPost: { id: number; slug: string } };
+        };
+        const post = {
+          id: Number(body.data.createBlogPost.id),
+          slug: body.data.createBlogPost.slug,
+        };
+
+        await postGql({
+          app,
+          query: `mutation PublishBlogPost($id: Int!) { publishBlogPost(id: $id) { id } }`,
+          variables: { id: post.id },
+          token: adminToken,
+        }).expect(200);
+
+        posts.push({ id: post.id, slug: post.slug });
+      }
+
+      // 查询中间文章，应有 prevPost 和 nextPost
+      const midRes = await postGql({
+        app,
+        query: `
+          query BlogPostBySlug($slug: String!) {
+            blogPostBySlug(slug: $slug) {
+              id
+              prevPost { id title slug }
+              nextPost { id title slug }
+            }
+          }
+        `,
+        variables: { slug: posts[1].slug },
+      }).expect(200);
+
+      const midBody = midRes.body as {
+        data: {
+          blogPostBySlug: {
+            id: number;
+            prevPost: { id: number; title: string; slug: string } | null;
+            nextPost: { id: number; title: string; slug: string } | null;
+          };
+        };
+      };
+      expect(midBody.data.blogPostBySlug).not.toBeNull();
+      expect(midBody.data.blogPostBySlug.prevPost).not.toBeNull();
+      expect(midBody.data.blogPostBySlug.nextPost).not.toBeNull();
+
+      // 查询第一篇文章，prevPost 应为 null
+      const firstRes = await postGql({
+        app,
+        query: `
+          query BlogPostBySlug($slug: String!) {
+            blogPostBySlug(slug: $slug) { prevPost { id } nextPost { id } }
+          }
+        `,
+        variables: { slug: posts[0].slug },
+      }).expect(200);
+
+      const firstBody = firstRes.body as {
+        data: { blogPostBySlug: { prevPost: null; nextPost: { id: number } | null } };
+      };
+      expect(firstBody.data.blogPostBySlug.prevPost).toBeNull();
+      expect(firstBody.data.blogPostBySlug.nextPost).not.toBeNull();
+
+      // 查询最后一篇文章，nextPost 应为 null
+      const lastRes = await postGql({
+        app,
+        query: `
+          query BlogPostBySlug($slug: String!) {
+            blogPostBySlug(slug: $slug) { prevPost { id } nextPost { id } }
+          }
+        `,
+        variables: { slug: posts[2].slug },
+      }).expect(200);
+
+      const lastBody = lastRes.body as {
+        data: { blogPostBySlug: { prevPost: { id: number } | null; nextPost: null } };
+      };
+      expect(lastBody.data.blogPostBySlug.prevPost).not.toBeNull();
+      expect(lastBody.data.blogPostBySlug.nextPost).toBeNull();
     });
   });
 
