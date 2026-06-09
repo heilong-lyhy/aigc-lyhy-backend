@@ -23,7 +23,7 @@ export class BlogProfileQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogProfileView | null> {
     const repo = this.getProfileRepo(transactionContext);
-    const entity = await repo.findOne({ order: { id: 'ASC' } });
+    const entity = await repo.findOne({ where: {}, order: { id: 'ASC' } });
     if (!entity) return null;
     return this.toView(entity);
   }

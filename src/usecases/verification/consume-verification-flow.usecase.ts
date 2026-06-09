@@ -1,26 +1,20 @@
 // src/usecases/verification/consume-verification-flow.usecase.ts
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
-import {
-  VerificationRecordType,
-  VerificationRecordStatus,
-} from '@app-types/models/verification-record.types';
-import {
-  DomainError,
-  PERMISSION_ERROR,
-  VERIFICATION_RECORD_ERROR,
-} from '@core/common/errors/domain-error';
+import { VerificationRecordType } from '@app-types/models/verification-record.types';
+import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
-import { ConsumableQueryService } from '@src/modules/verification-record/queries/consumable.query.service';
-import {
-  VerificationRecordConsumeTargetConstraint,
-  VerificationRecordService,
-  VerificationRecordValidationSnapshot,
-} from '@src/modules/verification-record/verification-record.service';
+import { VerificationReadQueryService } from '@src/modules/verification-record/queries/verification-read.query.service';
+import { VerificationRecordService } from '@src/modules/verification-record/verification-record.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
 } from '@src/usecases/common/ports/transaction-runner.contract';
+import {
+  resolveConsumeTargetConstraint,
+  throwConsumeFailure,
+  type VerificationConsumeContext,
+} from '@src/modules/verification-record/verification-record-consume.shared';
 import { ResetPasswordHandler } from './password/reset-password.handler';
 import {
   ConsumeVerificationFlowParams,
@@ -49,7 +43,7 @@ export class ConsumeVerificationFlowUsecase {
 
   constructor(
     private readonly verificationRecordService: VerificationRecordService,
-    private readonly consumableQueryService: ConsumableQueryService,
+    private readonly verificationReadQueryService: VerificationReadQueryService,
     private readonly resetPasswordHandler: ResetPasswordHandler,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
@@ -93,7 +87,7 @@ export class ConsumeVerificationFlowUsecase {
     ): Promise<VerificationFlowResult> => {
       // 第一步：在事务中重新验证并获取验证记录视图
       // 这里需要重新验证是因为从预读到消费之间可能有状态变化
-      const recordView = await this.consumableQueryService.findConsumableRecord(
+      const recordView = await this.verificationReadQueryService.findConsumableRecord(
         token,
         params.audience,
         params.email,
@@ -192,7 +186,8 @@ export class ConsumeVerificationFlowUsecase {
   }): Promise<void> {
     const { token, consumedByAccountId, expectedType, transactionContext } = params;
     const now = new Date();
-    const targetConstraint = this.resolveTargetConstraint({ consumedByAccountId, expectedType });
+    const context: VerificationConsumeContext = { consumedByAccountId, expectedType, now };
+    const targetConstraint = resolveConsumeTargetConstraint(context);
     const tokenFp = this.verificationRecordService.generateTokenFingerprint(token);
 
     const { affected, validationRecord } = await this.verificationRecordService.consumeRecord({
@@ -207,76 +202,7 @@ export class ConsumeVerificationFlowUsecase {
     });
 
     if (affected === 0) {
-      this.throwConsumptionFailure(validationRecord, { consumedByAccountId, expectedType, now });
+      throwConsumeFailure(validationRecord, context);
     }
-  }
-
-  private throwConsumptionFailure(
-    record: VerificationRecordValidationSnapshot | null,
-    context: {
-      consumedByAccountId?: number;
-      expectedType?: VerificationRecordType;
-      now: Date;
-    },
-  ): never {
-    if (!record) {
-      throw new DomainError(VERIFICATION_RECORD_ERROR.INVALID_TOKEN, '无效的验证 token');
-    }
-
-    if (context.expectedType && record.type !== context.expectedType) {
-      throw new DomainError(VERIFICATION_RECORD_ERROR.VERIFICATION_INVALID, '验证码类型不匹配');
-    }
-
-    if (record.type !== VerificationRecordType.PASSWORD_RESET) {
-      if (record.targetAccountId && !context.consumedByAccountId) {
-        throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '此验证码需要登录后使用');
-      }
-
-      if (
-        record.targetAccountId &&
-        context.consumedByAccountId &&
-        record.targetAccountId !== context.consumedByAccountId
-      ) {
-        throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '您无权使用此验证码', {
-          targetAccountId: record.targetAccountId,
-          consumedByAccountId: context.consumedByAccountId,
-        });
-      }
-    }
-
-    if (record.status !== VerificationRecordStatus.ACTIVE) {
-      throw new DomainError(
-        VERIFICATION_RECORD_ERROR.RECORD_ALREADY_CONSUMED,
-        '验证码已被使用或已失效',
-      );
-    }
-
-    const expiresAtWithGracePeriod = new Date(record.expiresAt.getTime() + 180 * 1000);
-    if (expiresAtWithGracePeriod <= context.now) {
-      throw new DomainError(VERIFICATION_RECORD_ERROR.RECORD_EXPIRED, '验证码已过期，请重新获取');
-    }
-
-    if (record.notBefore && record.notBefore > context.now) {
-      throw new DomainError(
-        VERIFICATION_RECORD_ERROR.RECORD_NOT_ACTIVE_YET,
-        '验证码尚未到使用时间',
-      );
-    }
-
-    throw new DomainError(VERIFICATION_RECORD_ERROR.CONSUMPTION_FAILED, '验证码已被使用或已失效');
-  }
-
-  private resolveTargetConstraint(params: {
-    consumedByAccountId?: number;
-    expectedType?: VerificationRecordType;
-  }): VerificationRecordConsumeTargetConstraint {
-    const { consumedByAccountId, expectedType } = params;
-    if (consumedByAccountId !== undefined) {
-      return { mode: 'MATCH_OR_NULL', accountId: consumedByAccountId };
-    }
-    if (expectedType === VerificationRecordType.PASSWORD_RESET) {
-      return { mode: 'IGNORE' };
-    }
-    return { mode: 'NULL_ONLY' };
   }
 }

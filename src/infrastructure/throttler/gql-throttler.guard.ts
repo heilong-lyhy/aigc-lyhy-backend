@@ -30,6 +30,13 @@ export class GqlThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
+  protected override async shouldSkip(_context: ExecutionContext): Promise<boolean> {
+    if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'e2e') {
+      return true;
+    }
+    return super.shouldSkip(_context);
+  }
+
   // 基类 ThrottlerGuard.getTracker 签名要求 Record<string, any>，无法避免
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected override getTracker(req: Record<string, any>): Promise<string> {

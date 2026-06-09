@@ -36,7 +36,7 @@ export class BlogCommentResolver {
 
   // ─── 管理端查询 ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogCommentsListResponse, { description: '查询评论列表（管理端，支持筛选）' })
@@ -102,7 +102,7 @@ export class BlogCommentResolver {
 
   // ─── 管理端 Mutation ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCommentObjectType, { description: '更新评论审核状态' })
@@ -116,7 +116,7 @@ export class BlogCommentResolver {
     return comment;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Int, { description: '批量更新评论审核状态' })
@@ -130,7 +130,7 @@ export class BlogCommentResolver {
     return updatedCount;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除评论' })

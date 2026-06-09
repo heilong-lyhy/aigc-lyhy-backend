@@ -15,6 +15,7 @@ import { BlogPostQueryService } from '../../src/modules/blog/queries/blog-post.q
 import { BlogCategoryQueryService } from '../../src/modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '../../src/modules/blog/queries/blog-tag.query.service';
 import { BlogCommentQueryService } from '../../src/modules/blog/queries/blog-comment.query.service';
+import { BlogCommentEntity } from '../../src/modules/blog/entities/blog-comment.entity';
 import { BlogPostStatus, BlogCommentStatus } from '@app-types/models/blog.types';
 import { PaginationService } from '../../src/modules/common/pagination.service';
 import { initGraphQLSchema } from '../../src/adapters/api/graphql/schema/schema.init';
@@ -389,22 +390,58 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('公开查询应只返回已审核通过的评论', async () => {
-      const comments = await commentQueryService.listCommentsByPostId(postId);
+      const qb = commentQueryService.createCommentByPostQueryBuilder({
+        postId,
+        page: 1,
+        pageSize: 20,
+      });
+      const result = await paginationService.paginateQuery({
+        qb,
+        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
+        allowedSorts: ['createdAt'],
+        defaultSorts: [{ field: 'createdAt', direction: 'ASC' }],
+        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
+      });
+      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
       expect(comments).toHaveLength(5);
       comments.forEach((c) => expect(c.status).toBe(BlogCommentStatus.APPROVED));
     });
 
     it('管理端查询应返回所有评论', async () => {
-      const comments = await commentQueryService.listAllComments();
+      const qb = commentQueryService.createCommentQueryBuilder({
+        page: 1,
+        pageSize: 20,
+      });
+      const result = await paginationService.paginateQuery({
+        qb,
+        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
+        allowedSorts: ['createdAt'],
+        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
+        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
+      });
+      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
       expect(comments).toHaveLength(8);
     });
 
-    it('应正确统计待审核评论数', async () => {
-      const count = await commentQueryService.countPendingComments();
+    it('管理端按状态筛选应返回对应评论', async () => {
+      const qb = commentQueryService.createCommentQueryBuilder({
+        page: 1,
+        pageSize: 20,
+        status: BlogCommentStatus.PENDING,
+      });
+      const result = await paginationService.paginateQuery({
+        qb,
+        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
+        allowedSorts: ['createdAt'],
+        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
+        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
+      });
+      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
-      expect(count).toBe(3);
+      expect(comments).toHaveLength(3);
+      comments.forEach((c) => expect(c.status).toBe(BlogCommentStatus.PENDING));
     });
   });
 
@@ -415,7 +452,7 @@ describe('Blog QueryService Integration (e2e)', () => {
       const tag1 = await tagService.createTag({ name: 'TypeScript', slug: 'typescript' });
       const tag2 = await tagService.createTag({ name: 'NestJS', slug: 'nestjs' });
 
-      const post = await postService.createPost({
+      const post = await postService.createPostWithTags({
         title: '带标签文章',
         slug: 'tagged-post',
         content: '内容',
@@ -423,7 +460,7 @@ describe('Blog QueryService Integration (e2e)', () => {
         status: BlogPostStatus.PUBLISHED,
       });
 
-      const view = await postQueryService.findPostById(post!.id);
+      const view = await postQueryService.findPostById(post.id);
       expect(view).not.toBeNull();
       expect(view!.tags).toHaveLength(1);
       expect(view!.tags[0].id).toBe(tag1.id);

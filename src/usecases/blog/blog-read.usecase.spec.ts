@@ -1,7 +1,7 @@
 // src/usecases/blog/blog-read.usecase.spec.ts
 // 博客读操作 usecase 单元测试：验证编排逻辑（分页、publishedOnly 过滤、委托调用）
 
-import { BlogPostStatus } from '@app-types/models/blog.types';
+import { BlogPostStatus, BlogCommentStatus, BlogFileType } from '@app-types/models/blog.types';
 import {
   GetBlogPostByIdUsecase,
   GetBlogPostBySlugUsecase,
@@ -10,7 +10,10 @@ import {
   ListBlogCategoriesUsecase,
   GetBlogCategoryTreeUsecase,
   ListBlogTagsUsecase,
+  ListBlogCommentsUsecase,
+  ListBlogCommentsByPostUsecase,
   HasLikedBlogPostUsecase,
+  ListBlogFilesUsecase,
   GetBlogProfileUsecase,
   GetBlogDashboardStatsUsecase,
 } from './blog-read.usecase';
@@ -18,7 +21,9 @@ import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
 import { BlogCategoryQueryService } from '@src/modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '@src/modules/blog/queries/blog-tag.query.service';
+import { BlogCommentQueryService } from '@src/modules/blog/queries/blog-comment.query.service';
 import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.service';
+import { BlogFileQueryService } from '@src/modules/blog/queries/blog-file.query.service';
 import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
 import { PaginationService } from '@src/modules/common/pagination.service';
@@ -316,6 +321,225 @@ describe('ListBlogTagsUsecase', () => {
     const result = await usecase.execute();
 
     expect(result).toEqual(tags);
+  });
+});
+
+// ─── ListBlogCommentsUsecase ───
+
+describe('ListBlogCommentsUsecase', () => {
+  let usecase: ListBlogCommentsUsecase;
+  let commentQueryService: {
+    createCommentQueryBuilder: jest.Mock;
+    toView: jest.Mock;
+  };
+  let paginationService: { paginateQuery: jest.Mock };
+
+  beforeEach(() => {
+    commentQueryService = {
+      createCommentQueryBuilder: jest.fn(),
+      toView: jest.fn(),
+    };
+    paginationService = { paginateQuery: jest.fn() };
+    usecase = new ListBlogCommentsUsecase(
+      commentQueryService as unknown as BlogCommentQueryService,
+      paginationService as unknown as PaginationService,
+    );
+  });
+
+  it('应编排分页查询并返回评论视图列表', async () => {
+    const mockQb = {};
+    const mockEntity = { id: 1, content: '评论1' };
+    const mockView = { id: 1, content: '评论1' };
+    commentQueryService.createCommentQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [mockEntity],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+    });
+    commentQueryService.toView.mockReturnValue(mockView);
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toEqual(mockView);
+    expect(result.total).toBe(1);
+    expect(commentQueryService.createCommentQueryBuilder).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
+    });
+  });
+
+  it('分页结果为空时不应调用 toView', async () => {
+    const mockQb = {};
+    commentQueryService.createCommentQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(0);
+    expect(commentQueryService.toView).not.toHaveBeenCalled();
+  });
+
+  it('应透传 postId 和 status 筛选参数', async () => {
+    const mockQb = {};
+    commentQueryService.createCommentQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    await usecase.execute({ page: 1, pageSize: 10, postId: 5, status: BlogCommentStatus.PENDING });
+
+    expect(commentQueryService.createCommentQueryBuilder).toHaveBeenCalledWith(
+      expect.objectContaining({ postId: 5, status: 'PENDING' }),
+    );
+  });
+});
+
+// ─── ListBlogCommentsByPostUsecase ───
+
+describe('ListBlogCommentsByPostUsecase', () => {
+  let usecase: ListBlogCommentsByPostUsecase;
+  let commentQueryService: {
+    createCommentByPostQueryBuilder: jest.Mock;
+    toView: jest.Mock;
+  };
+  let paginationService: { paginateQuery: jest.Mock };
+
+  beforeEach(() => {
+    commentQueryService = {
+      createCommentByPostQueryBuilder: jest.fn(),
+      toView: jest.fn(),
+    };
+    paginationService = { paginateQuery: jest.fn() };
+    usecase = new ListBlogCommentsByPostUsecase(
+      commentQueryService as unknown as BlogCommentQueryService,
+      paginationService as unknown as PaginationService,
+    );
+  });
+
+  it('应编排分页查询并返回评论视图列表', async () => {
+    const mockQb = {};
+    const mockEntity = { id: 1, content: '公开评论' };
+    const mockView = { id: 1, content: '公开评论' };
+    commentQueryService.createCommentByPostQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [mockEntity],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+    });
+    commentQueryService.toView.mockReturnValue(mockView);
+
+    const result = await usecase.execute({ postId: 5, page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toEqual(mockView);
+    expect(commentQueryService.createCommentByPostQueryBuilder).toHaveBeenCalledWith({
+      postId: 5,
+      page: 1,
+      pageSize: 10,
+    });
+  });
+
+  it('分页结果为空时不应调用 toView', async () => {
+    const mockQb = {};
+    commentQueryService.createCommentByPostQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    const result = await usecase.execute({ postId: 5, page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(0);
+    expect(commentQueryService.toView).not.toHaveBeenCalled();
+  });
+});
+
+// ─── ListBlogFilesUsecase ───
+
+describe('ListBlogFilesUsecase', () => {
+  let usecase: ListBlogFilesUsecase;
+  let fileQueryService: {
+    createFileQueryBuilder: jest.Mock;
+    toView: jest.Mock;
+  };
+  let paginationService: { paginateQuery: jest.Mock };
+
+  beforeEach(() => {
+    fileQueryService = {
+      createFileQueryBuilder: jest.fn(),
+      toView: jest.fn(),
+    };
+    paginationService = { paginateQuery: jest.fn() };
+    usecase = new ListBlogFilesUsecase(
+      fileQueryService as unknown as BlogFileQueryService,
+      paginationService as unknown as PaginationService,
+    );
+  });
+
+  it('应编排分页查询并返回文件视图列表', async () => {
+    const mockQb = {};
+    const mockEntity = { id: 1, originalName: 'test.jpg' };
+    const mockView = { id: 1, originalName: 'test.jpg' };
+    fileQueryService.createFileQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [mockEntity],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+    });
+    fileQueryService.toView.mockReturnValue(mockView);
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toEqual(mockView);
+    expect(result.total).toBe(1);
+  });
+
+  it('分页结果为空时不应调用 toView', async () => {
+    const mockQb = {};
+    fileQueryService.createFileQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    const result = await usecase.execute({ page: 1, pageSize: 10 });
+
+    expect(result.items).toHaveLength(0);
+    expect(fileQueryService.toView).not.toHaveBeenCalled();
+  });
+
+  it('应透传 fileType 筛选参数', async () => {
+    const mockQb = {};
+    fileQueryService.createFileQueryBuilder.mockReturnValue(mockQb);
+    paginationService.paginateQuery.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    await usecase.execute({ page: 1, pageSize: 10, fileType: BlogFileType.IMAGE });
+
+    expect(fileQueryService.createFileQueryBuilder).toHaveBeenCalledWith(
+      expect.objectContaining({ fileType: 'IMAGE' }),
+    );
   });
 });
 

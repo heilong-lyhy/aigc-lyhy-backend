@@ -32,7 +32,7 @@ export class BlogTagResolver {
 
   // ─── 管理端 Mutation ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogTagObjectType, { description: '创建标签' })
@@ -44,7 +44,7 @@ export class BlogTagResolver {
     return tag;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogTagObjectType, { description: '更新标签' })
@@ -56,7 +56,7 @@ export class BlogTagResolver {
     return tag;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除标签' })

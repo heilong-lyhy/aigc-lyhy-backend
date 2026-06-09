@@ -26,7 +26,7 @@ export class BlogFileResolver {
 
   // ─── 管理端查询 ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogFilesListResponse, { description: '查询文件列表（管理端）' })
@@ -48,7 +48,7 @@ export class BlogFileResolver {
 
   // ─── 管理端 Mutation ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogFileObjectType, { description: '上传文件' })
@@ -67,7 +67,7 @@ export class BlogFileResolver {
     return file;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除文件' })

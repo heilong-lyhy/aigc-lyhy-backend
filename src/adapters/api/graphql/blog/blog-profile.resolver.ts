@@ -33,7 +33,7 @@ export class BlogProfileResolver {
 
   // ─── 管理端 Mutation ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogProfileObjectType, { description: '更新博主信息' })
@@ -49,7 +49,7 @@ export class BlogProfileResolver {
     return profile;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Int, { description: '修改博客管理员密码' })

@@ -42,7 +42,7 @@ export class BlogCategoryResolver {
 
   // ─── 管理端 Mutation ───
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCategoryObjectType, { description: '创建分类' })
@@ -59,7 +59,7 @@ export class BlogCategoryResolver {
     return category;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => BlogCategoryObjectType, { description: '更新分类' })
@@ -76,7 +76,7 @@ export class BlogCategoryResolver {
     return category;
   }
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Mutation(() => Boolean, { description: '删除分类' })

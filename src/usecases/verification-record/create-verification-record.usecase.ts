@@ -7,10 +7,8 @@ import {
 import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { VerificationCodeHelper } from '@modules/verification-record/verification-code.helper';
 import { Injectable } from '@nestjs/common';
-import {
-  VerificationRecordDetailView,
-  VerificationRecordQueryService,
-} from '@src/modules/verification-record/queries/verification-record.query.service';
+import type { VerificationRecordDetailView } from '@src/modules/verification-record/verification-record.types';
+import { VerificationReadQueryService } from '@src/modules/verification-record/queries/verification-read.query.service';
 import { VerificationRecordService } from '@src/modules/verification-record/verification-record.service';
 
 /**
@@ -55,7 +53,7 @@ export class CreateVerificationRecordUsecase {
   constructor(
     private readonly verificationRecordService: VerificationRecordService,
     private readonly verificationCodeHelper: VerificationCodeHelper,
-    private readonly verificationRecordQueryService: VerificationRecordQueryService,
+    private readonly verificationReadQueryService: VerificationReadQueryService,
   ) {}
 
   /**
@@ -74,7 +72,7 @@ export class CreateVerificationRecordUsecase {
     const generatedByServer = !params.customToken;
 
     // 检查是否已存在相同的 token（防重复）
-    const tokenExists = await this.verificationRecordQueryService.isTokenExists(token);
+    const tokenExists = await this.verificationReadQueryService.isTokenExists(token);
     if (tokenExists) {
       // 如果是自定义 token，直接抛错
       if (params.customToken) {
@@ -94,7 +92,7 @@ export class CreateVerificationRecordUsecase {
       let newToken = token;
       while (retryCount < 3) {
         newToken = this.generateToken(params);
-        const retryTokenExists = await this.verificationRecordQueryService.isTokenExists(newToken);
+        const retryTokenExists = await this.verificationReadQueryService.isTokenExists(newToken);
         if (!retryTokenExists) {
           break;
         }
@@ -124,7 +122,7 @@ export class CreateVerificationRecordUsecase {
     });
 
     return {
-      record: this.verificationRecordQueryService.toDetailView(record),
+      record: this.verificationReadQueryService.toDetailView(record),
       token,
       generatedByServer,
     };

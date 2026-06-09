@@ -1,31 +1,24 @@
 // src/usecases/verification-record/consume-verification-record.usecase.ts
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
-import {
-  SubjectType,
-  VerificationRecordStatus,
-  VerificationRecordType,
-} from '@app-types/models/verification-record.types';
-import {
-  DomainError,
-  PERMISSION_ERROR,
-  VERIFICATION_RECORD_ERROR,
-} from '@core/common/errors/domain-error';
+import { SubjectType, VerificationRecordType } from '@app-types/models/verification-record.types';
+import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
-import {
+import type {
   VerificationRecordDetailView,
-  VerificationRecordQueryService,
   VerificationRecordView,
-} from '@src/modules/verification-record/queries/verification-record.query.service';
-import {
-  VerificationRecordService,
-  type VerificationRecordConsumeTargetConstraint,
-  type VerificationRecordValidationSnapshot,
-} from '@src/modules/verification-record/verification-record.service';
+} from '@src/modules/verification-record/verification-record.types';
+import { VerificationReadQueryService } from '@src/modules/verification-record/queries/verification-read.query.service';
+import { VerificationRecordService } from '@src/modules/verification-record/verification-record.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
 } from '@src/usecases/common/ports/transaction-runner.contract';
+import {
+  resolveConsumeTargetConstraint,
+  throwConsumeFailure,
+  type VerificationConsumeContext,
+} from '@src/modules/verification-record/verification-record-consume.shared';
 
 /**
  * 通过 token 消费验证记录用例参数
@@ -74,104 +67,14 @@ export interface RevokeRecordUsecaseParams {
 }
 
 /**
- * 验证失败原因检查器
- */
-interface FailureChecker {
-  check: (
-    record: VerificationRecordValidationSnapshot,
-    context: ValidationContext,
-  ) => DomainError | null;
-  priority: number;
-}
-
-/**
- * 验证上下文
- */
-interface ValidationContext {
-  expectedType?: VerificationRecordType;
-  consumedByAccountId?: number;
-  subjectType?: SubjectType;
-  subjectId?: number;
-  now: Date;
-}
-
-/**
  * 消费验证记录用例
  * 负责验证记录的消费操作，包括正常消费和撤销消费
  */
 @Injectable()
 export class ConsumeVerificationRecordUsecase {
-  /**
-   * 验证失败检查器列表，按优先级排序
-   */
-  private readonly failureCheckers: FailureChecker[] = [
-    {
-      priority: 1,
-      check: (record, context) =>
-        context.expectedType && record.type !== context.expectedType
-          ? new DomainError(VERIFICATION_RECORD_ERROR.VERIFICATION_INVALID, '验证码类型不匹配')
-          : null,
-    },
-    {
-      priority: 2,
-      check: (record, context) => {
-        // PASSWORD_RESET 类型允许匿名消费，即使有 targetAccountId 限制
-        if (record.type === VerificationRecordType.PASSWORD_RESET) {
-          return null;
-        }
-
-        // 如果记录有 targetAccountId 限制，但消费者未提供账号 ID，则拒绝
-        if (record.targetAccountId && !context.consumedByAccountId) {
-          return new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '此验证码需要登录后使用');
-        }
-        // 如果记录有 targetAccountId 限制，且消费者账号不匹配，则拒绝
-        if (
-          record.targetAccountId &&
-          context.consumedByAccountId &&
-          record.targetAccountId !== context.consumedByAccountId
-        ) {
-          return new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '您无权使用此验证码', {
-            targetAccountId: record.targetAccountId,
-            consumedByAccountId: context.consumedByAccountId,
-          });
-        }
-        return null;
-      },
-    },
-    {
-      priority: 3,
-      check: (record) =>
-        record.status !== VerificationRecordStatus.ACTIVE
-          ? new DomainError(
-              VERIFICATION_RECORD_ERROR.RECORD_ALREADY_CONSUMED,
-              '验证码已被使用或已失效',
-            )
-          : null,
-    },
-    {
-      priority: 4,
-      check: (record, context) => {
-        // 检查是否已过期（包含 180 秒宽限期）
-        const gracePeriodMs = 180 * 1000; // 180 秒宽限期
-        const expiresAtWithGracePeriod = new Date(record.expiresAt.getTime() + gracePeriodMs);
-
-        return expiresAtWithGracePeriod <= context.now
-          ? new DomainError(VERIFICATION_RECORD_ERROR.RECORD_EXPIRED, '验证码已过期，请重新获取')
-          : null;
-      },
-    },
-    {
-      priority: 5,
-      check: (record, context) =>
-        record.notBefore && record.notBefore > context.now
-          ? new DomainError(VERIFICATION_RECORD_ERROR.RECORD_NOT_ACTIVE_YET, '验证码尚未到使用时间')
-          : null,
-    },
-  ];
-
   constructor(
     private readonly verificationRecordService: VerificationRecordService,
-    private readonly verificationRecordQueryService: VerificationRecordQueryService,
+    private readonly verificationReadQueryService: VerificationReadQueryService,
     @Inject(TRANSACTION_RUNNER)
     private readonly transactionRunner: TransactionRunner,
   ) {}
@@ -291,7 +194,7 @@ export class ConsumeVerificationRecordUsecase {
           throw new DomainError(VERIFICATION_RECORD_ERROR.RECORD_NOT_FOUND, '验证记录不存在');
         }
 
-        return this.verificationRecordQueryService.toDetailView(updatedRecord);
+        return this.verificationReadQueryService.toDetailView(updatedRecord);
       } catch (error) {
         if (error instanceof DomainError) {
           throw error;
@@ -327,7 +230,7 @@ export class ConsumeVerificationRecordUsecase {
     where: { id?: number; tokenFp?: Buffer };
     notFoundError: string;
     notFoundMessage: string;
-    context: ValidationContext;
+    context: VerificationConsumeContext & { subjectType?: SubjectType; subjectId?: number };
     errorDetails: Record<string, unknown>;
     transactionContext?: PersistenceTransactionContext;
   }): Promise<VerificationRecordView> {
@@ -335,7 +238,7 @@ export class ConsumeVerificationRecordUsecase {
       options;
 
     try {
-      const targetConstraint = this.resolveTargetConstraint(context);
+      const targetConstraint = resolveConsumeTargetConstraint(context);
       const { affected, updatedRecord, validationRecord } =
         await this.verificationRecordService.consumeRecord({
           where,
@@ -344,14 +247,14 @@ export class ConsumeVerificationRecordUsecase {
         });
 
       if (affected === 0) {
-        this.handleUpdateFailure(validationRecord, context, notFoundError, notFoundMessage);
+        throwConsumeFailure(validationRecord, context, notFoundError, notFoundMessage);
       }
 
       if (!updatedRecord) {
         throw new DomainError(VERIFICATION_RECORD_ERROR.RECORD_NOT_FOUND, '验证记录不存在');
       }
 
-      return this.verificationRecordQueryService.toCleanView(updatedRecord);
+      return this.verificationReadQueryService.toCleanView(updatedRecord);
     } catch (error) {
       if (error instanceof DomainError) {
         throw error;
@@ -367,43 +270,5 @@ export class ConsumeVerificationRecordUsecase {
         error,
       );
     }
-  }
-
-  /**
-   * 处理更新失败的情况
-   */
-  private handleUpdateFailure(
-    record: VerificationRecordValidationSnapshot | null,
-    context: ValidationContext,
-    notFoundError: string,
-    notFoundMessage: string,
-  ): never {
-    if (!record) {
-      throw new DomainError(notFoundError, notFoundMessage);
-    }
-
-    // 按优先级检查失败原因
-    for (const checker of this.failureCheckers) {
-      const error = checker.check(record, context);
-      if (error) {
-        throw error;
-      }
-    }
-
-    // 如果所有检查都通过，说明是未知错误
-    throw new DomainError(VERIFICATION_RECORD_ERROR.CONSUMPTION_FAILED, '验证码已被使用或已失效');
-  }
-
-  private resolveTargetConstraint(
-    context: ValidationContext,
-  ): VerificationRecordConsumeTargetConstraint {
-    const { consumedByAccountId, expectedType } = context;
-    if (consumedByAccountId !== undefined) {
-      return { mode: 'MATCH_OR_NULL', accountId: consumedByAccountId };
-    }
-    if (expectedType === VerificationRecordType.PASSWORD_RESET) {
-      return { mode: 'IGNORE' };
-    }
-    return { mode: 'NULL_ONLY' };
   }
 }

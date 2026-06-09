@@ -14,7 +14,7 @@ import { Roles } from '../decorators/roles.decorator';
 export class BlogDashboardResolver {
   constructor(private readonly getBlogDashboardStatsUsecase: GetBlogDashboardStatsUsecase) {}
 
-  @SkipThrottle()
+  @SkipThrottle({ short: true, publicWrite: true })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Query(() => BlogDashboardObjectType, { description: '查询博客仪表盘统计' })
