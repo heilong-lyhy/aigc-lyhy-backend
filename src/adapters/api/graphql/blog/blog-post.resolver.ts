@@ -8,6 +8,9 @@ import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.useca
 import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.usecase';
 import { DeleteBlogPostUsecase } from '@src/usecases/blog/delete-blog-post.usecase';
 import { PublishBlogPostUsecase } from '@src/usecases/blog/publish-blog-post.usecase';
+import { RestoreBlogPostUsecase } from '@src/usecases/blog/restore-blog-post.usecase';
+import { PermanentDeleteBlogPostUsecase } from '@src/usecases/blog/permanent-delete-blog-post.usecase';
+import { ListDeletedBlogPostsUsecase } from '@src/usecases/blog/list-deleted-blog-posts.usecase';
 import {
   GetBlogPostByIdUsecase,
   GetBlogPostBySlugUsecase,
@@ -18,6 +21,7 @@ import { BlogPostDetailObjectType } from './dto/blog-post-detail.dto';
 import { BlogPostsListResponse } from './dto/blog-posts.list';
 import { BlogPostArgs } from './dto/blog-post.args';
 import { BlogPostsArgs } from './dto/blog-posts.args';
+import { BlogDeletedPostsArgs } from './dto/blog-deleted-posts.args';
 import { CreateBlogPostInput } from './dto/create-blog-post.input';
 import { UpdateBlogPostInput } from './dto/update-blog-post.input';
 import { BlogPublishedPostsArgs } from './dto/blog-published-posts.args';
@@ -36,6 +40,9 @@ export class BlogPostResolver {
     private readonly updateBlogPostUsecase: UpdateBlogPostUsecase,
     private readonly deleteBlogPostUsecase: DeleteBlogPostUsecase,
     private readonly publishBlogPostUsecase: PublishBlogPostUsecase,
+    private readonly restoreBlogPostUsecase: RestoreBlogPostUsecase,
+    private readonly permanentDeleteBlogPostUsecase: PermanentDeleteBlogPostUsecase,
+    private readonly listDeletedBlogPostsUsecase: ListDeletedBlogPostsUsecase,
   ) {}
 
   // ─── 公开查询 ───
@@ -163,5 +170,50 @@ export class BlogPostResolver {
   ): Promise<BlogPostDetailObjectType> {
     const { post } = await this.publishBlogPostUsecase.execute(id);
     return post;
+  }
+
+  // ─── 管理端回收站 ───
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Query(() => BlogPostsListResponse, { description: '查询已删除文章列表（回收站）' })
+  async blogDeletedPosts(@Args() args: BlogDeletedPostsArgs): Promise<BlogPostsListResponse> {
+    const result = await this.listDeletedBlogPostsUsecase.execute({
+      page: args.page,
+      pageSize: args.limit,
+      sortBy: args.sortBy,
+      sortOrder: args.sortOrder,
+      categoryId: args.categoryId,
+      title: args.title,
+    });
+    return {
+      list: [...result.items],
+      current: result.page ?? args.page,
+      pageSize: result.pageSize ?? args.limit,
+      total: result.total ?? 0,
+    };
+  }
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => BlogPostDetailObjectType, { description: '恢复已删除文章' })
+  async restoreBlogPost(
+    @Args('id', { type: () => Int, description: '文章 ID' }) id: number,
+  ): Promise<BlogPostDetailObjectType> {
+    const { post } = await this.restoreBlogPostUsecase.execute(id);
+    return post;
+  }
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => Boolean, { description: '永久删除文章' })
+  async permanentDeleteBlogPost(
+    @Args('id', { type: () => Int, description: '文章 ID' }) id: number,
+  ): Promise<boolean> {
+    const { deleted } = await this.permanentDeleteBlogPostUsecase.execute(id);
+    return deleted;
   }
 }

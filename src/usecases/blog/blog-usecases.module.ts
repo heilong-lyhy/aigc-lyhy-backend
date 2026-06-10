@@ -9,6 +9,9 @@ import { Module } from '@nestjs/common';
 import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.usecase';
 import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.usecase';
 import { DeleteBlogPostUsecase } from '@src/usecases/blog/delete-blog-post.usecase';
+import { RestoreBlogPostUsecase } from '@src/usecases/blog/restore-blog-post.usecase';
+import { PermanentDeleteBlogPostUsecase } from '@src/usecases/blog/permanent-delete-blog-post.usecase';
+import { ListDeletedBlogPostsUsecase } from '@src/usecases/blog/list-deleted-blog-posts.usecase';
 import { PublishBlogPostUsecase } from '@src/usecases/blog/publish-blog-post.usecase';
 import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-like.usecase';
 import { CreateBlogCategoryUsecase } from '@src/usecases/blog/create-blog-category.usecase';
@@ -56,6 +59,9 @@ import {
     CreateBlogPostUsecase,
     UpdateBlogPostUsecase,
     DeleteBlogPostUsecase,
+    RestoreBlogPostUsecase,
+    PermanentDeleteBlogPostUsecase,
+    ListDeletedBlogPostsUsecase,
     PublishBlogPostUsecase,
     ToggleBlogPostLikeUsecase,
     CreateBlogCategoryUsecase,
@@ -100,6 +106,9 @@ import {
     CreateBlogPostUsecase,
     UpdateBlogPostUsecase,
     DeleteBlogPostUsecase,
+    RestoreBlogPostUsecase,
+    PermanentDeleteBlogPostUsecase,
+    ListDeletedBlogPostsUsecase,
     PublishBlogPostUsecase,
     ToggleBlogPostLikeUsecase,
     CreateBlogCategoryUsecase,

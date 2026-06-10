@@ -17,8 +17,8 @@
 | 2.1 上一篇/下一篇 | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 基于 publishedAt + id 双排序，BlogPostDetailView 内置 prevPost/nextPost |
 | 2.2 友情链接功能 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | Entity/Service/QueryService/Usecase/Resolver 全链路；公开 blogFriendLinks + 管理 CRUD；增量 migration 1773930200000 |
 | 2.3 评论隐藏 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | is_hidden 布尔列；公开列表排除隐藏评论；hideBlogComment/unhideBlogComment mutation；增量 migration 1773930300000 |
-| 3.1 软删除/回收站 | 待开始 | 无 | | | 阻塞：前端 3.2 |
-| 3.2 Gravatar 头像 | 待开始 | 无 | | | 阻塞：前端 3.1 |
+| 3.1 软删除/回收站 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | restorePost/permanentDeletePost/listDeletedPosts 全链路；新增 POST_ALREADY_RESTORED 错误码 |
+| 3.2 Gravatar 头像 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | CravatarAvatarGeneratorAdapter 替换 GravatarAvatarGeneratorAdapter，DI 绑定已切换 |
 
 ## 风险登记
 

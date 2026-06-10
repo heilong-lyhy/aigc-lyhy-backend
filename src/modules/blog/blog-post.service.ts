@@ -176,6 +176,51 @@ export class BlogPostService {
     await repo.softRemove(entity);
   }
 
+  async restorePost(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostDetailView> {
+    const repo = this.getRepo(transactionContext);
+    // 需要包含软删除记录才能找到它
+    const entity = await repo
+      .createQueryBuilder('post')
+      .withDeleted()
+      .where('post.id = :id', { id })
+      .getOne();
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+    if (!entity.deletedAt) {
+      throw new DomainError(BLOG_ERROR.POST_ALREADY_RESTORED, '文章未被删除，无需恢复');
+    }
+    // 恢复文章：清除 deletedAt + 恢复 status 为 DRAFT
+    await repo.update(id, { deletedAt: null, status: BlogPostStatus.DRAFT });
+    return this.queryService.findPostById(id, transactionContext) as Promise<BlogPostDetailView>;
+  }
+
+  async permanentDeletePost(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getRepo(transactionContext);
+    // 需要包含软删除记录才能找到它
+    const entity = await repo
+      .createQueryBuilder('post')
+      .withDeleted()
+      .where('post.id = :id', { id })
+      .getOne();
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+    if (!entity.deletedAt) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_DELETED, '文章未被软删除，无法永久删除');
+    }
+    // 清理聚合内子实体：删除文章-标签关联
+    await this.postTagService.deleteByPostId(id, transactionContext);
+    // 永久删除（硬删），TypeORM 会执行 DELETE 而非 softRemove
+    await repo.delete(id);
+  }
+
   async incrementViewCount(
     id: number,
     transactionContext?: PersistenceTransactionContext,

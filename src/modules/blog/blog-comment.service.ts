@@ -145,6 +145,33 @@ export class BlogCommentService {
     await repo.update({ postId }, { status: BlogCommentStatus.SPAM });
   }
 
+  /**
+   * 永久删除指定文章下所有评论（硬删，用于文章永久删除时级联清理）
+   */
+  async permanentDeleteCommentsByPostId(
+    postId: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getCommentRepo(transactionContext);
+    await repo.delete({ postId });
+  }
+
+  /**
+   * 恢复指定文章下被标记为 SPAM 的评论为 PENDING 状态
+   * 用于文章从回收站恢复时的级联恢复，与 markCommentsHiddenByPostId 对称
+   * 恢复为 PENDING 而非 APPROVED，确保评论需要重新审核
+   */
+  async restoreCommentsByPostId(
+    postId: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const repo = this.getCommentRepo(transactionContext);
+    await repo.update(
+      { postId, status: BlogCommentStatus.SPAM },
+      { status: BlogCommentStatus.PENDING },
+    );
+  }
+
   async hideComment(
     id: number,
     transactionContext?: PersistenceTransactionContext,

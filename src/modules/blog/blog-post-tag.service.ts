@@ -48,6 +48,17 @@ export class BlogPostTagService {
     }
   }
 
+  /**
+   * 删除指定文章的所有标签关联（用于文章永久删除时清理）
+   */
+  async deleteByPostId(
+    postId: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<void> {
+    const ptRepo = this.getPostTagRepo(transactionContext);
+    await ptRepo.delete({ postId });
+  }
+
   // ─── 内部工具 ───
 
   private getPostTagRepo(

@@ -32,6 +32,7 @@ export interface BlogPostView {
   readonly commentCount: number;
   readonly isPinned: boolean;
   readonly publishedAt: Date | null;
+  readonly deletedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

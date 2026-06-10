@@ -45,6 +45,9 @@ export class BlogPostObjectType {
   @Field(() => Date, { description: '发布时间', nullable: true })
   publishedAt!: Date | null;
 
+  @Field(() => Date, { description: '删除时间', nullable: true })
+  deletedAt!: Date | null;
+
   @Field(() => Date, { description: '创建时间' })
   createdAt!: Date;
 

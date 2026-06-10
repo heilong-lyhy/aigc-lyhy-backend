@@ -3,7 +3,7 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GravatarAvatarGeneratorAdapter } from '@src/infrastructure/blog-storage/gravatar-avatar-generator.adapter';
+import { CravatarAvatarGeneratorAdapter } from '@src/infrastructure/blog-storage/cravatar-avatar-generator.adapter';
 import { LocalFileStorageAdapter } from '@src/infrastructure/blog-storage/local-file-storage.adapter';
 import { BlogUploadConfigProvider } from '@src/infrastructure/blog-storage/blog-upload-config.provider';
 import { BlogPostEntity } from './entities/blog-post.entity';
@@ -54,7 +54,7 @@ const BLOG_ENTITIES = [
 @Module({
   imports: [TypeOrmModule.forFeature(BLOG_ENTITIES)],
   providers: [
-    { provide: BLOG_AVATAR_GENERATOR_TOKEN, useClass: GravatarAvatarGeneratorAdapter },
+    { provide: BLOG_AVATAR_GENERATOR_TOKEN, useClass: CravatarAvatarGeneratorAdapter },
     { provide: BLOG_FILE_STORAGE_TOKEN, useClass: LocalFileStorageAdapter },
     { provide: BLOG_FILE_UPLOAD_CONFIG_TOKEN, useClass: BlogUploadConfigProvider },
     BlogPostService,

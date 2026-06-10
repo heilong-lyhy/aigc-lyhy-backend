@@ -93,6 +93,37 @@ export class BlogPostQueryService {
 
     const repo = this.getPostRepo(transactionContext);
     const entities = await repo.findBy({ id: In(ids) });
+    return this.mapEntitiesToViews(entities, ids, transactionContext);
+  }
+
+  /**
+   * 按 ID 批量查询已删除文章视图（含软删除记录，供回收站列表使用）
+   * 使用 withDeleted() 确保能查到 deletedAt 不为空的记录
+   */
+  async findDeletedPostsByIdsForViewMapping(
+    ids: number[],
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostView[]> {
+    if (ids.length === 0) return [];
+
+    const repo = this.getPostRepo(transactionContext);
+    const entities = await repo
+      .createQueryBuilder('post')
+      .withDeleted()
+      .where('post.id IN (:...ids)', { ids })
+      .getMany();
+    return this.mapEntitiesToViews(entities, ids, transactionContext);
+  }
+
+  /**
+   * 将实体列表映射为 BlogPostView 列表（共享 mapper，避免重复）
+   * 加载关联 category 名称，按 ids 顺序返回
+   */
+  private async mapEntitiesToViews(
+    entities: BlogPostEntity[],
+    ids: number[],
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogPostView[]> {
     if (entities.length === 0) return [];
 
     const categoryIds = [
@@ -120,6 +151,7 @@ export class BlogPostQueryService {
           commentCount: entity.commentCount,
           isPinned: entity.isPinned,
           publishedAt: entity.publishedAt,
+          deletedAt: entity.deletedAt,
           createdAt: entity.createdAt,
           updatedAt: entity.updatedAt,
         },
@@ -150,6 +182,22 @@ export class BlogPostQueryService {
         'EXISTS (SELECT 1 FROM blog_post_tag pt WHERE pt.post_id = post.id AND pt.tag_id = :tagId)',
         { tagId: params.tagId },
       );
+    }
+
+    return qb;
+  }
+
+  /**
+   * 创建已删除文章分页查询 QueryBuilder（管理端回收站，仅返回软删除文章）
+   */
+  createDeletedPostsQueryBuilder(params: BlogPostPaginationParams) {
+    const qb = this.postRepo.createQueryBuilder('post').where('post.deleted_at IS NOT NULL');
+
+    if (params.categoryId !== undefined) {
+      qb.andWhere('post.category_id = :categoryId', { categoryId: params.categoryId });
+    }
+    if (params.title !== undefined) {
+      qb.andWhere('post.title LIKE :title', { title: `%${params.title}%` });
     }
 
     return qb;
