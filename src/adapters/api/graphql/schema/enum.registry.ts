@@ -19,8 +19,7 @@ import {
 } from '@app-types/models/verification-record.types';
 import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { registerEnumType } from '@nestjs/graphql';
-import { GqlPaginationMode, GqlSortDirection } from '@src/adapters/api/graphql/pagination.enums';
-import { OrderDirection } from '@app-types/common/sort.types';
+import { GqlPaginationMode, GqlSortDirection } from '@adapters/api/graphql/pagination.enums';
 import {
   MagicItemCraftTaskQualityLevel,
   MagicItemCraftTaskStatus,
@@ -59,8 +58,6 @@ export function registerEnums(): { enums: string[] } {
   registeredEnums.push('VerificationRecordType');
   registerEnumType(CreatableVerificationRecordType, { name: 'CreatableVerificationRecordType' });
   registeredEnums.push('CreatableVerificationRecordType');
-  registerEnumType(OrderDirection, { name: 'OrderDirection' });
-  registeredEnums.push('OrderDirection');
   registerEnumType(GqlPaginationMode, { name: 'PaginationMode' });
   registeredEnums.push('PaginationMode');
   registerEnumType(GqlSortDirection, { name: 'SortDirection' });

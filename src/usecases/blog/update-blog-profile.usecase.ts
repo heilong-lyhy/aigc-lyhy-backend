@@ -5,14 +5,14 @@
 // 持有事务边界
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogProfileService } from '@src/modules/blog/blog-profile.service';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
+import { BlogProfileService } from '@modules/blog/blog-profile.service';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import type { BlogProfileView, UpdateBlogProfileInput } from '@src/modules/blog/blog.types';
+import type { BlogProfileView, UpdateBlogProfileInput } from '@modules/blog/blog.types';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UpdateBlogProfileResult {
   readonly profile: BlogProfileView;

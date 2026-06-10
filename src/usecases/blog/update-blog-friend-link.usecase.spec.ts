@@ -2,7 +2,7 @@
 // 更新友情链接用例单元测试
 
 import { UpdateBlogFriendLinkUsecase } from './update-blog-friend-link.usecase';
-import { BlogFriendLinkService } from '@src/modules/blog/blog-friend-link.service';
+import { BlogFriendLinkService } from '@modules/blog/blog-friend-link.service';
 import { DomainError } from '@core/common/errors/domain-error';
 
 describe('UpdateBlogFriendLinkUsecase', () => {

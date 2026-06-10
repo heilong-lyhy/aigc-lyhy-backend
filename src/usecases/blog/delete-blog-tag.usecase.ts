@@ -4,11 +4,11 @@
 // 存在性校验和文章关联校验由 BlogTagService.assertHasNoPostLinks 内部完成
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogTagService } from '@src/modules/blog/blog-tag.service';
+import { BlogTagService } from '@modules/blog/blog-tag.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface DeleteBlogTagResult {
   readonly deleted: boolean;

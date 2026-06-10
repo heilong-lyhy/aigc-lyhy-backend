@@ -4,8 +4,8 @@
 // 遵守 usecases -> usecases 同域编排（one hop deep）
 
 import { Injectable } from '@nestjs/common';
-import type { CreateBlogCommentInput, BlogCommentView } from '@src/modules/blog/blog.types';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
+import type { CreateBlogCommentInput, BlogCommentView } from '@modules/blog/blog.types';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
 import { CreateBlogCommentUsecase } from './create-blog-comment.usecase';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 

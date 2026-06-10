@@ -7,10 +7,10 @@ import { SkipThrottle } from '@nestjs/throttler';
 import {
   ListBlogFriendLinksUsecase,
   ListAllBlogFriendLinksUsecase,
-} from '@src/usecases/blog/blog-read.usecase';
-import { CreateBlogFriendLinkUsecase } from '@src/usecases/blog/create-blog-friend-link.usecase';
-import { UpdateBlogFriendLinkUsecase } from '@src/usecases/blog/update-blog-friend-link.usecase';
-import { DeleteBlogFriendLinkUsecase } from '@src/usecases/blog/delete-blog-friend-link.usecase';
+} from '@usecases/blog/blog-read.usecase';
+import { CreateBlogFriendLinkUsecase } from '@usecases/blog/create-blog-friend-link.usecase';
+import { UpdateBlogFriendLinkUsecase } from '@usecases/blog/update-blog-friend-link.usecase';
+import { DeleteBlogFriendLinkUsecase } from '@usecases/blog/delete-blog-friend-link.usecase';
 import { BlogFriendLinkObjectType } from './dto/blog-friend-link.dto';
 import { CreateBlogFriendLinkInput } from './dto/create-blog-friend-link.input';
 import { UpdateBlogFriendLinkInput } from './dto/update-blog-friend-link.input';

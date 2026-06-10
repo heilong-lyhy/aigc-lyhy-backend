@@ -4,11 +4,11 @@
 // 存在性校验和状态校验由 BlogPostService.publishPost 内部完成，usecase 不重复校验
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 import type { BlogPostWriteResult } from './blog.types';
 
 @Injectable()

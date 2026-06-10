@@ -4,13 +4,13 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
-import { CreateBlogCategoryUsecase } from '@src/usecases/blog/create-blog-category.usecase';
-import { UpdateBlogCategoryUsecase } from '@src/usecases/blog/update-blog-category.usecase';
-import { DeleteBlogCategoryUsecase } from '@src/usecases/blog/delete-blog-category.usecase';
+import { CreateBlogCategoryUsecase } from '@usecases/blog/create-blog-category.usecase';
+import { UpdateBlogCategoryUsecase } from '@usecases/blog/update-blog-category.usecase';
+import { DeleteBlogCategoryUsecase } from '@usecases/blog/delete-blog-category.usecase';
 import {
   ListBlogCategoriesUsecase,
   GetBlogCategoryTreeUsecase,
-} from '@src/usecases/blog/blog-read.usecase';
+} from '@usecases/blog/blog-read.usecase';
 import { BlogCategoryObjectType } from './dto/blog-category.dto';
 import { CreateBlogCategoryInput } from './dto/create-blog-category.input';
 import { UpdateBlogCategoryInput } from './dto/update-blog-category.input';

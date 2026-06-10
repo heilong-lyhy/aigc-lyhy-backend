@@ -2,7 +2,7 @@
 import { AccountStatus, IdentityTypeEnum } from '@app-types/models/account.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { AccountSecuritySubjectSnapshot } from '@src/modules/account/account.types';
+import type { AccountSecuritySubjectSnapshot } from '../../account.types';
 import { PinoLogger } from 'nestjs-pino';
 import { Repository } from 'typeorm';
 import { AccountEntity } from '../entities/account.entity';

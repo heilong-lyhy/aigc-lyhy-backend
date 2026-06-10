@@ -2,7 +2,7 @@
 // AvatarGenerator boundary contract 的实现：基于 Cravatar（cravatar.cn）的头像 URL 拼装
 // 国内访问稳定，替代 Gravatar
 
-import type { AvatarGenerator } from '@src/modules/blog/contracts/avatar-generator.contract';
+import type { AvatarGenerator } from '@modules/blog/contracts/avatar-generator.contract';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 

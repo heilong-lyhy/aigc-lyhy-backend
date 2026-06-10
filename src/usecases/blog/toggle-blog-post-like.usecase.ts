@@ -4,13 +4,13 @@
 // 返回点赞结果和当前点赞数
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogLikeService } from '@src/modules/blog/blog-like.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
+import { BlogLikeService } from '@modules/blog/blog-like.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@modules/blog/queries/blog-post.query.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface ToggleBlogPostLikeResult {
   readonly liked: boolean;

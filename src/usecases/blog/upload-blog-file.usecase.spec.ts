@@ -2,7 +2,7 @@
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogFileType } from '@app-types/models/blog.types';
-import { BlogFileService } from '@src/modules/blog/blog-file.service';
+import { BlogFileService } from '@modules/blog/blog-file.service';
 import { UploadBlogFileUsecase } from './upload-blog-file.usecase';
 
 describe('UploadBlogFileUsecase', () => {

@@ -4,7 +4,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
-import { GetBlogDashboardStatsUsecase } from '@src/usecases/blog/blog-read.usecase';
+import { GetBlogDashboardStatsUsecase } from '@usecases/blog/blog-read.usecase';
 import { BlogDashboardObjectType } from './dto/blog-dashboard.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';

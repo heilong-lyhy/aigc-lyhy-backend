@@ -4,15 +4,15 @@
 // XSS 清洗由 BlogCommentService.createComment 内部完成
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateBlogCommentInput, BlogCommentView } from '@src/modules/blog/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
-import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import type { CreateBlogCommentInput, BlogCommentView } from '@modules/blog/blog.types';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
+import { BlogPostQueryService } from '@modules/blog/queries/blog-post.query.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface CreateBlogCommentResult {
   readonly comment: BlogCommentView;

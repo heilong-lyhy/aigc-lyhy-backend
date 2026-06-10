@@ -1,8 +1,8 @@
 // src/usecases/blog/update-blog-profile.usecase.spec.ts
 
 import { DomainError } from '@core/common/errors/domain-error';
-import { BlogProfileService } from '@src/modules/blog/blog-profile.service';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
+import { BlogProfileService } from '@modules/blog/blog-profile.service';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
 import { UpdateBlogProfileUsecase } from './update-blog-profile.usecase';
 
 describe('UpdateBlogProfileUsecase', () => {

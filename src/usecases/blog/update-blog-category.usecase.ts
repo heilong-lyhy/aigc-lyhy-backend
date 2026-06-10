@@ -4,12 +4,12 @@
 // 存在性校验由 BlogCategoryService.updateCategory 内部完成，usecase 不重复校验
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UpdateBlogCategoryInput, BlogCategoryView } from '@src/modules/blog/blog.types';
-import { BlogCategoryService } from '@src/modules/blog/blog-category.service';
+import type { UpdateBlogCategoryInput, BlogCategoryView } from '@modules/blog/blog.types';
+import { BlogCategoryService } from '@modules/blog/blog-category.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UpdateBlogCategoryResult {
   readonly category: BlogCategoryView;

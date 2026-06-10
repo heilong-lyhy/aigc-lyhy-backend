@@ -1,9 +1,9 @@
 // src/usecases/blog/delete-blog-post.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
-import { BlogLikeService } from '@src/modules/blog/blog-like.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
+import { BlogLikeService } from '@modules/blog/blog-like.service';
 import { DeleteBlogPostUsecase } from './delete-blog-post.usecase';
 
 describe('DeleteBlogPostUsecase', () => {

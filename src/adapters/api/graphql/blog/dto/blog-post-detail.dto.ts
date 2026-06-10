@@ -49,6 +49,9 @@ export class BlogPostDetailObjectType {
   @Field(() => String, { description: '分类名称', nullable: true })
   categoryName!: string | null;
 
+  @Field(() => [Int], { description: '标签 ID 列表' })
+  tagIds!: readonly number[];
+
   @Field(() => [BlogTagObjectType], { description: '标签列表' })
   tags!: BlogTagObjectType[];
 

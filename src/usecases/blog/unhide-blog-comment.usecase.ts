@@ -3,12 +3,12 @@
 // 单聚合写入（评论），持有事务边界
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { BlogCommentView } from '@src/modules/blog/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import type { BlogCommentView } from '@modules/blog/blog.types';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UnhideBlogCommentResult {
   readonly comment: BlogCommentView;

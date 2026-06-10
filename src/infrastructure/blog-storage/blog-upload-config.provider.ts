@@ -2,7 +2,7 @@
 // BlogFileUploadConfig boundary contract 的 infrastructure 实现
 // 从 ConfigService 读取配置，通过 DI 注入到 modules 层
 
-import type { BlogFileUploadConfig } from '@src/modules/blog/contracts/file-storage.contract';
+import type { BlogFileUploadConfig } from '@modules/blog/contracts/file-storage.contract';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 

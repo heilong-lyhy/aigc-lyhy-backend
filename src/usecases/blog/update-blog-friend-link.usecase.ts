@@ -2,12 +2,12 @@
 // 更新友情链接用例：持有事务边界，通过 TransactionRunner 开启事务
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UpdateBlogFriendLinkInput, BlogFriendLinkView } from '@src/modules/blog/blog.types';
-import { BlogFriendLinkService } from '@src/modules/blog/blog-friend-link.service';
+import type { UpdateBlogFriendLinkInput, BlogFriendLinkView } from '@modules/blog/blog.types';
+import { BlogFriendLinkService } from '@modules/blog/blog-friend-link.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UpdateBlogFriendLinkResult {
   readonly friendLink: BlogFriendLinkView;

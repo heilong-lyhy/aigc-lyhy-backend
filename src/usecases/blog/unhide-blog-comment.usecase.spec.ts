@@ -1,7 +1,7 @@
 // src/usecases/blog/unhide-blog-comment.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
 import { UnhideBlogCommentUsecase } from './unhide-blog-comment.usecase';
 
 describe('UnhideBlogCommentUsecase', () => {

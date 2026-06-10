@@ -4,7 +4,7 @@
 import type {
   FileStorageAdapter,
   SaveFileInput,
-} from '@src/modules/blog/contracts/file-storage.contract';
+} from '@modules/blog/contracts/file-storage.contract';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

@@ -1,7 +1,7 @@
 // src/usecases/blog/delete-blog-tag.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogTagService } from '@src/modules/blog/blog-tag.service';
+import { BlogTagService } from '@modules/blog/blog-tag.service';
 import { DeleteBlogTagUsecase } from './delete-blog-tag.usecase';
 
 describe('DeleteBlogTagUsecase', () => {

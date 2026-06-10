@@ -4,11 +4,11 @@
 // 物理文件删除失败不影响数据库软删除状态，孤儿文件可通过定期清理任务处理
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogFileService } from '@src/modules/blog/blog-file.service';
+import { BlogFileService } from '@modules/blog/blog-file.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 @Injectable()
 export class DeleteBlogFileUsecase {

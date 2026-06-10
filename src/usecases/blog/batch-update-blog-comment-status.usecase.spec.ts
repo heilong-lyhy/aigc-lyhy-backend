@@ -1,7 +1,7 @@
 // src/usecases/blog/batch-update-blog-comment-status.usecase.spec.ts
 
 import { BlogCommentStatus } from '@app-types/models/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
 import { BatchUpdateBlogCommentStatusUsecase } from './batch-update-blog-comment-status.usecase';
 
 describe('BatchUpdateBlogCommentStatusUsecase', () => {

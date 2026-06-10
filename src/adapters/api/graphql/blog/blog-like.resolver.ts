@@ -3,8 +3,8 @@
 
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Throttle } from '@nestjs/throttler';
-import { ToggleBlogPostLikeUsecase } from '@src/usecases/blog/toggle-blog-post-like.usecase';
-import { HasLikedBlogPostUsecase } from '@src/usecases/blog/blog-read.usecase';
+import { ToggleBlogPostLikeUsecase } from '@usecases/blog/toggle-blog-post-like.usecase';
+import { HasLikedBlogPostUsecase } from '@usecases/blog/blog-read.usecase';
 
 @Resolver()
 export class BlogLikeResolver {

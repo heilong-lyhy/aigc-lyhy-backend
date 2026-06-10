@@ -1,7 +1,7 @@
 // src/usecases/blog/change-blog-admin-password.usecase.spec.ts
 
 import { ACCOUNT_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { AccountService } from '@src/modules/account/base/services/account.service';
+import { AccountService } from '@modules/account/base/services/account.service';
 import { ChangeBlogAdminPasswordUsecase } from './change-blog-admin-password.usecase';
 
 describe('ChangeBlogAdminPasswordUsecase', () => {

@@ -4,12 +4,12 @@
 
 import { Injectable } from '@nestjs/common';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
-import type { BlogPostView } from '@src/modules/blog/blog.types';
+import type { BlogPostView } from '@modules/blog/blog.types';
 import {
   BlogPostQueryService,
   type BlogPostPaginationParams,
-} from '@src/modules/blog/queries/blog-post.query.service';
-import { PaginationService } from '@src/modules/common/pagination.service';
+} from '@modules/blog/queries/blog-post.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 
 @Injectable()
 export class ListDeletedBlogPostsUsecase {

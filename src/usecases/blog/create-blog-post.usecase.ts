@@ -4,12 +4,12 @@
 // 通过 BlogPostService（聚合根入口）编排子实体写入，不直接调 BlogPostTagService
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateBlogPostInput } from '@src/modules/blog/blog.types';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import type { CreateBlogPostInput } from '@modules/blog/blog.types';
+import { BlogPostService } from '@modules/blog/blog-post.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 import type { BlogPostWriteResult } from './blog.types';
 
 @Injectable()

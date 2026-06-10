@@ -1,7 +1,7 @@
 // src/usecases/blog/delete-blog-file.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogFileService } from '@src/modules/blog/blog-file.service';
+import { BlogFileService } from '@modules/blog/blog-file.service';
 import { DeleteBlogFileUsecase } from './delete-blog-file.usecase';
 
 describe('DeleteBlogFileUsecase', () => {

@@ -8,8 +8,8 @@
 // - 不采用"先入库再存物理文件"策略，因为 DB 记录指向不存在的物理文件比孤儿文件更严重
 
 import { Injectable } from '@nestjs/common';
-import { BlogFileService } from '@src/modules/blog/blog-file.service';
-import type { BlogFileView, UploadBlogFileInput } from '@src/modules/blog/blog.types';
+import { BlogFileService } from '@modules/blog/blog-file.service';
+import type { BlogFileView, UploadBlogFileInput } from '@modules/blog/blog.types';
 
 export interface UploadBlogFileResult {
   readonly file: BlogFileView;

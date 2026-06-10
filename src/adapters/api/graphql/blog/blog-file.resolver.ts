@@ -4,9 +4,9 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
-import { UploadBlogFileUsecase } from '@src/usecases/blog/upload-blog-file.usecase';
-import { DeleteBlogFileUsecase } from '@src/usecases/blog/delete-blog-file.usecase';
-import { ListBlogFilesUsecase } from '@src/usecases/blog/blog-read.usecase';
+import { UploadBlogFileUsecase } from '@usecases/blog/upload-blog-file.usecase';
+import { DeleteBlogFileUsecase } from '@usecases/blog/delete-blog-file.usecase';
+import { ListBlogFilesUsecase } from '@usecases/blog/blog-read.usecase';
 import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileObjectType } from './dto/blog-file.dto';
 import { BlogFilesListResponse } from './dto/blog-files.list';

@@ -1,7 +1,7 @@
 // src/adapters/api/graphql/blog/blog-graphql-adapter.module.ts
 // 博客 GraphQL 适配器模块：注册所有 blog resolvers，导入 BlogUsecasesModule
 
-import { BlogUsecasesModule } from '@src/usecases/blog/blog-usecases.module';
+import { BlogUsecasesModule } from '@usecases/blog/blog-usecases.module';
 import { Module } from '@nestjs/common';
 import { BlogPostResolver } from './blog-post.resolver';
 import { BlogCategoryResolver } from './blog-category.resolver';

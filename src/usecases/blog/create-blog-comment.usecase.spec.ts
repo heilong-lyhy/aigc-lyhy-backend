@@ -2,9 +2,9 @@
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@modules/blog/queries/blog-post.query.service';
 import { CreateBlogCommentUsecase } from './create-blog-comment.usecase';
 
 describe('CreateBlogCommentUsecase', () => {

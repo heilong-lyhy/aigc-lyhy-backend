@@ -4,13 +4,13 @@
 // 存在性校验由 BlogPostService.softDeletePost 内部完成，usecase 不重复校验
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
-import { BlogLikeService } from '@src/modules/blog/blog-like.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
+import { BlogLikeService } from '@modules/blog/blog-like.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface DeleteBlogPostResult {
   readonly deleted: boolean;

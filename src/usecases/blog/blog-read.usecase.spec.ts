@@ -19,17 +19,17 @@ import {
   ListBlogFriendLinksUsecase,
   ListAllBlogFriendLinksUsecase,
 } from './blog-read.usecase';
-import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogCategoryQueryService } from '@src/modules/blog/queries/blog-category.query.service';
-import { BlogTagQueryService } from '@src/modules/blog/queries/blog-tag.query.service';
-import { BlogCommentQueryService } from '@src/modules/blog/queries/blog-comment.query.service';
-import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.service';
-import { BlogFileQueryService } from '@src/modules/blog/queries/blog-file.query.service';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
-import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
-import { BlogFriendLinkQueryService } from '@src/modules/blog/queries/blog-friend-link.query.service';
-import { PaginationService } from '@src/modules/common/pagination.service';
+import { BlogPostQueryService } from '@modules/blog/queries/blog-post.query.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogCategoryQueryService } from '@modules/blog/queries/blog-category.query.service';
+import { BlogTagQueryService } from '@modules/blog/queries/blog-tag.query.service';
+import { BlogCommentQueryService } from '@modules/blog/queries/blog-comment.query.service';
+import { BlogLikeQueryService } from '@modules/blog/queries/blog-like.query.service';
+import { BlogFileQueryService } from '@modules/blog/queries/blog-file.query.service';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
+import { BlogDashboardQueryService } from '@modules/blog/queries/blog-dashboard.query.service';
+import { BlogFriendLinkQueryService } from '@modules/blog/queries/blog-friend-link.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 
 // ─── GetBlogPostByIdUsecase ───
 

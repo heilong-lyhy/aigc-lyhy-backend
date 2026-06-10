@@ -4,12 +4,12 @@
 // 存在性校验由 BlogTagService.updateTag 内部完成，usecase 不重复校验
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UpdateBlogTagInput, BlogTagView } from '@src/modules/blog/blog.types';
-import { BlogTagService } from '@src/modules/blog/blog-tag.service';
+import type { UpdateBlogTagInput, BlogTagView } from '@modules/blog/blog.types';
+import { BlogTagService } from '@modules/blog/blog-tag.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UpdateBlogTagResult {
   readonly tag: BlogTagView;

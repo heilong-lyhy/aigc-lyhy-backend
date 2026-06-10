@@ -1,7 +1,7 @@
 // src/usecases/blog/create-blog-tag.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogTagService } from '@src/modules/blog/blog-tag.service';
+import { BlogTagService } from '@modules/blog/blog-tag.service';
 import { CreateBlogTagUsecase } from './create-blog-tag.usecase';
 
 describe('CreateBlogTagUsecase', () => {

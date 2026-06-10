@@ -4,12 +4,12 @@
 // 存在性校验由 BlogCommentService.updateCommentStatus 内部完成
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UpdateBlogCommentStatusInput, BlogCommentView } from '@src/modules/blog/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import type { UpdateBlogCommentStatusInput, BlogCommentView } from '@modules/blog/blog.types';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface UpdateBlogCommentStatusResult {
   readonly comment: BlogCommentView;

@@ -3,12 +3,12 @@
 // 持有事务边界，通过 TransactionRunner 开启事务
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateBlogCategoryInput, BlogCategoryView } from '@src/modules/blog/blog.types';
-import { BlogCategoryService } from '@src/modules/blog/blog-category.service';
+import type { CreateBlogCategoryInput, BlogCategoryView } from '@modules/blog/blog.types';
+import { BlogCategoryService } from '@modules/blog/blog-category.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface CreateBlogCategoryResult {
   readonly category: BlogCategoryView;

@@ -1,9 +1,9 @@
 // src/usecases/blog/toggle-blog-post-like.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogLikeService } from '@src/modules/blog/blog-like.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
+import { BlogLikeService } from '@modules/blog/blog-like.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogPostQueryService } from '@modules/blog/queries/blog-post.query.service';
 import { ToggleBlogPostLikeUsecase } from './toggle-blog-post-like.usecase';
 
 describe('ToggleBlogPostLikeUsecase', () => {

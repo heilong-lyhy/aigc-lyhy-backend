@@ -3,12 +3,12 @@
 // 持有事务边界，通过 TransactionRunner 开启事务
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateBlogTagInput, BlogTagView } from '@src/modules/blog/blog.types';
-import { BlogTagService } from '@src/modules/blog/blog-tag.service';
+import type { CreateBlogTagInput, BlogTagView } from '@modules/blog/blog.types';
+import { BlogTagService } from '@modules/blog/blog-tag.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface CreateBlogTagResult {
   readonly tag: BlogTagView;

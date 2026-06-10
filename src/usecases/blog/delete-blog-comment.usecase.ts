@@ -4,12 +4,12 @@
 // 存在性校验由 BlogCommentService.softDeleteComment 内部完成，返回 postId 供计数更新
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface DeleteBlogCommentResult {
   readonly deleted: boolean;

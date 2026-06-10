@@ -4,11 +4,11 @@
 // 存在性校验和文章关联校验由 BlogCategoryService.assertHasNoPosts 内部完成
 
 import { Inject, Injectable } from '@nestjs/common';
-import { BlogCategoryService } from '@src/modules/blog/blog-category.service';
+import { BlogCategoryService } from '@modules/blog/blog-category.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface DeleteBlogCategoryResult {
   readonly deleted: boolean;

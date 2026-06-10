@@ -10,6 +10,7 @@ import { getTypeOrmEntityManager } from '@src/infrastructure/database/transactio
 import { In, Repository } from 'typeorm';
 import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.types';
 import { BlogPostEntity } from '../entities/blog-post.entity';
+import { BlogPostTagEntity } from '../entities/blog-post-tag.entity';
 import { BlogCategoryQueryService } from './blog-category.query.service';
 import { BlogTagQueryService } from './blog-tag.query.service';
 
@@ -29,6 +30,8 @@ export class BlogPostQueryService {
   constructor(
     @InjectRepository(BlogPostEntity)
     private readonly postRepo: Repository<BlogPostEntity>,
+    @InjectRepository(BlogPostTagEntity)
+    private readonly postTagRepo: Repository<BlogPostTagEntity>,
     @Inject(forwardRef(() => BlogCategoryQueryService))
     private readonly categoryQueryService: BlogCategoryQueryService,
     private readonly tagQueryService: BlogTagQueryService,
@@ -134,6 +137,18 @@ export class BlogPostQueryService {
       transactionContext,
     );
 
+    // 批量查询文章-标签关联
+    const postIds = entities.map((e) => e.id);
+    const postTags = await this.postTagRepo.find({
+      where: { postId: In(postIds) },
+    });
+    const tagIdsMap = new Map<number, number[]>();
+    for (const pt of postTags) {
+      const arr = tagIdsMap.get(pt.postId) ?? [];
+      arr.push(pt.tagId);
+      tagIdsMap.set(pt.postId, arr);
+    }
+
     const viewMap = new Map<number, BlogPostView>(
       entities.map((entity) => [
         entity.id,
@@ -146,6 +161,7 @@ export class BlogPostQueryService {
           status: entity.status,
           categoryId: entity.categoryId,
           categoryName: entity.categoryId ? (categoryMap[entity.categoryId] ?? null) : null,
+          tagIds: tagIdsMap.get(entity.id) ?? [],
           viewCount: entity.viewCount,
           likeCount: entity.likeCount,
           commentCount: entity.commentCount,
@@ -291,6 +307,7 @@ export class BlogPostQueryService {
       status: entity.status,
       categoryId: entity.categoryId,
       categoryName,
+      tagIds: tags.map((t) => t.id),
       tags,
       viewCount: entity.viewCount,
       likeCount: entity.likeCount,

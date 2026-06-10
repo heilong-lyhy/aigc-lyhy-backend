@@ -8,24 +8,24 @@ import { BlogPostStatus } from '@app-types/models/blog.types';
 import {
   BlogPostQueryService,
   type BlogPostPaginationParams,
-} from '@src/modules/blog/queries/blog-post.query.service';
-import { BlogPostService } from '@src/modules/blog/blog-post.service';
-import { BlogCategoryQueryService } from '@src/modules/blog/queries/blog-category.query.service';
-import { BlogTagQueryService } from '@src/modules/blog/queries/blog-tag.query.service';
+} from '@modules/blog/queries/blog-post.query.service';
+import { BlogPostService } from '@modules/blog/blog-post.service';
+import { BlogCategoryQueryService } from '@modules/blog/queries/blog-category.query.service';
+import { BlogTagQueryService } from '@modules/blog/queries/blog-tag.query.service';
 import {
   BlogCommentQueryService,
   type BlogCommentPaginationParams,
   type BlogCommentByPostPaginationParams,
-} from '@src/modules/blog/queries/blog-comment.query.service';
-import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.service';
+} from '@modules/blog/queries/blog-comment.query.service';
+import { BlogLikeQueryService } from '@modules/blog/queries/blog-like.query.service';
 import {
   BlogFileQueryService,
   type BlogFilePaginationParams,
-} from '@src/modules/blog/queries/blog-file.query.service';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
-import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
-import { BlogFriendLinkQueryService } from '@src/modules/blog/queries/blog-friend-link.query.service';
-import { PaginationService } from '@src/modules/common/pagination.service';
+} from '@modules/blog/queries/blog-file.query.service';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
+import { BlogDashboardQueryService } from '@modules/blog/queries/blog-dashboard.query.service';
+import { BlogFriendLinkQueryService } from '@modules/blog/queries/blog-friend-link.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 import type {
   BlogPostView,
   BlogPostDetailView,
@@ -37,13 +37,14 @@ import type {
   BlogProfileView,
   BlogDashboardView,
   BlogFriendLinkView,
-} from '@src/modules/blog/blog.types';
+} from '@modules/blog/blog.types';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 
 // ─── 文章读 ───
 
 /** 文章分页排序字段 → 数据库列名映射 */
 const POST_SORT_COLUMN_MAP: Record<string, string> = {
+  isPinned: 'post.is_pinned',
   createdAt: 'post.created_at',
   publishedAt: 'post.published_at',
   viewCount: 'post.view_count',
@@ -51,8 +52,11 @@ const POST_SORT_COLUMN_MAP: Record<string, string> = {
   title: 'post.title',
 };
 
-const POST_ALLOWED_SORTS = ['createdAt', 'publishedAt', 'viewCount', 'likeCount', 'title'];
-const POST_DEFAULT_SORTS = [{ field: 'createdAt', direction: 'DESC' as const }];
+const POST_ALLOWED_SORTS = ['isPinned', 'createdAt', 'publishedAt', 'viewCount', 'likeCount', 'title'];
+const POST_DEFAULT_SORTS = [
+  { field: 'isPinned', direction: 'DESC' as const },
+  { field: 'createdAt', direction: 'DESC' as const },
+];
 
 @Injectable()
 export class GetBlogPostByIdUsecase {
@@ -111,6 +115,14 @@ export class ListBlogPostsUsecase {
   async execute(params: BlogPostPaginationParams): Promise<PaginatedResult<BlogPostView>> {
     const qb = this.postQueryService.createPostQueryBuilder(params);
 
+    // 置顶始终为最高优先级排序，用户指定排序字段时前置 isPinned DESC
+    // 当用户显式按 isPinned 排序时，直接使用用户排序，避免重复字段
+    const userSort = params.sortBy
+      ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' as const }]
+      : [{ field: 'createdAt', direction: 'DESC' as const }];
+    const sorts: ReadonlyArray<{ field: string; direction: 'ASC' | 'DESC' }> =
+      params.sortBy === 'isPinned' ? userSort : [{ field: 'isPinned', direction: 'DESC' }, ...userSort];
+
     const result = await this.paginationService.paginateQuery({
       qb,
       params: {
@@ -118,9 +130,7 @@ export class ListBlogPostsUsecase {
         page: params.page,
         pageSize: params.pageSize,
         withTotal: true,
-        sorts: params.sortBy
-          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
-          : [{ field: 'createdAt', direction: 'DESC' }],
+        sorts,
       },
       allowedSorts: POST_ALLOWED_SORTS,
       defaultSorts: POST_DEFAULT_SORTS,

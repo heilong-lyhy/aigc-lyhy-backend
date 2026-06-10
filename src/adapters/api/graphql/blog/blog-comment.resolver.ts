@@ -4,17 +4,17 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
-import { CreateBlogCommentUsecase } from '@src/usecases/blog/create-blog-comment.usecase';
-import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-comment-status.usecase';
-import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
-import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
-import { ReplyBlogCommentUsecase } from '@src/usecases/blog/reply-blog-comment.usecase';
-import { HideBlogCommentUsecase } from '@src/usecases/blog/hide-blog-comment.usecase';
-import { UnhideBlogCommentUsecase } from '@src/usecases/blog/unhide-blog-comment.usecase';
+import { CreateBlogCommentUsecase } from '@usecases/blog/create-blog-comment.usecase';
+import { UpdateBlogCommentStatusUsecase } from '@usecases/blog/update-blog-comment-status.usecase';
+import { BatchUpdateBlogCommentStatusUsecase } from '@usecases/blog/batch-update-blog-comment-status.usecase';
+import { DeleteBlogCommentUsecase } from '@usecases/blog/delete-blog-comment.usecase';
+import { ReplyBlogCommentUsecase } from '@usecases/blog/reply-blog-comment.usecase';
+import { HideBlogCommentUsecase } from '@usecases/blog/hide-blog-comment.usecase';
+import { UnhideBlogCommentUsecase } from '@usecases/blog/unhide-blog-comment.usecase';
 import {
   ListBlogCommentsUsecase,
   ListBlogCommentsByPostUsecase,
-} from '@src/usecases/blog/blog-read.usecase';
+} from '@usecases/blog/blog-read.usecase';
 import { BlogCommentObjectType } from './dto/blog-comment.dto';
 import { BlogCommentsListResponse } from './dto/blog-comments.list';
 import { BlogCommentsArgs } from './dto/blog-comments.args';

@@ -2,7 +2,7 @@
 // 创建友情链接用例单元测试
 
 import { CreateBlogFriendLinkUsecase } from './create-blog-friend-link.usecase';
-import { BlogFriendLinkService } from '@src/modules/blog/blog-friend-link.service';
+import { BlogFriendLinkService } from '@modules/blog/blog-friend-link.service';
 
 describe('CreateBlogFriendLinkUsecase', () => {
   let usecase: CreateBlogFriendLinkUsecase;

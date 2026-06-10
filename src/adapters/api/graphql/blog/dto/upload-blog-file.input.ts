@@ -4,7 +4,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { IsEnum, IsOptional } from 'class-validator';
 import { BlogFileType } from '@app-types/models/blog.types';
-import { GraphQLUpload } from '@src/adapters/api/graphql/schema/upload.scalar';
+import { GraphQLUpload } from '@adapters/api/graphql/schema/upload.scalar';
 import type { FileUpload } from 'graphql-upload/processRequest.mjs';
 
 @InputType({ description: '文件上传输入' })

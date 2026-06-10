@@ -3,10 +3,10 @@
 
 import { ReplyBlogCommentUsecase } from './reply-blog-comment.usecase';
 import { CreateBlogCommentUsecase } from './create-blog-comment.usecase';
-import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
+import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { DomainError } from '@core/common/errors/domain-error';
-import type { BlogCommentView } from '@src/modules/blog/blog.types';
+import type { BlogCommentView } from '@modules/blog/blog.types';
 
 describe('ReplyBlogCommentUsecase', () => {
   let usecase: ReplyBlogCommentUsecase;

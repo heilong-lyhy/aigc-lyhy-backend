@@ -4,12 +4,12 @@
 // 持有事务边界
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { BatchUpdateBlogCommentStatusInput } from '@src/modules/blog/blog.types';
-import { BlogCommentService } from '@src/modules/blog/blog-comment.service';
+import type { BatchUpdateBlogCommentStatusInput } from '@modules/blog/blog.types';
+import { BlogCommentService } from '@modules/blog/blog-comment.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface BatchUpdateBlogCommentStatusResult {
   readonly updatedCount: number;

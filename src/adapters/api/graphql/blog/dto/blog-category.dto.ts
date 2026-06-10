@@ -26,6 +26,9 @@ export class BlogCategoryObjectType {
   @Field(() => Int, { description: '文章数' })
   postCount!: number;
 
+  @Field(() => [BlogCategoryObjectType], { description: '子分类列表', nullable: true })
+  children?: BlogCategoryObjectType[] | null;
+
   @Field(() => Date, { description: '创建时间' })
   createdAt!: Date;
 

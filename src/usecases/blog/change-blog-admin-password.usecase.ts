@@ -8,11 +8,11 @@
 // 不重复实现哈希策略，完全复用 Account 域已有能力
 
 import { Inject, Injectable } from '@nestjs/common';
-import { AccountService } from '@src/modules/account/base/services/account.service';
+import { AccountService } from '@modules/account/base/services/account.service';
 import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
-} from '@src/usecases/common/ports/transaction-runner.contract';
+} from '@usecases/common/ports/transaction-runner.contract';
 
 export interface ChangeBlogAdminPasswordInput {
   readonly accountId: number;

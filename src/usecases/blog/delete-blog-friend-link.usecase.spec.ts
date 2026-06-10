@@ -2,7 +2,7 @@
 // 删除友情链接用例单元测试
 
 import { DeleteBlogFriendLinkUsecase } from './delete-blog-friend-link.usecase';
-import { BlogFriendLinkService } from '@src/modules/blog/blog-friend-link.service';
+import { BlogFriendLinkService } from '@modules/blog/blog-friend-link.service';
 import { DomainError } from '@core/common/errors/domain-error';
 
 describe('DeleteBlogFriendLinkUsecase', () => {

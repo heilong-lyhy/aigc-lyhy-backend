@@ -1,7 +1,7 @@
 // src/usecases/blog/delete-blog-category.usecase.spec.ts
 
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { BlogCategoryService } from '@src/modules/blog/blog-category.service';
+import { BlogCategoryService } from '@modules/blog/blog-category.service';
 import { DeleteBlogCategoryUsecase } from './delete-blog-category.usecase';
 
 describe('DeleteBlogCategoryUsecase', () => {

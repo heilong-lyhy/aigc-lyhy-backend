@@ -3,7 +3,7 @@
 
 import { ArgsType, Field, Int } from '@nestjs/graphql';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { GqlSortDirection } from '@src/adapters/api/graphql/pagination.enums';
+import { GqlSortDirection } from '@adapters/api/graphql/pagination.enums';
 
 @ArgsType()
 export class BlogPaginationArgs {

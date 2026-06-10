@@ -27,6 +27,7 @@ export interface BlogPostView {
   readonly status: BlogPostStatus;
   readonly categoryId: number | null;
   readonly categoryName: string | null;
+  readonly tagIds: readonly number[];
   readonly viewCount: number;
   readonly likeCount: number;
   readonly commentCount: number;
@@ -56,6 +57,7 @@ export interface BlogPostDetailView {
   readonly status: BlogPostStatus;
   readonly categoryId: number | null;
   readonly categoryName: string | null;
+  readonly tagIds: readonly number[];
   readonly tags: BlogTagView[];
   readonly viewCount: number;
   readonly likeCount: number;

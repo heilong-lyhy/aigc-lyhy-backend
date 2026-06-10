@@ -4,19 +4,19 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
-import { CreateBlogPostUsecase } from '@src/usecases/blog/create-blog-post.usecase';
-import { UpdateBlogPostUsecase } from '@src/usecases/blog/update-blog-post.usecase';
-import { DeleteBlogPostUsecase } from '@src/usecases/blog/delete-blog-post.usecase';
-import { PublishBlogPostUsecase } from '@src/usecases/blog/publish-blog-post.usecase';
-import { RestoreBlogPostUsecase } from '@src/usecases/blog/restore-blog-post.usecase';
-import { PermanentDeleteBlogPostUsecase } from '@src/usecases/blog/permanent-delete-blog-post.usecase';
-import { ListDeletedBlogPostsUsecase } from '@src/usecases/blog/list-deleted-blog-posts.usecase';
+import { CreateBlogPostUsecase } from '@usecases/blog/create-blog-post.usecase';
+import { UpdateBlogPostUsecase } from '@usecases/blog/update-blog-post.usecase';
+import { DeleteBlogPostUsecase } from '@usecases/blog/delete-blog-post.usecase';
+import { PublishBlogPostUsecase } from '@usecases/blog/publish-blog-post.usecase';
+import { RestoreBlogPostUsecase } from '@usecases/blog/restore-blog-post.usecase';
+import { PermanentDeleteBlogPostUsecase } from '@usecases/blog/permanent-delete-blog-post.usecase';
+import { ListDeletedBlogPostsUsecase } from '@usecases/blog/list-deleted-blog-posts.usecase';
 import {
   GetBlogPostByIdUsecase,
   GetBlogPostBySlugUsecase,
   ListBlogPostsUsecase,
   ListBlogPublishedPostsUsecase,
-} from '@src/usecases/blog/blog-read.usecase';
+} from '@usecases/blog/blog-read.usecase';
 import { BlogPostDetailObjectType } from './dto/blog-post-detail.dto';
 import { BlogPostsListResponse } from './dto/blog-posts.list';
 import { BlogPostArgs } from './dto/blog-post.args';

@@ -4,10 +4,10 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
-import { CreateBlogTagUsecase } from '@src/usecases/blog/create-blog-tag.usecase';
-import { DeleteBlogTagUsecase } from '@src/usecases/blog/delete-blog-tag.usecase';
-import { UpdateBlogTagUsecase } from '@src/usecases/blog/update-blog-tag.usecase';
-import { ListBlogTagsUsecase } from '@src/usecases/blog/blog-read.usecase';
+import { CreateBlogTagUsecase } from '@usecases/blog/create-blog-tag.usecase';
+import { DeleteBlogTagUsecase } from '@usecases/blog/delete-blog-tag.usecase';
+import { UpdateBlogTagUsecase } from '@usecases/blog/update-blog-tag.usecase';
+import { ListBlogTagsUsecase } from '@usecases/blog/blog-read.usecase';
 import { BlogTagObjectType } from './dto/blog-tag.dto';
 import { UpdateBlogTagInput } from './dto/update-blog-tag.input';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
