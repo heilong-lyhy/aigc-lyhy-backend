@@ -132,6 +132,10 @@ export class BlogCommentService {
   /**
    * 将指定文章下所有评论标记为不可见（SPAM 状态）
    * 用于文章删除时的级联处理，不硬删评论
+   *
+   * 注意：此方法修改的是 status 字段（置为 SPAM），与 hideComment/unhideComment
+   * 修改的 isHidden 字段是独立的两个维度。status=SPAM 表示内容违规/不可展示，
+   * isHidden=true 表示管理员手动隐藏。两者均可使评论在公开列表中不可见。
    */
   async markCommentsHiddenByPostId(
     postId: number,
@@ -139,6 +143,32 @@ export class BlogCommentService {
   ): Promise<void> {
     const repo = this.getCommentRepo(transactionContext);
     await repo.update({ postId }, { status: BlogCommentStatus.SPAM });
+  }
+
+  async hideComment(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogCommentView> {
+    const repo = this.getCommentRepo(transactionContext);
+    const entity = await repo.findOne({ where: { id } });
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '评论不存在');
+    }
+    await repo.update(id, { isHidden: true });
+    return this.queryService.findCommentById(id, transactionContext) as Promise<BlogCommentView>;
+  }
+
+  async unhideComment(
+    id: number,
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<BlogCommentView> {
+    const repo = this.getCommentRepo(transactionContext);
+    const entity = await repo.findOne({ where: { id } });
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '评论不存在');
+    }
+    await repo.update(id, { isHidden: false });
+    return this.queryService.findCommentById(id, transactionContext) as Promise<BlogCommentView>;
   }
 
   // ─── 内部工具 ───

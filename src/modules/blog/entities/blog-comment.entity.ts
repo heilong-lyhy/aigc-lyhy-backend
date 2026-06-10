@@ -92,6 +92,14 @@ export class BlogCommentEntity {
   })
   isAdminReply!: boolean;
 
+  @Column({
+    name: 'is_hidden',
+    type: 'boolean',
+    default: false,
+    comment: '是否隐藏（违规下架但保留记录）',
+  })
+  isHidden!: boolean;
+
   @DeleteDateColumn({
     name: 'deleted_at',
     type: 'timestamp',

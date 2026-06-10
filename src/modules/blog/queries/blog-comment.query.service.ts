@@ -68,7 +68,8 @@ export class BlogCommentQueryService {
     return this.commentRepo
       .createQueryBuilder('comment')
       .where('comment.post_id = :postId', { postId: params.postId })
-      .andWhere('comment.status = :status', { status: BlogCommentStatus.APPROVED });
+      .andWhere('comment.status = :status', { status: BlogCommentStatus.APPROVED })
+      .andWhere('comment.is_hidden = :isHidden', { isHidden: false });
   }
 
   /**
@@ -86,6 +87,7 @@ export class BlogCommentQueryService {
       status: entity.status,
       nestingLevel: entity.nestingLevel,
       isAdminReply: entity.isAdminReply,
+      isHidden: entity.isHidden,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

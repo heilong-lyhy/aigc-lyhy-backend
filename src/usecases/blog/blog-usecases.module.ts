@@ -22,6 +22,11 @@ import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-c
 import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
 import { ReplyBlogCommentUsecase } from '@src/usecases/blog/reply-blog-comment.usecase';
+import { HideBlogCommentUsecase } from '@src/usecases/blog/hide-blog-comment.usecase';
+import { UnhideBlogCommentUsecase } from '@src/usecases/blog/unhide-blog-comment.usecase';
+import { CreateBlogFriendLinkUsecase } from '@src/usecases/blog/create-blog-friend-link.usecase';
+import { UpdateBlogFriendLinkUsecase } from '@src/usecases/blog/update-blog-friend-link.usecase';
+import { DeleteBlogFriendLinkUsecase } from '@src/usecases/blog/delete-blog-friend-link.usecase';
 import { UploadBlogFileUsecase } from '@src/usecases/blog/upload-blog-file.usecase';
 import { DeleteBlogFileUsecase } from '@src/usecases/blog/delete-blog-file.usecase';
 import { UpdateBlogProfileUsecase } from '@src/usecases/blog/update-blog-profile.usecase';
@@ -40,6 +45,8 @@ import {
   ListBlogFilesUsecase,
   GetBlogProfileUsecase,
   GetBlogDashboardStatsUsecase,
+  ListBlogFriendLinksUsecase,
+  ListAllBlogFriendLinksUsecase,
 } from '@src/usecases/blog/blog-read.usecase';
 
 @Module({
@@ -62,6 +69,11 @@ import {
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,
     ReplyBlogCommentUsecase,
+    HideBlogCommentUsecase,
+    UnhideBlogCommentUsecase,
+    CreateBlogFriendLinkUsecase,
+    UpdateBlogFriendLinkUsecase,
+    DeleteBlogFriendLinkUsecase,
     UploadBlogFileUsecase,
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
@@ -80,6 +92,8 @@ import {
     ListBlogFilesUsecase,
     GetBlogProfileUsecase,
     GetBlogDashboardStatsUsecase,
+    ListBlogFriendLinksUsecase,
+    ListAllBlogFriendLinksUsecase,
   ],
   exports: [
     // 写 usecases
@@ -99,6 +113,11 @@ import {
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,
     ReplyBlogCommentUsecase,
+    HideBlogCommentUsecase,
+    UnhideBlogCommentUsecase,
+    CreateBlogFriendLinkUsecase,
+    UpdateBlogFriendLinkUsecase,
+    DeleteBlogFriendLinkUsecase,
     UploadBlogFileUsecase,
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
@@ -117,6 +136,8 @@ import {
     ListBlogFilesUsecase,
     GetBlogProfileUsecase,
     GetBlogDashboardStatsUsecase,
+    ListBlogFriendLinksUsecase,
+    ListAllBlogFriendLinksUsecase,
   ],
 })
 export class BlogUsecasesModule {}

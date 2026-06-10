@@ -19,6 +19,8 @@ describe('BlogCommentQueryService', () => {
     content: '评论内容',
     status: BlogCommentStatus.APPROVED,
     nestingLevel: 0,
+    isAdminReply: false,
+    isHidden: false,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   } as unknown as BlogCommentEntity;
@@ -82,6 +84,8 @@ describe('BlogCommentQueryService', () => {
       expect(view.content).toBe('评论内容');
       expect(view.status).toBe(BlogCommentStatus.APPROVED);
       expect(view.nestingLevel).toBe(0);
+      expect(view.isAdminReply).toBe(false);
+      expect(view.isHidden).toBe(false);
     });
   });
 
@@ -139,7 +143,7 @@ describe('BlogCommentQueryService', () => {
   // ─── createCommentByPostQueryBuilder ───
 
   describe('createCommentByPostQueryBuilder', () => {
-    it('应创建仅含已审核通过评论的 QueryBuilder', () => {
+    it('应创建仅含已审核通过且未隐藏评论的 QueryBuilder', () => {
       const mockQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -155,6 +159,9 @@ describe('BlogCommentQueryService', () => {
       expect(mockQb.where).toHaveBeenCalledWith('comment.post_id = :postId', { postId: 5 });
       expect(mockQb.andWhere).toHaveBeenCalledWith('comment.status = :status', {
         status: BlogCommentStatus.APPROVED,
+      });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('comment.is_hidden = :isHidden', {
+        isHidden: false,
       });
     });
   });

@@ -36,6 +36,9 @@ export class BlogCommentObjectType {
   @Field(() => Boolean, { description: '是否为管理员回复' })
   isAdminReply!: boolean;
 
+  @Field(() => Boolean, { description: '是否隐藏' })
+  isHidden!: boolean;
+
   @Field(() => Date, { description: '创建时间' })
   createdAt!: Date;
 

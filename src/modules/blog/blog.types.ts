@@ -107,6 +107,7 @@ export interface BlogCommentView {
   readonly status: BlogCommentStatus;
   readonly nestingLevel: number;
   readonly isAdminReply: boolean;
+  readonly isHidden: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -255,6 +256,43 @@ export interface UploadBlogFileInput {
   readonly fileSize: number;
   readonly storedName: string;
   readonly fileType: BlogFileType;
+}
+
+/** 友情链接视图 */
+export interface BlogFriendLinkView {
+  readonly id: number;
+  readonly name: string;
+  readonly url: string;
+  readonly description: string | null;
+  readonly logoUrl: string | null;
+  readonly sortOrder: number;
+  readonly isActive: boolean;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface CreateBlogFriendLinkInput {
+  readonly name: string;
+  readonly url: string;
+  readonly description?: string;
+  readonly logoUrl?: string;
+  readonly sortOrder?: number;
+  readonly isActive?: boolean;
+}
+
+/**
+ * 更新友情链接输入
+ * - 字段省略或 undefined 表示不修改该字段
+ * - 显式传 null 表示清空该字段（仅对 description / logoUrl 有效）
+ */
+export interface UpdateBlogFriendLinkInput {
+  readonly id: number;
+  readonly name?: string;
+  readonly url?: string;
+  readonly description?: string | null;
+  readonly logoUrl?: string | null;
+  readonly sortOrder?: number;
+  readonly isActive?: boolean;
 }
 
 /**

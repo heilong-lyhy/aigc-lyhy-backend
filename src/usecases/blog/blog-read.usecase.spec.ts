@@ -16,6 +16,8 @@ import {
   ListBlogFilesUsecase,
   GetBlogProfileUsecase,
   GetBlogDashboardStatsUsecase,
+  ListBlogFriendLinksUsecase,
+  ListAllBlogFriendLinksUsecase,
 } from './blog-read.usecase';
 import { BlogPostQueryService } from '@src/modules/blog/queries/blog-post.query.service';
 import { BlogPostService } from '@src/modules/blog/blog-post.service';
@@ -26,6 +28,7 @@ import { BlogLikeQueryService } from '@src/modules/blog/queries/blog-like.query.
 import { BlogFileQueryService } from '@src/modules/blog/queries/blog-file.query.service';
 import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
+import { BlogFriendLinkQueryService } from '@src/modules/blog/queries/blog-friend-link.query.service';
 import { PaginationService } from '@src/modules/common/pagination.service';
 
 // ─── GetBlogPostByIdUsecase ───
@@ -620,5 +623,56 @@ describe('GetBlogDashboardStatsUsecase', () => {
     const result = await usecase.execute();
 
     expect(result).toEqual(stats);
+  });
+});
+
+// ─── ListBlogFriendLinksUsecase ───
+
+describe('ListBlogFriendLinksUsecase', () => {
+  let usecase: ListBlogFriendLinksUsecase;
+  let friendLinkQueryService: { listActiveFriendLinks: jest.Mock };
+
+  beforeEach(() => {
+    friendLinkQueryService = { listActiveFriendLinks: jest.fn() };
+    usecase = new ListBlogFriendLinksUsecase(
+      friendLinkQueryService as unknown as BlogFriendLinkQueryService,
+    );
+  });
+
+  it('应仅返回启用的友链', async () => {
+    const views = [{ id: 1, name: '友链1', isActive: true }];
+    friendLinkQueryService.listActiveFriendLinks.mockResolvedValue(views);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(views);
+    expect(friendLinkQueryService.listActiveFriendLinks).toHaveBeenCalled();
+  });
+});
+
+// ─── ListAllBlogFriendLinksUsecase ───
+
+describe('ListAllBlogFriendLinksUsecase', () => {
+  let usecase: ListAllBlogFriendLinksUsecase;
+  let friendLinkQueryService: { listAllFriendLinks: jest.Mock };
+
+  beforeEach(() => {
+    friendLinkQueryService = { listAllFriendLinks: jest.fn() };
+    usecase = new ListAllBlogFriendLinksUsecase(
+      friendLinkQueryService as unknown as BlogFriendLinkQueryService,
+    );
+  });
+
+  it('应返回所有友链（含禁用项）', async () => {
+    const views = [
+      { id: 1, name: '友链1', isActive: true },
+      { id: 2, name: '友链2', isActive: false },
+    ];
+    friendLinkQueryService.listAllFriendLinks.mockResolvedValue(views);
+
+    const result = await usecase.execute();
+
+    expect(result).toEqual(views);
+    expect(friendLinkQueryService.listAllFriendLinks).toHaveBeenCalled();
   });
 });

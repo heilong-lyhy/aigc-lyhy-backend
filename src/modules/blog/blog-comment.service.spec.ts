@@ -403,4 +403,50 @@ describe('BlogCommentService', () => {
       );
     });
   });
+
+  // ─── hideComment ───
+
+  describe('hideComment', () => {
+    it('应成功隐藏评论', async () => {
+      const existing = { id: 1, isHidden: false } as BlogCommentEntity;
+      commentRepo.findOne.mockResolvedValue(existing);
+      commentRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      queryService.findCommentById.mockResolvedValue({ id: 1, isHidden: true });
+
+      const result = await service.hideComment(1);
+
+      expect(result.isHidden).toBe(true);
+      expect(commentRepo.update).toHaveBeenCalledWith(1, { isHidden: true });
+      expect(queryService.findCommentById).toHaveBeenCalledWith(1, undefined);
+    });
+
+    it('评论不存在时应抛出 COMMENT_NOT_FOUND', async () => {
+      commentRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.hideComment(999)).rejects.toThrow(DomainError);
+    });
+  });
+
+  // ─── unhideComment ───
+
+  describe('unhideComment', () => {
+    it('应成功取消隐藏评论', async () => {
+      const existing = { id: 1, isHidden: true } as BlogCommentEntity;
+      commentRepo.findOne.mockResolvedValue(existing);
+      commentRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      queryService.findCommentById.mockResolvedValue({ id: 1, isHidden: false });
+
+      const result = await service.unhideComment(1);
+
+      expect(result.isHidden).toBe(false);
+      expect(commentRepo.update).toHaveBeenCalledWith(1, { isHidden: false });
+      expect(queryService.findCommentById).toHaveBeenCalledWith(1, undefined);
+    });
+
+    it('评论不存在时应抛出 COMMENT_NOT_FOUND', async () => {
+      commentRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.unhideComment(999)).rejects.toThrow(DomainError);
+    });
+  });
 });

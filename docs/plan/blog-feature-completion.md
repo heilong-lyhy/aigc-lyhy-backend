@@ -15,8 +15,8 @@
 | 1.4 标签更新 Mutation | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 参考 update-blog-category 模板，复用 assertSlugUnique(slug, excludeId) |
 | 1.5 评论管理回复 Mutation | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 新增 isAdminReply 字段、ReplyBlogCommentUsecase、replyBlogComment mutation；管理员回复自动审核通过 |
 | 2.1 上一篇/下一篇 | 已完成 | 无 | 2026-06-09 | 2026-06-09 | 基于 publishedAt + id 双排序，BlogPostDetailView 内置 prevPost/nextPost |
-| 2.2 友情链接功能 | 待开始 | 无 | | | 阻塞：前端 2.5；需数据库迁移 |
-| 2.3 评论隐藏 | 待开始 | 无 | | | 阻塞：前端 3.3；需数据库迁移 |
+| 2.2 友情链接功能 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | Entity/Service/QueryService/Usecase/Resolver 全链路；公开 blogFriendLinks + 管理 CRUD；增量 migration 1773930200000 |
+| 2.3 评论隐藏 | 已完成 | 无 | 2026-06-10 | 2026-06-10 | is_hidden 布尔列；公开列表排除隐藏评论；hideBlogComment/unhideBlogComment mutation；增量 migration 1773930300000 |
 | 3.1 软删除/回收站 | 待开始 | 无 | | | 阻塞：前端 3.2 |
 | 3.2 Gravatar 头像 | 待开始 | 无 | | | 阻塞：前端 3.1 |
 

@@ -24,6 +24,7 @@ import {
 } from '@src/modules/blog/queries/blog-file.query.service';
 import { BlogProfileQueryService } from '@src/modules/blog/queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from '@src/modules/blog/queries/blog-dashboard.query.service';
+import { BlogFriendLinkQueryService } from '@src/modules/blog/queries/blog-friend-link.query.service';
 import { PaginationService } from '@src/modules/common/pagination.service';
 import type {
   BlogPostView,
@@ -35,6 +36,7 @@ import type {
   BlogFileView,
   BlogProfileView,
   BlogDashboardView,
+  BlogFriendLinkView,
 } from '@src/modules/blog/blog.types';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 
@@ -335,5 +337,27 @@ export class GetBlogDashboardStatsUsecase {
 
   async execute(): Promise<BlogDashboardView> {
     return this.dashboardQueryService.getDashboardStats();
+  }
+}
+
+// ─── 友情链接读 ───
+
+@Injectable()
+export class ListBlogFriendLinksUsecase {
+  constructor(private readonly friendLinkQueryService: BlogFriendLinkQueryService) {}
+
+  /** 公开接口：仅返回启用的友链 */
+  async execute(): Promise<BlogFriendLinkView[]> {
+    return this.friendLinkQueryService.listActiveFriendLinks();
+  }
+}
+
+@Injectable()
+export class ListAllBlogFriendLinksUsecase {
+  constructor(private readonly friendLinkQueryService: BlogFriendLinkQueryService) {}
+
+  /** 管理端：返回所有友链（含禁用项） */
+  async execute(): Promise<BlogFriendLinkView[]> {
+    return this.friendLinkQueryService.listAllFriendLinks();
   }
 }

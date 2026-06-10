@@ -9,6 +9,8 @@ import { UpdateBlogCommentStatusUsecase } from '@src/usecases/blog/update-blog-c
 import { BatchUpdateBlogCommentStatusUsecase } from '@src/usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@src/usecases/blog/delete-blog-comment.usecase';
 import { ReplyBlogCommentUsecase } from '@src/usecases/blog/reply-blog-comment.usecase';
+import { HideBlogCommentUsecase } from '@src/usecases/blog/hide-blog-comment.usecase';
+import { UnhideBlogCommentUsecase } from '@src/usecases/blog/unhide-blog-comment.usecase';
 import {
   ListBlogCommentsUsecase,
   ListBlogCommentsByPostUsecase,
@@ -35,6 +37,8 @@ export class BlogCommentResolver {
     private readonly updateBlogCommentStatusUsecase: UpdateBlogCommentStatusUsecase,
     private readonly batchUpdateBlogCommentStatusUsecase: BatchUpdateBlogCommentStatusUsecase,
     private readonly deleteBlogCommentUsecase: DeleteBlogCommentUsecase,
+    private readonly hideBlogCommentUsecase: HideBlogCommentUsecase,
+    private readonly unhideBlogCommentUsecase: UnhideBlogCommentUsecase,
   ) {}
 
   // ─── 管理端查询 ───
@@ -158,5 +162,27 @@ export class BlogCommentResolver {
   ): Promise<boolean> {
     const { deleted } = await this.deleteBlogCommentUsecase.execute(id);
     return deleted;
+  }
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => BlogCommentObjectType, { description: '隐藏评论' })
+  async hideBlogComment(
+    @Args('id', { type: () => Int, description: '评论 ID' }) id: number,
+  ): Promise<BlogCommentObjectType> {
+    const { comment } = await this.hideBlogCommentUsecase.execute(id);
+    return comment;
+  }
+
+  @SkipThrottle({ short: true, publicWrite: true })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Mutation(() => BlogCommentObjectType, { description: '取消隐藏评论' })
+  async unhideBlogComment(
+    @Args('id', { type: () => Int, description: '评论 ID' }) id: number,
+  ): Promise<BlogCommentObjectType> {
+    const { comment } = await this.unhideBlogCommentUsecase.execute(id);
+    return comment;
   }
 }

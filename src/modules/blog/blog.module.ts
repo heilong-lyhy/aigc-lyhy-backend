@@ -14,6 +14,7 @@ import { BlogCommentEntity } from './entities/blog-comment.entity';
 import { BlogLikeEntity } from './entities/blog-like.entity';
 import { BlogFileEntity } from './entities/blog-file.entity';
 import { BlogProfileEntity } from './entities/blog-profile.entity';
+import { BlogFriendLinkEntity } from './entities/blog-friend-link.entity';
 import { BlogPostService } from './blog-post.service';
 import { BlogCategoryService } from './blog-category.service';
 import { BlogPostTagService } from './blog-post-tag.service';
@@ -22,6 +23,7 @@ import { BlogCommentService } from './blog-comment.service';
 import { BlogLikeService } from './blog-like.service';
 import { BlogFileService } from './blog-file.service';
 import { BlogProfileService } from './blog-profile.service';
+import { BlogFriendLinkService } from './blog-friend-link.service';
 import { BlogPostQueryService } from './queries/blog-post.query.service';
 import { BlogCategoryQueryService } from './queries/blog-category.query.service';
 import { BlogTagQueryService } from './queries/blog-tag.query.service';
@@ -30,6 +32,7 @@ import { BlogLikeQueryService } from './queries/blog-like.query.service';
 import { BlogFileQueryService } from './queries/blog-file.query.service';
 import { BlogProfileQueryService } from './queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from './queries/blog-dashboard.query.service';
+import { BlogFriendLinkQueryService } from './queries/blog-friend-link.query.service';
 import { BLOG_AVATAR_GENERATOR_TOKEN } from './contracts/avatar-generator.contract';
 import {
   BLOG_FILE_STORAGE_TOKEN,
@@ -45,6 +48,7 @@ const BLOG_ENTITIES = [
   BlogLikeEntity,
   BlogFileEntity,
   BlogProfileEntity,
+  BlogFriendLinkEntity,
 ];
 
 @Module({
@@ -61,6 +65,7 @@ const BLOG_ENTITIES = [
     BlogLikeService,
     BlogFileService,
     BlogProfileService,
+    BlogFriendLinkService,
     // BlogPostQueryService 与 BlogCategoryQueryService 存在循环依赖（跨聚合读委托），需 forwardRef
     BlogPostQueryService,
     BlogCategoryQueryService,
@@ -70,6 +75,7 @@ const BLOG_ENTITIES = [
     BlogFileQueryService,
     BlogProfileQueryService,
     BlogDashboardQueryService,
+    BlogFriendLinkQueryService,
   ],
   exports: [
     TypeOrmModule,
@@ -81,6 +87,7 @@ const BLOG_ENTITIES = [
     BlogLikeService,
     BlogFileService,
     BlogProfileService,
+    BlogFriendLinkService,
     BlogPostQueryService,
     BlogCategoryQueryService,
     BlogTagQueryService,
@@ -89,6 +96,7 @@ const BLOG_ENTITIES = [
     BlogFileQueryService,
     BlogProfileQueryService,
     BlogDashboardQueryService,
+    BlogFriendLinkQueryService,
   ],
 })
 export class BlogModule {}

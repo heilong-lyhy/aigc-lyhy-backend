@@ -11,6 +11,7 @@ import { BlogLikeResolver } from './blog-like.resolver';
 import { BlogFileResolver } from './blog-file.resolver';
 import { BlogProfileResolver } from './blog-profile.resolver';
 import { BlogDashboardResolver } from './blog-dashboard.resolver';
+import { BlogFriendLinkResolver } from './blog-friend-link.resolver';
 
 @Module({
   imports: [BlogUsecasesModule],
@@ -23,6 +24,7 @@ import { BlogDashboardResolver } from './blog-dashboard.resolver';
     BlogFileResolver,
     BlogProfileResolver,
     BlogDashboardResolver,
+    BlogFriendLinkResolver,
   ],
   exports: [
     BlogPostResolver,
@@ -33,6 +35,7 @@ import { BlogDashboardResolver } from './blog-dashboard.resolver';
     BlogFileResolver,
     BlogProfileResolver,
     BlogDashboardResolver,
+    BlogFriendLinkResolver,
   ],
 })
 export class BlogGraphQLAdapterModule {}

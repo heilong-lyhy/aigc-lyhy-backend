@@ -26,6 +26,7 @@ describe('ReplyBlogCommentUsecase', () => {
       status: BlogCommentStatus.APPROVED,
       nestingLevel: 0,
       isAdminReply: true,
+      isHidden: false,
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
