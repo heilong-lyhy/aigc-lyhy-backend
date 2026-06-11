@@ -3,10 +3,10 @@ import type { Job } from 'bullmq';
 import type {
   ConsumeMagicItemCraftJobCompleteInput,
   ConsumeMagicItemCraftJobFailInput,
+  ConsumeMagicItemCraftJobProcessInput,
+  MagicItemCraftResult,
 } from '@src/usecases/magic-item-craft/consume-magic-item-craft.usecase';
-import type { ConsumeMagicItemCraftJobProcessInput } from '@src/usecases/magic-item-craft/consume-magic-item-craft.usecase';
 import type { MagicItemCraftJobPayload } from '@src/modules/magic-item-craft/magic-item-craft.types';
-import type { MagicItemCraftResult } from '@src/usecases/magic-item-craft/consume-magic-item-craft.usecase';
 import {
   resolveDate,
   resolveJobId,

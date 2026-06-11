@@ -20,7 +20,7 @@ export class MagicItemCraftJobHandler {
   }
 
   onCompleted(input: { readonly job: MagicItemCraftJob }): void {
-    this.consumeMagicItemCraftUsecase.complete(
+    void this.consumeMagicItemCraftUsecase.complete(
       mapMagicItemCraftJobToCompleteInput({ job: input.job }),
     );
   }

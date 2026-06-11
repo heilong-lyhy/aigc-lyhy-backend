@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  DomainError,
-  MAGIC_ITEM_CRAFT_ERROR,
-} from '@core/common/errors/domain-error';
+import { DomainError, MAGIC_ITEM_CRAFT_ERROR } from '@core/common/errors/domain-error';
 import { normalizeRequiredText } from '@core/common/input-normalize/input-normalize.policy';
 import type { MagicItemCraftTaskView } from '@modules/magic-item-craft/magic-item-craft.types';
 import { MagicItemCraftQueryService } from '@modules/magic-item-craft/queries/magic-item-craft.query.service';

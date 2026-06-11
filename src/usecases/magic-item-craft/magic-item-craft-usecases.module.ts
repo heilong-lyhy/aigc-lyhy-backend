@@ -8,7 +8,11 @@ import { GetMagicItemCraftTaskUsecase } from './get-magic-item-craft-task.usecas
 
 @Module({
   imports: [MagicItemCraftModule, MagicItemCraftQueueModule, AsyncTaskRecordModule],
-  providers: [QueueMagicItemCraftUsecase, ConsumeMagicItemCraftUsecase, GetMagicItemCraftTaskUsecase],
+  providers: [
+    QueueMagicItemCraftUsecase,
+    ConsumeMagicItemCraftUsecase,
+    GetMagicItemCraftTaskUsecase,
+  ],
   exports: [QueueMagicItemCraftUsecase, ConsumeMagicItemCraftUsecase, GetMagicItemCraftTaskUsecase],
 })
 export class MagicItemCraftUsecasesModule {}
