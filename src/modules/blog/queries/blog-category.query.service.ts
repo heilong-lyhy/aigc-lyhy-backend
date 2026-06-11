@@ -1,22 +1,23 @@
 // src/modules/blog/queries/blog-category.query.service.ts
 // 分类读侧 QueryService：读取、输出规范化，不写、不开事务
+// 依赖方向单向：BlogPostQueryService → BlogCategoryQueryService，不形成环
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogCategoryTreeView, BlogCategoryView } from '../blog.types';
 import { BlogCategoryEntity } from '../entities/blog-category.entity';
-import { BlogPostQueryService } from './blog-post.query.service';
+import { BlogPostEntity } from '../entities/blog-post.entity';
 
 @Injectable()
 export class BlogCategoryQueryService {
   constructor(
     @InjectRepository(BlogCategoryEntity)
     private readonly categoryRepo: Repository<BlogCategoryEntity>,
-    @Inject(forwardRef(() => BlogPostQueryService))
-    private readonly postQueryService: BlogPostQueryService,
+    @InjectRepository(BlogPostEntity)
+    private readonly postRepo: Repository<BlogPostEntity>,
   ) {}
 
   async findCategoryById(
@@ -26,10 +27,7 @@ export class BlogCategoryQueryService {
     const repo = this.getCategoryRepo(transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) return null;
-    const postCounts = await this.postQueryService.countPostsByCategoryIds(
-      [id],
-      transactionContext,
-    );
+    const postCounts = await this.countPostsByCategoryIds([id], transactionContext);
     return this.toView(entity, postCounts[id] ?? 0);
   }
 
@@ -40,7 +38,7 @@ export class BlogCategoryQueryService {
     const entities = await repo.find({
       order: { sortOrder: 'ASC', createdAt: 'ASC' },
     });
-    const postCounts = await this.postQueryService.countPostsByCategoryIds(
+    const postCounts = await this.countPostsByCategoryIds(
       entities.map((e) => e.id),
       transactionContext,
     );
@@ -72,6 +70,32 @@ export class BlogCategoryQueryService {
   }
 
   // ─── 内部工具 ───
+
+  /**
+   * 批量统计各分类下的文章数（分类视图 postCount 字段的数据来源）
+   * 从 BlogPostQueryService 迁移至此，打破 BlogPostQueryService ↔ BlogCategoryQueryService 循环依赖
+   */
+  async countPostsByCategoryIds(
+    categoryIds: number[],
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<Record<number, number>> {
+    if (categoryIds.length === 0) return {};
+    const repo = this.getPostRepo(transactionContext);
+    const result = await repo
+      .createQueryBuilder('post')
+      .select('post.category_id', 'categoryId')
+      .addSelect('COUNT(*)', 'count')
+      .where('post.category_id IN (:...ids)', { ids: categoryIds })
+      .andWhere('post.deleted_at IS NULL')
+      .groupBy('post.category_id')
+      .getRawMany<{ categoryId: number; count: string }>();
+
+    const map: Record<number, number> = {};
+    for (const row of result) {
+      map[row.categoryId] = Number(row.count);
+    }
+    return map;
+  }
 
   private toView(entity: BlogCategoryEntity, postCount: number): BlogCategoryView {
     return {
@@ -113,5 +137,13 @@ export class BlogCategoryQueryService {
     return transactionContext
       ? getTypeOrmEntityManager(transactionContext).getRepository(BlogCategoryEntity)
       : this.categoryRepo;
+  }
+
+  private getPostRepo(
+    transactionContext?: PersistenceTransactionContext,
+  ): Repository<BlogPostEntity> {
+    return transactionContext
+      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostEntity)
+      : this.postRepo;
   }
 }

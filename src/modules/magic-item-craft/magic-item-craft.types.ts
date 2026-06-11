@@ -41,3 +41,15 @@ export interface QueueMagicItemCraftTaskResult {
   readonly itemName: string;
   readonly createdAt: Date;
 }
+
+/**
+ * Worker 消费侧 payload，仅包含业务所需字段
+ * 不包含 actor 元数据（actorAccountId / actorActiveRole）
+ */
+export interface MagicItemCraftJobPayload {
+  readonly itemName: string;
+  readonly itemType: MagicItemCraftTaskType;
+  readonly materialLevel: number;
+  readonly requestNote?: string;
+  readonly traceId?: string;
+}

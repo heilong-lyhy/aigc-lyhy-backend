@@ -51,7 +51,7 @@ describe('BlogProfileQueryService', () => {
       expect(result!.nickname).toBe('博主');
       expect(result!.bio).toBe('个人简介');
       expect(result!.socialLinks).toEqual({ github: 'https://github.com/test' });
-      expect(mockProfileRepo.findOne).toHaveBeenCalledWith({ order: { id: 'ASC' } });
+      expect(mockProfileRepo.findOne).toHaveBeenCalledWith({ where: {}, order: { id: 'ASC' } });
     });
 
     it('不存在博主信息时应返回 null', async () => {

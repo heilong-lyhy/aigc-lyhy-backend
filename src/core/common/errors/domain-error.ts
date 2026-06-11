@@ -133,6 +133,15 @@ export const ASYNC_TASK_RECORD_ERROR = {
 } as const;
 Object.freeze(ASYNC_TASK_RECORD_ERROR);
 
+// 魔法道具制作相关错误码
+export const MAGIC_ITEM_CRAFT_ERROR = {
+  INVALID_MATERIAL_LEVEL: 'MAGIC_ITEM_CRAFT_INVALID_MATERIAL_LEVEL',
+  INVALID_ITEM_TYPE: 'MAGIC_ITEM_CRAFT_INVALID_ITEM_TYPE',
+  ENQUEUE_FAILED: 'MAGIC_ITEM_CRAFT_ENQUEUE_FAILED',
+  TASK_NOT_FOUND: 'MAGIC_ITEM_CRAFT_TASK_NOT_FOUND',
+} as const;
+Object.freeze(MAGIC_ITEM_CRAFT_ERROR);
+
 export const TIME_ERROR = {
   INVALID_TIME_INPUT: 'TIME_INVALID_TIME_INPUT',
   INVALID_SYSTEM_EVENT_TIME: 'TIME_INVALID_SYSTEM_EVENT_TIME',
@@ -201,6 +210,8 @@ export type VerificationRecordErrorCode =
   (typeof VERIFICATION_RECORD_ERROR)[keyof typeof VERIFICATION_RECORD_ERROR];
 export type AsyncTaskRecordErrorCode =
   (typeof ASYNC_TASK_RECORD_ERROR)[keyof typeof ASYNC_TASK_RECORD_ERROR];
+export type MagicItemCraftErrorCode =
+  (typeof MAGIC_ITEM_CRAFT_ERROR)[keyof typeof MAGIC_ITEM_CRAFT_ERROR];
 export type TimeErrorCode = (typeof TIME_ERROR)[keyof typeof TIME_ERROR];
 export type InputNormalizeErrorCode =
   (typeof INPUT_NORMALIZE_ERROR)[keyof typeof INPUT_NORMALIZE_ERROR];
@@ -215,6 +226,7 @@ export type DomainErrorCode =
   | PermissionErrorCode
   | VerificationRecordErrorCode
   | AsyncTaskRecordErrorCode
+  | MagicItemCraftErrorCode
   | TimeErrorCode
   | InputNormalizeErrorCode
   | BlogErrorCode

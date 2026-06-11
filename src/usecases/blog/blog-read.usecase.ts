@@ -52,7 +52,14 @@ const POST_SORT_COLUMN_MAP: Record<string, string> = {
   title: 'post.title',
 };
 
-const POST_ALLOWED_SORTS = ['isPinned', 'createdAt', 'publishedAt', 'viewCount', 'likeCount', 'title'];
+const POST_ALLOWED_SORTS = [
+  'isPinned',
+  'createdAt',
+  'publishedAt',
+  'viewCount',
+  'likeCount',
+  'title',
+];
 const POST_DEFAULT_SORTS = [
   { field: 'isPinned', direction: 'DESC' as const },
   { field: 'createdAt', direction: 'DESC' as const },
@@ -118,10 +125,12 @@ export class ListBlogPostsUsecase {
     // 置顶始终为最高优先级排序，用户指定排序字段时前置 isPinned DESC
     // 当用户显式按 isPinned 排序时，直接使用用户排序，避免重复字段
     const userSort = params.sortBy
-      ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' as const }]
+      ? [{ field: params.sortBy, direction: params.sortOrder ?? ('DESC' as const) }]
       : [{ field: 'createdAt', direction: 'DESC' as const }];
     const sorts: ReadonlyArray<{ field: string; direction: 'ASC' | 'DESC' }> =
-      params.sortBy === 'isPinned' ? userSort : [{ field: 'isPinned', direction: 'DESC' }, ...userSort];
+      params.sortBy === 'isPinned'
+        ? userSort
+        : [{ field: 'isPinned', direction: 'DESC' }, ...userSort];
 
     const result = await this.paginationService.paginateQuery({
       qb,

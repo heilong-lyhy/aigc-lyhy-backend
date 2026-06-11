@@ -1,38 +1,26 @@
+// src/usecases/magic-item-craft/consume-magic-item-craft.usecase.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { MagicItemCraftTaskQualityLevel } from '@app-types/models/magic-item-craft.types';
-import type { QueueMagicItemCraftTaskInput } from '@src/modules/magic-item-craft/magic-item-craft.types';
+import type { MagicItemCraftJobPayload } from '@src/modules/magic-item-craft/magic-item-craft.types';
 import { MagicItemCraftService } from '@src/modules/magic-item-craft/magic-item-craft.service';
+import { AsyncTaskRecordService } from '@src/modules/async-task-record/async-task-record.service';
+import { DomainError, MAGIC_ITEM_CRAFT_ERROR } from '@src/core/common/errors/domain-error';
+import {
+  recordAsyncTaskStarted,
+  recordAsyncTaskFinished,
+  resolveFailBizKey,
+  resolveFailReason,
+  type MagicItemCraftWorkerJobBaseInput,
+  type MagicItemCraftWorkerJobCompleteInput,
+  type MagicItemCraftWorkerJobFailInput,
+} from './consume-magic-item-craft.helper';
 
-export type MagicItemCraftJobPayload = QueueMagicItemCraftTaskInput;
+export type { MagicItemCraftWorkerJobBaseInput as ConsumeMagicItemCraftJobBaseInput };
+export type { MagicItemCraftWorkerJobCompleteInput as ConsumeMagicItemCraftJobCompleteInput };
+export type { MagicItemCraftWorkerJobFailInput as ConsumeMagicItemCraftJobFailInput };
 
-export interface ConsumeMagicItemCraftJobProcessInput {
-  readonly queueName: string;
-  readonly jobName: string;
-  readonly jobId: string;
-  readonly traceId: string;
+export interface ConsumeMagicItemCraftJobProcessInput extends MagicItemCraftWorkerJobBaseInput {
   readonly payload: MagicItemCraftJobPayload;
-  readonly attemptsMade: number;
-  readonly maxAttempts?: number;
-  readonly enqueuedAt?: Date;
-  readonly startedAt?: Date;
-}
-
-export interface ConsumeMagicItemCraftJobCompleteInput {
-  readonly queueName: string;
-  readonly jobName: string;
-  readonly jobId: string;
-  readonly traceId: string;
-  readonly attemptsMade: number;
-  readonly maxAttempts?: number;
-  readonly enqueuedAt?: Date;
-  readonly startedAt?: Date;
-  readonly finishedAt?: Date;
-}
-
-export interface ConsumeMagicItemCraftJobFailInput extends ConsumeMagicItemCraftJobCompleteInput {
-  readonly reason?: string;
-  readonly occurredAt?: Date;
-  readonly error?: unknown;
 }
 
 export interface MagicItemCraftResult {
@@ -46,13 +34,22 @@ export interface MagicItemCraftResult {
 export class ConsumeMagicItemCraftUsecase {
   private readonly logger = new Logger(ConsumeMagicItemCraftUsecase.name);
 
-  constructor(private readonly magicItemCraftService: MagicItemCraftService) {}
+  constructor(
+    private readonly magicItemCraftService: MagicItemCraftService,
+    private readonly asyncTaskRecordService: AsyncTaskRecordService,
+  ) {}
 
   async process(input: ConsumeMagicItemCraftJobProcessInput): Promise<MagicItemCraftResult> {
+    await recordAsyncTaskStarted(this.asyncTaskRecordService, {
+      ...input,
+      bizType: 'magic_item_craft',
+      domain: 'magic_item_craft',
+    });
+
     this.logger.log(`Processing magic item craft task: ${input.traceId}`);
     await this.magicItemCraftService.updateTaskToProcessing(input.traceId);
 
-    const craftResult = this.generateMockCraftResult(input.payload);
+    const craftResult = this.generateCraftResult(input.payload);
 
     await this.magicItemCraftService.updateTaskToSucceeded({
       traceId: input.traceId,
@@ -69,11 +66,37 @@ export class ConsumeMagicItemCraftUsecase {
     };
   }
 
-  complete(input: ConsumeMagicItemCraftJobCompleteInput): void {
+  async complete(input: MagicItemCraftWorkerJobCompleteInput): Promise<void> {
+    await recordAsyncTaskFinished(this.asyncTaskRecordService, {
+      ...input,
+      bizType: 'magic_item_craft',
+      domain: 'magic_item_craft',
+      status: 'succeeded',
+      reason: 'worker_completed',
+      occurredAt: input.finishedAt,
+    });
     this.logger.log(`Magic item craft job completed: ${input.traceId}`);
   }
 
-  async fail(input: ConsumeMagicItemCraftJobFailInput): Promise<void> {
+  async fail(input: MagicItemCraftWorkerJobFailInput): Promise<void> {
+    const bizType = input.bizType ?? 'magic_item_craft';
+    await recordAsyncTaskFinished(this.asyncTaskRecordService, {
+      ...input,
+      bizType,
+      domain: 'magic_item_craft',
+      status: 'failed',
+      reason: resolveFailReason({ bizType, reason: input.reason }),
+      bizKey:
+        input.bizKey ??
+        resolveFailBizKey({
+          bizType,
+          traceId: input.traceId,
+          jobId: input.jobId,
+          domain: 'magic_item_craft',
+        }),
+      occurredAt: input.occurredAt ?? input.finishedAt,
+    });
+
     this.logger.error(`Magic item craft job failed: ${input.traceId}`, input.error);
     await this.magicItemCraftService.updateTaskToFailed({
       traceId: input.traceId,
@@ -81,7 +104,7 @@ export class ConsumeMagicItemCraftUsecase {
     });
   }
 
-  private generateMockCraftResult(input: MagicItemCraftJobPayload): {
+  private generateCraftResult(input: MagicItemCraftJobPayload): {
     qualityLevel: MagicItemCraftTaskQualityLevel;
     resultDescription: string;
     craftLog: string;
@@ -119,12 +142,18 @@ export class ConsumeMagicItemCraftUsecase {
     const materialKey = `LEVEL_${input.materialLevel}`;
     const materialDesc = materialDescriptions[materialKey];
     if (!materialDesc) {
-      throw new Error(`invalid_material_level:${input.materialLevel}`);
+      throw new DomainError(
+        MAGIC_ITEM_CRAFT_ERROR.INVALID_MATERIAL_LEVEL,
+        `invalid_material_level:${input.materialLevel}`,
+      );
     }
 
     const typeDesc = typeDescriptions[input.itemType];
     if (!typeDesc) {
-      throw new Error(`invalid_item_type:${input.itemType}`);
+      throw new DomainError(
+        MAGIC_ITEM_CRAFT_ERROR.INVALID_ITEM_TYPE,
+        `invalid_item_type:${input.itemType}`,
+      );
     }
 
     const description = `${materialDesc}${typeDesc}: ${input.itemName}`;

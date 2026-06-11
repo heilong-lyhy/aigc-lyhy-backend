@@ -1,4 +1,5 @@
 // src/modules/blog/blog-tag.service.spec.ts
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
 import { DomainError } from '@core/common/errors/domain-error';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -98,14 +99,14 @@ describe('BlogTagService', () => {
     });
 
     it('slug 已存在且非排除 ID 时应抛出 TAG_SLUG_DUPLICATE', async () => {
-      tagRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' });
+      tagRepo.findOne.mockResolvedValue({ id: 2, slug: 'existing-slug' } as BlogTagEntity);
 
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow(DomainError);
       await expect(service.assertSlugUnique('existing-slug')).rejects.toThrow('标签 slug 已存在');
     });
 
     it('slug 已存在但等于排除 ID 时应正常通过', async () => {
-      tagRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' });
+      tagRepo.findOne.mockResolvedValue({ id: 1, slug: 'my-slug' } as BlogTagEntity);
 
       await expect(service.assertSlugUnique('my-slug', 1)).resolves.toBeUndefined();
     });
@@ -143,7 +144,7 @@ describe('BlogTagService', () => {
         id: 1,
         name: '旧名称',
         slug: 'old-slug',
-      });
+      } as BlogTagEntity);
       tagRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       queryService.findTagById.mockResolvedValue({
         id: 1,
@@ -164,7 +165,7 @@ describe('BlogTagService', () => {
         id: 1,
         name: 'TypeScript',
         slug: 'old-slug',
-      });
+      } as BlogTagEntity);
       tagRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       queryService.findTagById.mockResolvedValue({
         id: 1,

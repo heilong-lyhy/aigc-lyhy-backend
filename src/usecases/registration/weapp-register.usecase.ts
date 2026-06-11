@@ -104,10 +104,13 @@ export class WeappRegisterUsecase {
       });
 
       // 6. 创建第三方绑定关系
-      await this.tpa.bindThirdPartyForRegistration({
+      await this.tpa.bindThirdParty({
         accountId: account.id,
-        provider: ThirdPartyProviderEnum.WEAPP,
-        session,
+        input: {
+          provider: ThirdPartyProviderEnum.WEAPP,
+          providerUserId: session.providerUserId,
+          unionId: session.unionId,
+        },
       });
 
       if (account.status !== AccountStatus.ACTIVE) {

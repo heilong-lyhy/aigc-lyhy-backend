@@ -7,11 +7,11 @@ import type { PersistenceTransactionContext } from '@app-types/common/transactio
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { CreateBlogTagInput, UpdateBlogTagInput, BlogTagView } from './blog.types';
 import { BlogTagEntity } from './entities/blog-tag.entity';
 import { BlogTagQueryService } from './queries/blog-tag.query.service';
+import { assertSlugUnique, getTransactionalRepo } from './slug-uniqueness.helper';
 
 @Injectable()
 export class BlogTagService {
@@ -25,7 +25,7 @@ export class BlogTagService {
     input: CreateBlogTagInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogTagView> {
-    const repo = this.getTagRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogTagEntity, this.tagRepo, transactionContext);
     const entity = repo.create({
       name: input.name,
       slug: input.slug,
@@ -39,7 +39,7 @@ export class BlogTagService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getTagRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogTagEntity, this.tagRepo, transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.TAG_NOT_FOUND, '标签不存在');
@@ -52,7 +52,7 @@ export class BlogTagService {
     input: UpdateBlogTagInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogTagView> {
-    const repo = this.getTagRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogTagEntity, this.tagRepo, transactionContext);
 
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
@@ -102,20 +102,13 @@ export class BlogTagService {
     excludeId?: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getTagRepo(transactionContext);
-    const existing = await repo.findOne({ where: { slug } });
-    if (existing && existing.id !== excludeId) {
-      throw new DomainError(BLOG_ERROR.TAG_SLUG_DUPLICATE, '标签 slug 已存在');
-    }
-  }
-
-  // ─── 内部工具 ───
-
-  private getTagRepo(
-    transactionContext?: PersistenceTransactionContext,
-  ): Repository<BlogTagEntity> {
-    return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogTagEntity)
-      : this.tagRepo;
+    const repo = getTransactionalRepo(BlogTagEntity, this.tagRepo, transactionContext);
+    await assertSlugUnique(
+      repo,
+      slug,
+      BLOG_ERROR.TAG_SLUG_DUPLICATE,
+      '标签 slug 已存在',
+      excludeId,
+    );
   }
 }

@@ -7,7 +7,6 @@ import type { PersistenceTransactionContext } from '@app-types/common/transactio
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import {
@@ -19,6 +18,7 @@ import { BlogPostEntity } from './entities/blog-post.entity';
 import { BlogPostTagService } from './blog-post-tag.service';
 import { BlogPostQueryService } from './queries/blog-post.query.service';
 import { sanitizeBlogContent } from './sanitize-html.helper';
+import { assertSlugUnique, getTransactionalRepo } from './slug-uniqueness.helper';
 
 @Injectable()
 export class BlogPostService {
@@ -77,7 +77,7 @@ export class BlogPostService {
     input: CreateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogPostDetailView | null> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     const entity = repo.create({
       title: input.title,
       slug: input.slug,
@@ -100,7 +100,7 @@ export class BlogPostService {
     input: UpdateBlogPostInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogPostDetailView | null> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
 
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
@@ -137,7 +137,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogPostDetailView> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
@@ -164,7 +164,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
@@ -180,7 +180,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogPostDetailView> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     // 需要包含软删除记录才能找到它
     const entity = await repo
       .createQueryBuilder('post')
@@ -202,7 +202,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     // 需要包含软删除记录才能找到它
     const entity = await repo
       .createQueryBuilder('post')
@@ -225,7 +225,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     await repo.increment({ id }, 'viewCount', 1);
   }
 
@@ -233,7 +233,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     await repo.increment({ id }, 'commentCount', 1);
   }
 
@@ -241,7 +241,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     await repo.decrement({ id }, 'commentCount', 1);
   }
 
@@ -249,7 +249,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     await repo.increment({ id }, 'likeCount', 1);
   }
 
@@ -257,7 +257,7 @@ export class BlogPostService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
     await repo.decrement({ id }, 'likeCount', 1);
   }
 
@@ -271,18 +271,13 @@ export class BlogPostService {
     excludeId?: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
-    const existing = await repo.findOne({ where: { slug } });
-    if (existing && existing.id !== excludeId) {
-      throw new DomainError(BLOG_ERROR.POST_SLUG_DUPLICATE, '文章 slug 已存在');
-    }
-  }
-
-  // ─── 内部工具 ───
-
-  private getRepo(transactionContext?: PersistenceTransactionContext): Repository<BlogPostEntity> {
-    return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostEntity)
-      : this.postRepo;
+    const repo = getTransactionalRepo(BlogPostEntity, this.postRepo, transactionContext);
+    await assertSlugUnique(
+      repo,
+      slug,
+      BLOG_ERROR.POST_SLUG_DUPLICATE,
+      '文章 slug 已存在',
+      excludeId,
+    );
   }
 }

@@ -8,11 +8,12 @@ import {
 } from '@app-types/models/verification-record.types';
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
+import { isUniqueConstraintViolation } from '@modules/common/database/database-error.helper';
 import { TokenFingerprintHelper } from '@modules/common/security/token-fingerprint.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { VerificationRecordEntity } from './verification-record.entity';
 
 export type VerificationRecordConsumeTargetConstraint =
@@ -50,53 +51,6 @@ export class VerificationRecordService {
     @InjectRepository(VerificationRecordEntity)
     private readonly verificationRecordRepository: Repository<VerificationRecordEntity>,
   ) {}
-
-  /**
-   * 检测是否为唯一约束冲突错误
-   *
-   * @param error 捕获的错误对象
-   * @returns 是否为唯一约束冲突
-   */
-  private isUniqueConstraintViolation(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-
-    const errorObj = error as unknown as Record<string, unknown>;
-
-    // TypeORM v0.3: 优先从 driverError 字段读取稳定的错误信息
-    const driverError = errorObj.driverError as Record<string, unknown> | undefined;
-
-    // MySQL: 检查 MySQL 的重复键错误
-    // 读取顺序：driverError.code / driverError.errno / driverError.sqlState
-    if (driverError) {
-      if (
-        driverError.code === 'ER_DUP_ENTRY' ||
-        driverError.errno === 1062 ||
-        driverError.sqlState === '23000'
-      ) {
-        return true;
-      }
-
-      // PostgreSQL: 唯一约束冲突错误码 23505
-      if (driverError.code === '23505') {
-        return true;
-      }
-    }
-
-    // 兼容性处理：如果 driverError 不存在，回退到直接读取 error 对象
-    // 这是为了向后兼容旧版本 TypeORM 或特殊情况
-    if (
-      errorObj.code === 'ER_DUP_ENTRY' ||
-      errorObj.errno === 1062 ||
-      errorObj.sqlState === '23000' ||
-      errorObj.code === '23505'
-    ) {
-      return true;
-    }
-
-    return false;
-  }
 
   /**
    * 生成 token 指纹
@@ -147,7 +101,7 @@ export class VerificationRecordService {
       return await repository.save(record);
     } catch (error) {
       // 处理唯一约束冲突（token 指纹重复）
-      if (this.isUniqueConstraintViolation(error)) {
+      if (isUniqueConstraintViolation(error)) {
         throw new DomainError(
           VERIFICATION_RECORD_ERROR.CREATION_FAILED,
           '验证记录创建失败：token 已存在',
@@ -342,37 +296,6 @@ export class VerificationRecordService {
       updatedRecord: updatedRecord ?? null,
       currentRecord: null,
     };
-  }
-
-  /**
-   * 检查验证记录是否有效（工具方法）
-   * 验证记录状态、过期时间和生效时间
-   *
-   * ⚠️ 此方法仅提供基础的有效性检查
-   * 不包含权限校验，权限校验应在 Usecase 中处理
-   *
-   * @param record 验证记录实体
-   * @returns 是否有效
-   */
-  isRecordValid(record: VerificationRecordEntity): boolean {
-    const now = new Date();
-
-    // 检查状态
-    if (record.status !== VerificationRecordStatus.ACTIVE) {
-      return false;
-    }
-
-    // 检查是否过期
-    if (record.expiresAt <= now) {
-      return false;
-    }
-
-    // 检查是否已生效
-    if (record.notBefore && record.notBefore > now) {
-      return false;
-    }
-
-    return true;
   }
 
   /**

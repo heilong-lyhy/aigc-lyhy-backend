@@ -4,8 +4,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BlogCategoryEntity } from '../entities/blog-category.entity';
+import { BlogPostEntity } from '../entities/blog-post.entity';
 import { BlogCategoryQueryService } from './blog-category.query.service';
-import { BlogPostQueryService } from './blog-post.query.service';
 
 /** 构造 id→count 映射，避免 ESLint 对数字键报错 */
 const buildCountMap = (entries: ReadonlyArray<readonly [number, number]>): Record<number, number> =>
@@ -25,16 +25,31 @@ describe('BlogCategoryQueryService', () => {
     findBy: jest.fn(),
   };
 
-  const mockPostQueryService = {
-    countPostsByCategoryIds: jest.fn(),
+  const mockPostRepo = {
+    createQueryBuilder: jest.fn(),
   };
+
+  /** 构造 countPostsByCategoryIds 的 mock QueryBuilder，返回指定映射 */
+  const mockCountQb = (countMap: Record<number, number>) => ({
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    groupBy: jest.fn().mockReturnThis(),
+    getRawMany: jest.fn().mockResolvedValue(
+      Object.entries(countMap).map(([categoryId, count]) => ({
+        categoryId: Number(categoryId),
+        count: String(count),
+      })),
+    ),
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogCategoryQueryService,
         { provide: getRepositoryToken(BlogCategoryEntity), useValue: mockCategoryRepo },
-        { provide: BlogPostQueryService, useValue: mockPostQueryService },
+        { provide: getRepositoryToken(BlogPostEntity), useValue: mockPostRepo },
       ],
     }).compile();
 
@@ -70,7 +85,7 @@ describe('BlogCategoryQueryService', () => {
       } as BlogCategoryEntity;
 
       categoryRepo.findOne.mockResolvedValue(entity);
-      mockPostQueryService.countPostsByCategoryIds.mockResolvedValue(buildCountMap([[1, 5]]));
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockCountQb(buildCountMap([[1, 5]])));
 
       const result = await service.findCategoryById(1);
 
@@ -132,13 +147,15 @@ describe('BlogCategoryQueryService', () => {
       ] as BlogCategoryEntity[];
 
       categoryRepo.find.mockResolvedValue(entities);
-      mockPostQueryService.countPostsByCategoryIds.mockResolvedValue(
-        buildCountMap([
-          [1, 10],
-          [2, 5],
-          [3, 3],
-          [4, 1],
-        ]),
+      mockPostRepo.createQueryBuilder.mockReturnValue(
+        mockCountQb(
+          buildCountMap([
+            [1, 10],
+            [2, 5],
+            [3, 3],
+            [4, 1],
+          ]),
+        ),
       );
 
       const result = await service.getCategoryTree();
@@ -154,7 +171,6 @@ describe('BlogCategoryQueryService', () => {
 
     it('无分类时应返回空数组', async () => {
       categoryRepo.find.mockResolvedValue([]);
-      mockPostQueryService.countPostsByCategoryIds.mockResolvedValue({});
 
       const result = await service.getCategoryTree();
 
@@ -167,13 +183,44 @@ describe('BlogCategoryQueryService', () => {
       ] as BlogCategoryEntity[];
 
       categoryRepo.find.mockResolvedValue(entities);
-      mockPostQueryService.countPostsByCategoryIds.mockResolvedValue(buildCountMap([[1, 0]]));
+      mockPostRepo.createQueryBuilder.mockReturnValue(mockCountQb(buildCountMap([[1, 0]])));
 
       const result = await service.getCategoryTree();
 
       // parentId=999 不在 map 中，应作为根节点
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('孤立分类');
+    });
+  });
+
+  // ─── countPostsByCategoryIds ───
+
+  describe('countPostsByCategoryIds', () => {
+    it('应返回各分类的文章数统计', async () => {
+      mockPostRepo.createQueryBuilder.mockReturnValue(
+        mockCountQb(
+          buildCountMap([
+            [1, 5],
+            [2, 3],
+          ]),
+        ),
+      );
+
+      const result = await service.countPostsByCategoryIds([1, 2]);
+
+      expect(result).toEqual(
+        buildCountMap([
+          [1, 5],
+          [2, 3],
+        ]),
+      );
+    });
+
+    it('ids 为空时应返回空对象', async () => {
+      const result = await service.countPostsByCategoryIds([]);
+
+      expect(result).toEqual({});
+      expect(mockPostRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 });

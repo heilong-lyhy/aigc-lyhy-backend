@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import { BlogPostEntity } from '../entities/blog-post.entity';
+import { BlogPostTagEntity } from '../entities/blog-post-tag.entity';
 import { BlogPostQueryService } from './blog-post.query.service';
 import { BlogCategoryQueryService } from './blog-category.query.service';
 import { BlogTagQueryService } from './blog-tag.query.service';
@@ -37,6 +38,11 @@ describe('BlogPostQueryService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  const mockPostTagRepo = {
+    find: jest.fn().mockResolvedValue([]),
+    createQueryBuilder: jest.fn(),
+  };
+
   const mockCategoryQueryService = {
     findCategoryNamesByIds: jest.fn(),
   };
@@ -50,6 +56,7 @@ describe('BlogPostQueryService', () => {
       providers: [
         BlogPostQueryService,
         { provide: getRepositoryToken(BlogPostEntity), useValue: mockPostRepo },
+        { provide: getRepositoryToken(BlogPostTagEntity), useValue: mockPostTagRepo },
         { provide: BlogCategoryQueryService, useValue: mockCategoryQueryService },
         { provide: BlogTagQueryService, useValue: mockTagQueryService },
       ],
@@ -370,41 +377,6 @@ describe('BlogPostQueryService', () => {
         'EXISTS (SELECT 1 FROM blog_post_tag pt WHERE pt.post_id = post.id AND pt.tag_id = :tagId)',
         { tagId: 3 },
       );
-    });
-  });
-
-  // ─── countPostsByCategoryIds ───
-
-  describe('countPostsByCategoryIds', () => {
-    it('应返回各分类的文章数统计', async () => {
-      const mockQb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: 1, count: '5' },
-          { categoryId: 2, count: '3' },
-        ]),
-      };
-      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      const result = await service.countPostsByCategoryIds([1, 2]);
-
-      expect(result).toEqual(
-        Object.fromEntries([
-          [1, 5],
-          [2, 3],
-        ]),
-      );
-    });
-
-    it('ids 为空时应返回空对象', async () => {
-      const result = await service.countPostsByCategoryIds([]);
-
-      expect(result).toEqual({});
-      expect(mockPostRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 

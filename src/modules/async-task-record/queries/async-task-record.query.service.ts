@@ -3,12 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
 import { AsyncTaskRecordEntity } from '../async-task-record.entity';
-import type {
-  AsyncTaskRecordStatus,
-  AsyncTaskRecordView,
-  FindAsyncTaskRecordByQueueJobInput,
-  ListAsyncTaskRecordsByBizTargetInput,
-  ListAsyncTaskRecordsByTraceInput,
+import {
+  type AsyncTaskRecordStatus,
+  type AsyncTaskRecordView,
+  type FindAsyncTaskRecordByQueueJobInput,
+  type ListAsyncTaskRecordsByBizTargetInput,
+  type ListAsyncTaskRecordsByTraceInput,
+  mapAsyncTaskRecordToView,
 } from '../async-task-record.types';
 
 @Injectable()
@@ -106,29 +107,6 @@ export class AsyncTaskRecordQueryService {
   }
 
   private toView(entity: AsyncTaskRecordEntity): AsyncTaskRecordView {
-    return {
-      id: entity.id,
-      queueName: entity.queueName,
-      jobName: entity.jobName,
-      jobId: entity.jobId,
-      traceId: entity.traceId,
-      actorAccountId: entity.actorAccountId,
-      actorActiveRole: entity.actorActiveRole,
-      bizType: entity.bizType,
-      bizKey: entity.bizKey,
-      bizSubKey: entity.bizSubKey,
-      source: entity.source,
-      reason: entity.reason,
-      occurredAt: entity.occurredAt,
-      dedupKey: entity.dedupKey,
-      status: entity.status,
-      attemptCount: entity.attemptCount,
-      maxAttempts: entity.maxAttempts,
-      enqueuedAt: entity.enqueuedAt,
-      startedAt: entity.startedAt,
-      finishedAt: entity.finishedAt,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
+    return mapAsyncTaskRecordToView(entity);
   }
 }

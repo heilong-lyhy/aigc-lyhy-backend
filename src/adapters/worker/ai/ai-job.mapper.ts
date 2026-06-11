@@ -8,6 +8,15 @@ import type {
   ConsumeAiGenerateJobProcessInput,
 } from '@src/usecases/ai-worker/consume-ai-job.usecase';
 import type { Job } from 'bullmq';
+import {
+  resolveDate,
+  resolveFailedJobName,
+  resolveJobId,
+  resolveMaxAttempts,
+  resolveMissingJobId,
+  resolveMissingJobTraceId,
+  resolveTraceId,
+} from '../internal/job-mapper.helpers';
 
 export const AI_QUEUE_NAME = 'ai';
 export const AI_GENERATE_JOB_NAME = 'generate';
@@ -76,10 +85,7 @@ export function mapAiGenerateJobToProcessInput(input: {
   readonly job: AiGenerateJob;
 }): ConsumeAiGenerateJobProcessInput {
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'strict',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'strict' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_GENERATE_JOB_NAME,
@@ -97,10 +103,7 @@ export function mapAiGenerateJobToCompleteInput(input: {
   readonly job: AiGenerateJob;
 }): ConsumeAiGenerateJobCompleteInput {
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'strict',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'strict' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_GENERATE_JOB_NAME,
@@ -120,10 +123,7 @@ export function mapAiGenerateJobToFailInput(input: {
 }): ConsumeAiGenerateJobFailInput {
   const occurredAt = resolveDate({ timestamp: input.job.finishedOn });
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'degraded',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'degraded' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_GENERATE_JOB_NAME,
@@ -147,13 +147,14 @@ export function mapMissingAiJobToFailInput(input: {
   const occurredAt = input.occurredAt ?? new Date();
   const jobName = 'unknown';
   const jobId = resolveMissingJobId({ occurredAt, jobName });
+  const traceId = resolveMissingJobTraceId({ occurredAt, jobName });
   return {
     queueName: AI_QUEUE_NAME,
     jobName,
     jobId,
-    traceId: jobId,
+    traceId,
     bizType: 'ai_worker',
-    bizKey: jobId,
+    bizKey: traceId,
     attemptsMade: 0,
     enqueuedAt: occurredAt,
     finishedAt: occurredAt,
@@ -170,10 +171,7 @@ export function mapUnknownAiJobToFailInput(input: {
   const occurredAt = resolveDate({ timestamp: input.job.finishedOn }) ?? new Date();
   const jobName = resolveFailedJobName({ job: input.job });
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'degraded',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'degraded' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName,
@@ -196,10 +194,7 @@ export function mapAiEmbedJobToProcessInput(input: {
   readonly job: AiEmbedJob;
 }): ConsumeAiEmbedJobProcessInput {
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'strict',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'strict' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_EMBED_JOB_NAME,
@@ -217,10 +212,7 @@ export function mapAiEmbedJobToCompleteInput(input: {
   readonly job: AiEmbedJob;
 }): ConsumeAiEmbedJobCompleteInput {
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'strict',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'strict' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_EMBED_JOB_NAME,
@@ -240,10 +232,7 @@ export function mapAiEmbedJobToFailInput(input: {
 }): ConsumeAiEmbedJobFailInput {
   const occurredAt = resolveDate({ timestamp: input.job.finishedOn });
   const jobId = resolveJobId({ job: input.job });
-  const traceId = resolveTraceId({
-    job: input.job,
-    mode: 'degraded',
-  });
+  const traceId = resolveTraceId({ job: input.job, mode: 'degraded' });
   return {
     queueName: AI_QUEUE_NAME,
     jobName: AI_EMBED_JOB_NAME,
@@ -260,67 +249,7 @@ export function mapAiEmbedJobToFailInput(input: {
   };
 }
 
-function resolveDate(input: { readonly timestamp?: number }): Date | undefined {
-  if (typeof input.timestamp !== 'number' || Number.isNaN(input.timestamp)) {
-    return undefined;
-  }
-  return new Date(input.timestamp);
-}
-
-function resolveMaxAttempts(input: { readonly job: AiJob | AiFailedJob }): number | undefined {
-  const attempts = input.job.opts.attempts;
-  if (typeof attempts !== 'number' || Number.isNaN(attempts)) {
-    return undefined;
-  }
-  return attempts;
-}
-
-function resolveJobId(input: { readonly job: AiJob | AiFailedJob }): string {
-  if (typeof input.job.id === 'number') {
-    return String(input.job.id);
-  }
-  return input.job.id ?? `${input.job.name}:${input.job.timestamp}`;
-}
-
-function resolveTraceId(input: {
-  readonly job: AiJob | AiFailedJob;
-  readonly mode: 'strict' | 'degraded';
-}): string {
-  const payloadTraceId = resolvePayloadTraceId({ job: input.job });
-  if (payloadTraceId) {
-    return payloadTraceId;
-  }
-  if (input.mode === 'strict') {
-    throw new Error(`missing_payload_trace_id:${input.job.name}`);
-  }
-  const jobId = resolveJobId({ job: input.job });
-  return `degraded-trace:${input.job.name}:${jobId}`;
-}
-
-function resolvePayloadTraceId(input: { readonly job: AiJob | AiFailedJob }): string | undefined {
-  const payload = input.job.data;
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return undefined;
-  }
-  const traceId = payload.traceId;
-  if (typeof traceId !== 'string') {
-    return undefined;
-  }
-  const normalizedTraceId = traceId.trim();
-  return normalizedTraceId || undefined;
-}
-
-function resolveFailedJobName(input: { readonly job: AiFailedJob }): string {
-  const normalizedName = input.job.name.trim();
-  return normalizedName || 'unknown';
-}
-
-function resolveMissingJobId(input: {
-  readonly occurredAt: Date;
-  readonly jobName: string;
-}): string {
-  return `missing-job:${input.jobName}:${input.occurredAt.getTime()}`;
-}
+// ─── AI 链路专用辅助 ───
 
 function resolveWorkerFailedReason(input: { readonly message: string }): string {
   const normalizedMessage = input.message.trim() || 'worker_unknown_error';

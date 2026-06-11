@@ -35,7 +35,7 @@ export class MagicItemCraftResolver {
 
   @Query(() => MagicItemCraftTaskResult, { description: '查询魔法道具制作任务' })
   async magicItemCraftTask(@Args('id') id: string): Promise<MagicItemCraftTaskResult> {
-    const task = await this.getMagicItemCraftTaskUsecase.execute(id);
+    const task = await this.getMagicItemCraftTaskUsecase.execute({ id });
     return {
       id: task.id,
       traceId: task.traceId,

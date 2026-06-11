@@ -4,7 +4,7 @@
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BlogPostStatus } from '@app-types/models/blog.types';
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
@@ -32,7 +32,6 @@ export class BlogPostQueryService {
     private readonly postRepo: Repository<BlogPostEntity>,
     @InjectRepository(BlogPostTagEntity)
     private readonly postTagRepo: Repository<BlogPostTagEntity>,
-    @Inject(forwardRef(() => BlogCategoryQueryService))
     private readonly categoryQueryService: BlogCategoryQueryService,
     private readonly tagQueryService: BlogTagQueryService,
   ) {}
@@ -328,31 +327,6 @@ export class BlogPostQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogTagView[]> {
     return this.tagQueryService.findTagsByPostId(postId, transactionContext);
-  }
-
-  /**
-   * 批量统计各分类下的文章数（供同域 QueryService 委托调用，避免跨聚合直接读取 Entity）
-   */
-  async countPostsByCategoryIds(
-    categoryIds: number[],
-    transactionContext?: PersistenceTransactionContext,
-  ): Promise<Record<number, number>> {
-    if (categoryIds.length === 0) return {};
-    const repo = this.getPostRepo(transactionContext);
-    const result = await repo
-      .createQueryBuilder('post')
-      .select('post.category_id', 'categoryId')
-      .addSelect('COUNT(*)', 'count')
-      .where('post.category_id IN (:...ids)', { ids: categoryIds })
-      .andWhere('post.deleted_at IS NULL')
-      .groupBy('post.category_id')
-      .getRawMany<{ categoryId: number; count: string }>();
-
-    const map: Record<number, number> = {};
-    for (const row of result) {
-      map[row.categoryId] = Number(row.count);
-    }
-    return map;
   }
 
   private getPostRepo(

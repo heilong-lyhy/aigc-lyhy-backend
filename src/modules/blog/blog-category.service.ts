@@ -6,7 +6,6 @@ import type { PersistenceTransactionContext } from '@app-types/common/transactio
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type {
   CreateBlogCategoryInput,
@@ -15,6 +14,7 @@ import type {
 } from './blog.types';
 import { BlogCategoryEntity } from './entities/blog-category.entity';
 import { BlogCategoryQueryService } from './queries/blog-category.query.service';
+import { assertSlugUnique, getTransactionalRepo } from './slug-uniqueness.helper';
 
 @Injectable()
 export class BlogCategoryService {
@@ -28,7 +28,7 @@ export class BlogCategoryService {
     input: CreateBlogCategoryInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogCategoryView> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
     const entity = repo.create({
       name: input.name,
       slug: input.slug,
@@ -49,7 +49,7 @@ export class BlogCategoryService {
     input: UpdateBlogCategoryInput,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<BlogCategoryView> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
 
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
@@ -80,7 +80,7 @@ export class BlogCategoryService {
     id: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.CATEGORY_NOT_FOUND, '分类不存在');
@@ -93,7 +93,7 @@ export class BlogCategoryService {
     sortOrder: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
     const entity = await repo.findOne({ where: { id } });
     if (!entity) {
       throw new DomainError(BLOG_ERROR.CATEGORY_NOT_FOUND, '分类不存在');
@@ -129,7 +129,7 @@ export class BlogCategoryService {
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
     if (parentId == null) return;
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
     const parent = await repo.findOne({ where: { id: parentId } });
     if (!parent) {
       throw new DomainError(BLOG_ERROR.CATEGORY_NOT_FOUND, '父级分类不存在');
@@ -147,7 +147,7 @@ export class BlogCategoryService {
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
     if (parentId == null) return;
-    const repo = this.getRepo(transactionContext);
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
     const visited = new Set<number>();
     let currentId: number | null = parentId;
     const MAX_DEPTH = 64;
@@ -183,20 +183,13 @@ export class BlogCategoryService {
     excludeId?: number,
     transactionContext?: PersistenceTransactionContext,
   ): Promise<void> {
-    const repo = this.getRepo(transactionContext);
-    const existing = await repo.findOne({ where: { slug } });
-    if (existing && existing.id !== excludeId) {
-      throw new DomainError(BLOG_ERROR.CATEGORY_SLUG_DUPLICATE, '分类 slug 已存在');
-    }
-  }
-
-  // ─── 内部工具 ───
-
-  private getRepo(
-    transactionContext?: PersistenceTransactionContext,
-  ): Repository<BlogCategoryEntity> {
-    return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogCategoryEntity)
-      : this.categoryRepo;
+    const repo = getTransactionalRepo(BlogCategoryEntity, this.categoryRepo, transactionContext);
+    await assertSlugUnique(
+      repo,
+      slug,
+      BLOG_ERROR.CATEGORY_SLUG_DUPLICATE,
+      '分类 slug 已存在',
+      excludeId,
+    );
   }
 }

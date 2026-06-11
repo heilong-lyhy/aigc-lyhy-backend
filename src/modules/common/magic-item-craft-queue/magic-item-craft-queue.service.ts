@@ -19,8 +19,7 @@ export class MagicItemCraftQueueService {
         itemType: input.itemType,
         materialLevel: input.materialLevel,
         requestNote: input.requestNote,
-        actorAccountId: input.actorAccountId ?? null,
-        actorActiveRole: input.actorActiveRole ?? null,
+        traceId: input.traceId,
       },
       traceId: input.traceId,
     });

@@ -3,8 +3,6 @@ export interface QueueMagicItemCraftJobInput {
   readonly itemType: string;
   readonly materialLevel: number;
   readonly requestNote?: string;
-  readonly actorAccountId?: number | null;
-  readonly actorActiveRole?: string | null;
   readonly traceId?: string;
 }
 

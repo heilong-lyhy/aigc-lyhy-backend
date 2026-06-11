@@ -1,19 +1,21 @@
 // src/modules/async-task-record/async-task-record.service.ts
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { isUniqueConstraintViolation } from '@modules/common/database/database-error.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { AsyncTaskRecordEntity } from './async-task-record.entity';
-import type {
-  AsyncTaskRecordView,
-  CreateAsyncTaskRecordInput,
-  FindAsyncTaskRecordByQueueJobInput,
-  RecordAsyncTaskEnqueuedInput,
-  RecordAsyncTaskEnqueueFailedInput,
-  RecordAsyncTaskFinishedInput,
-  RecordAsyncTaskStartedInput,
-  UpdateAsyncTaskRecordStatusInput,
+import {
+  type AsyncTaskRecordView,
+  type CreateAsyncTaskRecordInput,
+  type FindAsyncTaskRecordByQueueJobInput,
+  type RecordAsyncTaskEnqueuedInput,
+  type RecordAsyncTaskEnqueueFailedInput,
+  type RecordAsyncTaskFinishedInput,
+  type RecordAsyncTaskStartedInput,
+  type UpdateAsyncTaskRecordStatusInput,
+  mapAsyncTaskRecordToView,
 } from './async-task-record.types';
 
 @Injectable()
@@ -69,7 +71,7 @@ export class AsyncTaskRecordService {
     try {
       return await this.createRecord(input);
     } catch (error: unknown) {
-      if (!this.isUniqueConstraintViolation(error)) {
+      if (!isUniqueConstraintViolation(error)) {
         throw error;
       }
       const existing = await this.findByQueueJob({
@@ -153,7 +155,7 @@ export class AsyncTaskRecordService {
         transactionContext: input.transactionContext,
       });
     } catch (error: unknown) {
-      if (!this.isUniqueConstraintViolation(error)) {
+      if (!isUniqueConstraintViolation(error)) {
         throw error;
       }
       if (!normalizedInputJobId || resolvedJobId !== normalizedInputJobId) {
@@ -278,7 +280,7 @@ export class AsyncTaskRecordService {
         created: true,
       };
     } catch (error: unknown) {
-      if (!this.isUniqueConstraintViolation(error)) {
+      if (!isUniqueConstraintViolation(error)) {
         throw error;
       }
       const duplicated = await this.findByQueueJob({
@@ -415,63 +417,7 @@ export class AsyncTaskRecordService {
     return normalized;
   }
 
-  private isUniqueConstraintViolation(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-    const errorObject = error as unknown as {
-      readonly code?: string;
-      readonly errno?: number;
-      readonly sqlState?: string;
-      readonly driverError?: {
-        readonly code?: string;
-        readonly errno?: number;
-        readonly sqlState?: string;
-      };
-    };
-    const driverCode = errorObject.driverError?.code;
-    const driverErrno = errorObject.driverError?.errno;
-    const driverSqlState = errorObject.driverError?.sqlState;
-    if (
-      driverCode === 'ER_DUP_ENTRY' ||
-      driverErrno === 1062 ||
-      driverSqlState === '23000' ||
-      driverCode === '23505'
-    ) {
-      return true;
-    }
-    return (
-      errorObject.code === 'ER_DUP_ENTRY' ||
-      errorObject.errno === 1062 ||
-      errorObject.sqlState === '23000' ||
-      errorObject.code === '23505'
-    );
-  }
-
   private toView(entity: AsyncTaskRecordEntity): AsyncTaskRecordView {
-    return {
-      id: entity.id,
-      queueName: entity.queueName,
-      jobName: entity.jobName,
-      jobId: entity.jobId,
-      traceId: entity.traceId,
-      actorAccountId: entity.actorAccountId,
-      actorActiveRole: entity.actorActiveRole,
-      bizType: entity.bizType,
-      bizKey: entity.bizKey,
-      bizSubKey: entity.bizSubKey,
-      source: entity.source,
-      reason: entity.reason,
-      occurredAt: entity.occurredAt,
-      dedupKey: entity.dedupKey,
-      status: entity.status,
-      attemptCount: entity.attemptCount,
-      maxAttempts: entity.maxAttempts,
-      enqueuedAt: entity.enqueuedAt,
-      startedAt: entity.startedAt,
-      finishedAt: entity.finishedAt,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
+    return mapAsyncTaskRecordToView(entity);
   }
 }

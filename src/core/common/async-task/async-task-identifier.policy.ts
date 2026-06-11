@@ -1,4 +1,4 @@
-export type AsyncTaskBizDomain = 'ai_generation' | 'ai_embedding' | 'email';
+export type AsyncTaskBizDomain = 'ai_generation' | 'ai_embedding' | 'email' | 'magic_item_craft';
 
 type BizKeyPolicy = 'trace_id' | 'job_id';
 
@@ -6,6 +6,7 @@ const BIZ_KEY_POLICY_BY_DOMAIN: Record<AsyncTaskBizDomain, BizKeyPolicy> = {
   ai_generation: 'trace_id',
   ai_embedding: 'trace_id',
   email: 'job_id',
+  magic_item_craft: 'trace_id',
 };
 
 export interface ResolveAsyncTaskBizKeyInput {

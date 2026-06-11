@@ -1,6 +1,7 @@
 // src/modules/async-task-record/async-task-record.types.ts
 
 import { RECORD_SOURCES, type RecordSource } from '@app-types/common/record-source.types';
+import type { AsyncTaskRecordEntity } from './async-task-record.entity';
 
 export const ASYNC_TASK_RECORD_SOURCES = RECORD_SOURCES;
 
@@ -168,4 +169,32 @@ export interface UpdateAsyncTaskRecordStatusInput {
   readonly finishedAt?: Date | null;
   readonly reason?: string | null;
   readonly occurredAt?: Date | null;
+}
+
+/** Entity → View 映射纯函数，service 与 query.service 共用 */
+export function mapAsyncTaskRecordToView(entity: AsyncTaskRecordEntity): AsyncTaskRecordView {
+  return {
+    id: entity.id,
+    queueName: entity.queueName,
+    jobName: entity.jobName,
+    jobId: entity.jobId,
+    traceId: entity.traceId,
+    actorAccountId: entity.actorAccountId,
+    actorActiveRole: entity.actorActiveRole,
+    bizType: entity.bizType,
+    bizKey: entity.bizKey,
+    bizSubKey: entity.bizSubKey,
+    source: entity.source,
+    reason: entity.reason,
+    occurredAt: entity.occurredAt,
+    dedupKey: entity.dedupKey,
+    status: entity.status,
+    attemptCount: entity.attemptCount,
+    maxAttempts: entity.maxAttempts,
+    enqueuedAt: entity.enqueuedAt,
+    startedAt: entity.startedAt,
+    finishedAt: entity.finishedAt,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+  };
 }

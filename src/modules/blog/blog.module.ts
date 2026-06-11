@@ -66,7 +66,6 @@ const BLOG_ENTITIES = [
     BlogFileService,
     BlogProfileService,
     BlogFriendLinkService,
-    // BlogPostQueryService 与 BlogCategoryQueryService 存在循环依赖（跨聚合读委托），需 forwardRef
     BlogPostQueryService,
     BlogCategoryQueryService,
     BlogTagQueryService,

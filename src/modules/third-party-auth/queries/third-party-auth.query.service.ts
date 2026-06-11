@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ThirdPartyAuthEntity } from '../third-party-auth.entity';
+import { mapThirdPartyAuthToView } from '../third-party-auth.view-mapper';
 
 @Injectable()
 export class ThirdPartyAuthQueryService {
@@ -45,15 +46,7 @@ export class ThirdPartyAuthQueryService {
         updatedAt: true,
       },
     });
-    return records.map((record) => ({
-      id: record.id,
-      accountId: record.accountId,
-      provider: record.provider,
-      providerUserId: record.providerUserId,
-      unionId: record.unionId ?? null,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    }));
+    return records.map((record) => mapThirdPartyAuthToView(record));
   }
 
   async findThirdPartyAuthByAccountId(
@@ -76,14 +69,6 @@ export class ThirdPartyAuthQueryService {
   }
 
   private toView(record: ThirdPartyAuthEntity): ThirdPartyAuthView {
-    return {
-      id: record.id,
-      accountId: record.accountId,
-      provider: record.provider,
-      providerUserId: record.providerUserId,
-      unionId: record.unionId ?? null,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    };
+    return mapThirdPartyAuthToView(record);
   }
 }
