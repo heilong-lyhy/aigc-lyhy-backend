@@ -363,4 +363,24 @@ export class VerificationReadQueryService {
       updatedAt: record.updatedAt,
     };
   }
+
+  /**
+   * 将 DetailView 转换为 CleanView（脱敏）
+   * 用于 Service 层返回 DetailView 后，Usecase 需要对外输出脱敏视图的场景
+   */
+  detailViewToCleanView(detail: VerificationRecordDetailView): VerificationRecordView {
+    return {
+      id: detail.id,
+      type: detail.type,
+      status: detail.status,
+      expiresAt: detail.expiresAt,
+      notBefore: detail.notBefore,
+      targetAccountId: detail.targetAccountId,
+      subjectType: detail.subjectType,
+      subjectId: detail.subjectId,
+      publicPayload: this.extractPublicPayload(detail.payload),
+      issuedByAccountId: detail.issuedByAccountId,
+      createdAt: detail.createdAt,
+    };
+  }
 }

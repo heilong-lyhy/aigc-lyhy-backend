@@ -15,6 +15,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { VerificationRecordEntity } from './verification-record.entity';
+import type {
+  VerificationRecordDetailView,
+} from './verification-record.types';
 
 export type VerificationRecordConsumeTargetConstraint =
   | { mode: 'IGNORE' }
@@ -69,12 +72,12 @@ export class VerificationRecordService {
    *
    * @param params 创建参数
    * @param transactionContext 可选的事务上下文
-   * @returns 创建的验证记录实体
+   * @returns 创建的验证记录视图
    */
   async createRecord(
     params: CreateVerificationRecordParams,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<VerificationRecordEntity> {
+  ): Promise<VerificationRecordDetailView> {
     const repository = this.getRepository(transactionContext);
 
     try {
@@ -98,7 +101,8 @@ export class VerificationRecordService {
       });
 
       // 保存到数据库
-      return await repository.save(record);
+      const saved = await repository.save(record);
+      return this.toDetailView(saved);
     } catch (error) {
       // 处理唯一约束冲突（token 指纹重复）
       if (isUniqueConstraintViolation(error)) {
@@ -129,14 +133,14 @@ export class VerificationRecordService {
    * @param status 新状态
    * @param consumedByAccountId 消费者账号 ID（仅在消费时需要）
    * @param transactionContext 可选的事务上下文
-   * @returns 更新后的验证记录实体
+   * @returns 更新后的验证记录视图
    */
   async updateRecordStatus(
     recordId: number,
     status: VerificationRecordStatus,
     consumedByAccountId?: number,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<VerificationRecordEntity> {
+  ): Promise<VerificationRecordDetailView> {
     const repository = this.getRepository(transactionContext);
 
     try {
@@ -154,7 +158,8 @@ export class VerificationRecordService {
         record.consumedAt = new Date();
       }
 
-      return await repository.save(record);
+      const saved = await repository.save(record);
+      return this.toDetailView(saved);
     } catch (error) {
       if (error instanceof DomainError) {
         throw error;
@@ -182,7 +187,7 @@ export class VerificationRecordService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<{
     affected: number;
-    updatedRecord: VerificationRecordEntity | null;
+    updatedRecord: VerificationRecordDetailView | null;
     validationRecord: VerificationRecordValidationSnapshot | null;
   }> {
     const { where, context, transactionContext } = params;
@@ -257,7 +262,7 @@ export class VerificationRecordService {
     const updatedRecord = await repository.findOne({ where });
     return {
       affected: updateResult.affected ?? 0,
-      updatedRecord: updatedRecord ?? null,
+      updatedRecord: updatedRecord ? this.toDetailView(updatedRecord) : null,
       validationRecord: null,
     };
   }
@@ -267,8 +272,8 @@ export class VerificationRecordService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<{
     affected: number;
-    updatedRecord: VerificationRecordEntity | null;
-    currentRecord: VerificationRecordEntity | null;
+    updatedRecord: VerificationRecordDetailView | null;
+    currentRecord: VerificationRecordDetailView | null;
   }> {
     const { recordId, transactionContext } = params;
     const repository = this.getRepository(transactionContext);
@@ -286,15 +291,38 @@ export class VerificationRecordService {
       return {
         affected: 0,
         updatedRecord: null,
-        currentRecord,
+        currentRecord: currentRecord ? this.toDetailView(currentRecord) : null,
       };
     }
 
     const updatedRecord = await repository.findOne({ where: { id: recordId } });
     return {
       affected: result.affected ?? 0,
-      updatedRecord: updatedRecord ?? null,
+      updatedRecord: updatedRecord ? this.toDetailView(updatedRecord) : null,
       currentRecord: null,
+    };
+  }
+
+  /**
+   * 将 ORM Entity 映射为 DetailView
+   * 对外输出必须使用 View，不暴露 ORM Entity
+   */
+  private toDetailView(entity: VerificationRecordEntity): VerificationRecordDetailView {
+    return {
+      id: entity.id,
+      type: entity.type,
+      status: entity.status,
+      expiresAt: entity.expiresAt,
+      notBefore: entity.notBefore,
+      targetAccountId: entity.targetAccountId,
+      subjectType: entity.subjectType,
+      subjectId: entity.subjectId,
+      payload: entity.payload,
+      issuedByAccountId: entity.issuedByAccountId,
+      consumedByAccountId: entity.consumedByAccountId,
+      consumedAt: entity.consumedAt,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     };
   }
 

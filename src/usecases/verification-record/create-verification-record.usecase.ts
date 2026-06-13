@@ -122,7 +122,7 @@ export class CreateVerificationRecordUsecase {
     });
 
     return {
-      record: this.verificationReadQueryService.toDetailView(record),
+      record,
       token,
       generatedByServer,
     };

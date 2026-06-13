@@ -194,7 +194,7 @@ export class ConsumeVerificationRecordUsecase {
           throw new DomainError(VERIFICATION_RECORD_ERROR.RECORD_NOT_FOUND, '验证记录不存在');
         }
 
-        return this.verificationReadQueryService.toDetailView(updatedRecord);
+        return updatedRecord;
       } catch (error) {
         if (error instanceof DomainError) {
           throw error;
@@ -254,7 +254,7 @@ export class ConsumeVerificationRecordUsecase {
         throw new DomainError(VERIFICATION_RECORD_ERROR.RECORD_NOT_FOUND, '验证记录不存在');
       }
 
-      return this.verificationReadQueryService.toCleanView(updatedRecord);
+      return this.verificationReadQueryService.detailViewToCleanView(updatedRecord);
     } catch (error) {
       if (error instanceof DomainError) {
         throw error;
