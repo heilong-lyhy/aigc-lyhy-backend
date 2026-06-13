@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { useContainer } from 'class-validator';
+import cors from 'cors';
 import type { Express } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
@@ -21,6 +22,34 @@ async function bootstrap() {
 
   // 获取 ConfigService 实例（提前获取，供 Helmet、graphql-upload、CORS 等统一使用）
   const configService = app.get<ConfigService>(ConfigService);
+
+  // 全局启用 CORS（必须在所有中间件之前注册，确保 Apollo Server /graphql 路由也受 CORS 保护）
+  const corsEnabled = configService.get<boolean>('server.cors.enabled', true);
+  if (corsEnabled) {
+    const originsStr = configService.get<string>('server.cors.origins', '');
+    const origins = originsStr
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+          // 允许无 Origin 的请求（如服务端调用、curl 等）
+          if (!origin) return callback(null, true);
+          if (origins.includes(origin)) return callback(null, true);
+          // cors 包的 origin 数组匹配对非标准端口的 Origin 处理存在差异，
+          // 使用函数匹配确保带端口的 Origin 也能正确比较
+          callback(null, false);
+        },
+        credentials: configService.get<boolean>('server.cors.credentials', true),
+        methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        exposedHeaders: ['Content-Length', 'ETag'],
+        maxAge: 600,
+      }),
+    );
+  }
 
   // 安全头：Helmet 中间件（CSP 需兼容 GraphQL Playground，按环境调整）
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
@@ -61,25 +90,6 @@ async function bootstrap() {
 
   // 启用 class-validator 的依赖注入支持
   useContainer(app.select(ApiModule), { fallbackOnErrors: true });
-
-  // 全局启用 CORS（按配置限制来源与凭据）
-  const corsEnabled = configService.get<boolean>('server.cors.enabled', true);
-  if (corsEnabled) {
-    const originsStr = configService.get<string>('server.cors.origins', '');
-    const origins = originsStr
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    app.enableCors({
-      origin: origins.length > 0 ? origins : true,
-      credentials: configService.get<boolean>('server.cors.credentials', true),
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      exposedHeaders: ['Content-Length', 'ETag'],
-      maxAge: 600,
-    });
-  }
 
   // 从配置服务中获取服务器配置
   const host = configService.get<string>('server.host', '127.0.0.1');

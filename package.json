@@ -86,6 +86,7 @@
     "@nestjs/testing": "^11.1.22",
     "@swc/cli": "^0.8.1",
     "@swc/core": "^1.15.33",
+    "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",
     "@types/express": "^5.0.6",
     "@types/graphql-upload": "^17.0.0",
