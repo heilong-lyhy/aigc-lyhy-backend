@@ -56,7 +56,6 @@ export class RegistrationResolver {
       loginEmail: input.loginEmail,
       loginPassword: input.loginPassword,
       nickname: input.nickname,
-      type: input.type,
       inviteToken: input.inviteToken,
       clientIp,
     });

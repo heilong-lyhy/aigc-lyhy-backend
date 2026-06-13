@@ -1,12 +1,10 @@
 // src/adapters/api/graphql/registration/dto/register.input.ts
 
-import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { trimTextPure } from '@core/common/text/text.helper';
 import { Field, InputType } from '@nestjs/graphql';
 import { Transform, TransformFnParams } from 'class-transformer';
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -50,13 +48,6 @@ export class RegisterInput {
   @Transform(({ value }: TransformFnParams) => trimTextPure(value))
   @IsString({ message: '昵称必须是字符串' })
   nickname?: string | null;
-
-  @Field(() => RegisterTypeEnum, {
-    description: '注册类型',
-    defaultValue: RegisterTypeEnum.REGISTRANT,
-  })
-  @IsEnum(RegisterTypeEnum, { message: '注册类型无效' })
-  type: RegisterTypeEnum = RegisterTypeEnum.REGISTRANT;
 
   @Field(() => String, { description: '邀请令牌', nullable: true })
   @IsOptional()

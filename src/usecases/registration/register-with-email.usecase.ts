@@ -49,10 +49,11 @@ export class RegisterWithEmailUsecase {
       loginEmail,
       loginPassword,
       nickname,
-      type = RegisterTypeEnum.REGISTRANT,
       inviteToken,
       clientIp,
     } = params;
+    // 强制使用 REGISTRANT：注册用户仅分配 REGISTRANT 访问组，其他角色需管理员在数据库手动调整
+    const type = RegisterTypeEnum.REGISTRANT;
     const normalizedInput = normalizeRegisterWithEmailInput({ loginEmail, nickname });
     const normalizedLoginEmail = normalizedInput.loginEmail;
     const normalizedNickname = normalizedInput.nickname;
