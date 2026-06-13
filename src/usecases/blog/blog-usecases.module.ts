@@ -21,6 +21,7 @@ import { CreateBlogTagUsecase } from '@usecases/blog/create-blog-tag.usecase';
 import { UpdateBlogTagUsecase } from '@usecases/blog/update-blog-tag.usecase';
 import { DeleteBlogTagUsecase } from '@usecases/blog/delete-blog-tag.usecase';
 import { CreateBlogCommentUsecase } from '@usecases/blog/create-blog-comment.usecase';
+import { CreateBlogCommentByUserUsecase } from '@usecases/blog/create-blog-comment-by-user.usecase';
 import { UpdateBlogCommentStatusUsecase } from '@usecases/blog/update-blog-comment-status.usecase';
 import { BatchUpdateBlogCommentStatusUsecase } from '@usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@usecases/blog/delete-blog-comment.usecase';
@@ -71,6 +72,7 @@ import {
     UpdateBlogTagUsecase,
     DeleteBlogTagUsecase,
     CreateBlogCommentUsecase,
+    CreateBlogCommentByUserUsecase,
     UpdateBlogCommentStatusUsecase,
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,
@@ -118,6 +120,7 @@ import {
     UpdateBlogTagUsecase,
     DeleteBlogTagUsecase,
     CreateBlogCommentUsecase,
+    CreateBlogCommentByUserUsecase,
     UpdateBlogCommentStatusUsecase,
     BatchUpdateBlogCommentStatusUsecase,
     DeleteBlogCommentUsecase,

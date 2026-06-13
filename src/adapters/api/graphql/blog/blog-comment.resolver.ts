@@ -5,6 +5,7 @@ import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { CreateBlogCommentUsecase } from '@usecases/blog/create-blog-comment.usecase';
+import { CreateBlogCommentByUserUsecase } from '@usecases/blog/create-blog-comment-by-user.usecase';
 import { UpdateBlogCommentStatusUsecase } from '@usecases/blog/update-blog-comment-status.usecase';
 import { BatchUpdateBlogCommentStatusUsecase } from '@usecases/blog/batch-update-blog-comment-status.usecase';
 import { DeleteBlogCommentUsecase } from '@usecases/blog/delete-blog-comment.usecase';
@@ -20,12 +21,15 @@ import { BlogCommentsListResponse } from './dto/blog-comments.list';
 import { BlogCommentsArgs } from './dto/blog-comments.args';
 import { BlogPaginationArgs } from './dto/blog-pagination.args';
 import { CreateBlogCommentInput } from './dto/create-blog-comment.input';
+import { CreateBlogCommentByUserInput } from './dto/create-blog-comment-by-user.input';
 import { ReplyBlogCommentInput } from './dto/reply-blog-comment.input';
 import { UpdateBlogCommentStatusInput } from './dto/update-blog-comment-status.input';
 import { BatchUpdateBlogCommentStatusInput } from './dto/batch-update-blog-comment-status.input';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
+import { currentUser } from '../decorators/current-user.decorator';
+import { JwtPayload } from '@app-types/jwt.types';
 
 @Resolver()
 export class BlogCommentResolver {
@@ -33,6 +37,7 @@ export class BlogCommentResolver {
     private readonly listBlogCommentsUsecase: ListBlogCommentsUsecase,
     private readonly listBlogCommentsByPostUsecase: ListBlogCommentsByPostUsecase,
     private readonly createBlogCommentUsecase: CreateBlogCommentUsecase,
+    private readonly createBlogCommentByUserUsecase: CreateBlogCommentByUserUsecase,
     private readonly replyBlogCommentUsecase: ReplyBlogCommentUsecase,
     private readonly updateBlogCommentStatusUsecase: UpdateBlogCommentStatusUsecase,
     private readonly batchUpdateBlogCommentStatusUsecase: BatchUpdateBlogCommentStatusUsecase,
@@ -103,6 +108,24 @@ export class BlogCommentResolver {
       authorEmail: input.authorEmail,
       authorUrl: input.authorUrl,
       content: input.content,
+    });
+    return comment;
+  }
+
+  @Throttle({ publicWrite: { limit: 10, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => BlogCommentObjectType, { description: '登录用户创建评论' })
+  async createBlogCommentByUser(
+    @currentUser() user: JwtPayload,
+    @Args('input') input: CreateBlogCommentByUserInput,
+  ): Promise<BlogCommentObjectType> {
+    const { comment } = await this.createBlogCommentByUserUsecase.execute({
+      postId: input.postId,
+      content: input.content,
+      parentId: input.parentId,
+      replyToId: input.replyToId,
+      accountId: user.sub,
+      activeRole: user.activeRole,
     });
     return comment;
   }
