@@ -59,10 +59,10 @@ async function seed() {
     // ─── 1. 创建博主信息 ───
     const profileRepo = dataSource.getRepository(BlogProfileEntity);
     const profile = profileRepo.create({
-      nickname: '博主',
+      nickname: 'mahiru',
       bio: '全栈开发者，热爱技术与写作',
-      avatarUrl: 'https://example.com/avatar.png',
-      socialLinks: { github: 'https://github.com/example', twitter: 'https://twitter.com/example' },
+      avatarUrl: null,
+      socialLinks: null,
     });
     await profileRepo.save(profile);
     console.log(`博主信息已创建: ${profile.nickname}`);

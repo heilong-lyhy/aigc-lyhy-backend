@@ -19,7 +19,7 @@
 | 1.2 关闭 Throttler 限流 | 已完成 | 无 | 已移除 APP_GUARD 全局注册 |
 | 1.3 Blog 博主固定为 mahiru | 已完成 | 无 | 当前实现已满足，blog_profile 与用户系统独立 |
 | 2.1 评论登录态 mutation | 已完成 | 无 | 新增 createBlogCommentByUser |
-| 2.2 Blog profile 与 mahiru 关联 | 待执行 | 无 | 确认数据一致性 |
+| 2.2 Blog profile 与 mahiru 关联 | 已完成 | 无 | 新增 migration 插入 mahiru 博主初始数据；更新种子脚本 |
 
 ---
 
