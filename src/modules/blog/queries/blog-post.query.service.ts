@@ -206,7 +206,10 @@ export class BlogPostQueryService {
    * 创建已删除文章分页查询 QueryBuilder（管理端回收站，仅返回软删除文章）
    */
   createDeletedPostsQueryBuilder(params: BlogPostPaginationParams) {
-    const qb = this.postRepo.createQueryBuilder('post').where('post.deleted_at IS NOT NULL');
+    const qb = this.postRepo
+      .createQueryBuilder('post')
+      .withDeleted()
+      .where('post.deleted_at IS NOT NULL');
 
     if (params.categoryId !== undefined) {
       qb.andWhere('post.category_id = :categoryId', { categoryId: params.categoryId });

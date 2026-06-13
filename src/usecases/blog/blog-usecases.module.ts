@@ -35,6 +35,7 @@ import { UploadBlogFileUsecase } from '@usecases/blog/upload-blog-file.usecase';
 import { DeleteBlogFileUsecase } from '@usecases/blog/delete-blog-file.usecase';
 import { UpdateBlogProfileUsecase } from '@usecases/blog/update-blog-profile.usecase';
 import { ChangeBlogAdminPasswordUsecase } from '@usecases/blog/change-blog-admin-password.usecase';
+import { ViewBlogPostUsecase } from '@usecases/blog/view-blog-post.usecase';
 import {
   GetBlogPostByIdUsecase,
   GetBlogPostBySlugUsecase,
@@ -86,6 +87,7 @@ import {
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
     ChangeBlogAdminPasswordUsecase,
+    ViewBlogPostUsecase,
     // 读 usecases
     GetBlogPostByIdUsecase,
     GetBlogPostBySlugUsecase,
@@ -134,6 +136,7 @@ import {
     DeleteBlogFileUsecase,
     UpdateBlogProfileUsecase,
     ChangeBlogAdminPasswordUsecase,
+    ViewBlogPostUsecase,
     // 读 usecases
     GetBlogPostByIdUsecase,
     GetBlogPostBySlugUsecase,

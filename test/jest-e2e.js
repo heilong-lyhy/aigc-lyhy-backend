@@ -18,6 +18,8 @@ const GROUPS = {
       '09-blog/blog-crud.e2e-spec.ts',
       '09-blog/blog-query-integration.e2e-spec.ts',
       '09-blog/blog-graphql.e2e-spec.ts',
+      '09-blog/blog-recycle-bin.e2e-spec.ts',
+      '09-blog/blog-friend-link.e2e-spec.ts',
     ],
     needs: {
       mysql: true,

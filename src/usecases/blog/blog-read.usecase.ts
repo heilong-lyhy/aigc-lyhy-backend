@@ -3,13 +3,12 @@
 // 分页逻辑在 usecase 层编排 PaginationService，QueryService 只提供基础读取与视图映射
 // 遵守依赖方向：adapters → usecases → modules
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import {
   BlogPostQueryService,
   type BlogPostPaginationParams,
 } from '@modules/blog/queries/blog-post.query.service';
-import { BlogPostService } from '@modules/blog/blog-post.service';
 import { BlogCategoryQueryService } from '@modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '@modules/blog/queries/blog-tag.query.service';
 import {
@@ -52,6 +51,12 @@ const POST_SORT_COLUMN_MAP: Record<string, string> = {
   title: 'post.title',
 };
 
+/** 评论分页排序字段 → 数据库列名映射 */
+const COMMENT_SORT_COLUMN_MAP: Record<string, string> = {
+  createdAt: 'comment.created_at',
+  updatedAt: 'comment.updated_at',
+};
+
 const POST_ALLOWED_SORTS = [
   'isPinned',
   'createdAt',
@@ -82,12 +87,7 @@ export class GetBlogPostByIdUsecase {
 
 @Injectable()
 export class GetBlogPostBySlugUsecase {
-  private readonly logger = new Logger(GetBlogPostBySlugUsecase.name);
-
-  constructor(
-    private readonly postQueryService: BlogPostQueryService,
-    private readonly postService: BlogPostService,
-  ) {}
+  constructor(private readonly postQueryService: BlogPostQueryService) {}
 
   async execute(
     slug: string,
@@ -96,17 +96,6 @@ export class GetBlogPostBySlugUsecase {
     const view = await this.postQueryService.findPostBySlug(slug);
     if (!view) return null;
     if (options?.publishedOnly && view.status !== BlogPostStatus.PUBLISHED) return null;
-
-    // 阅读量自增：仅公开端（publishedOnly）触发，fire-and-forget，失败不影响详情返回
-    // 此处 view.status 必为 PUBLISHED（非 PUBLISHED 已在前方守卫返回 null）
-    if (options?.publishedOnly) {
-      // 独立写操作，不参与读查询事务；increment 为单 SQL，自身具备原子性
-      this.postService.incrementViewCount(view.id).catch((error) => {
-        this.logger.warn(
-          `阅读量自增失败 postId=${view.id}: ${error instanceof Error ? error.message : error}`,
-        );
-      });
-    }
 
     return view;
   }
@@ -227,13 +216,7 @@ export class ListBlogCommentsUsecase {
       },
       allowedSorts: ['createdAt', 'updatedAt'],
       defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-      resolveColumn: (field: string) => {
-        const columnMap: Record<string, string> = {
-          createdAt: 'comment.created_at',
-          updatedAt: 'comment.updated_at',
-        };
-        return columnMap[field] ?? null;
-      },
+      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
     });
 
     return {
@@ -268,13 +251,7 @@ export class ListBlogCommentsByPostUsecase {
       },
       allowedSorts: ['createdAt', 'updatedAt'],
       defaultSorts: [{ field: 'createdAt', direction: 'ASC' }],
-      resolveColumn: (field: string) => {
-        const columnMap: Record<string, string> = {
-          createdAt: 'comment.created_at',
-          updatedAt: 'comment.updated_at',
-        };
-        return columnMap[field] ?? null;
-      },
+      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
     });
 
     return {

@@ -12,11 +12,10 @@ import { RestoreBlogPostUsecase } from '@usecases/blog/restore-blog-post.usecase
 import { PermanentDeleteBlogPostUsecase } from '@usecases/blog/permanent-delete-blog-post.usecase';
 import { ListDeletedBlogPostsUsecase } from '@usecases/blog/list-deleted-blog-posts.usecase';
 import {
-  GetBlogPostByIdUsecase,
-  GetBlogPostBySlugUsecase,
   ListBlogPostsUsecase,
   ListBlogPublishedPostsUsecase,
 } from '@usecases/blog/blog-read.usecase';
+import { ViewBlogPostUsecase } from '@usecases/blog/view-blog-post.usecase';
 import { BlogPostDetailObjectType } from './dto/blog-post-detail.dto';
 import { BlogPostsListResponse } from './dto/blog-posts.list';
 import { BlogPostArgs } from './dto/blog-post.args';
@@ -32,8 +31,7 @@ import { Roles } from '../decorators/roles.decorator';
 @Resolver()
 export class BlogPostResolver {
   constructor(
-    private readonly getBlogPostByIdUsecase: GetBlogPostByIdUsecase,
-    private readonly getBlogPostBySlugUsecase: GetBlogPostBySlugUsecase,
+    private readonly viewBlogPostUsecase: ViewBlogPostUsecase,
     private readonly listBlogPostsUsecase: ListBlogPostsUsecase,
     private readonly listBlogPublishedPostsUsecase: ListBlogPublishedPostsUsecase,
     private readonly createBlogPostUsecase: CreateBlogPostUsecase,
@@ -49,14 +47,14 @@ export class BlogPostResolver {
 
   @Query(() => BlogPostDetailObjectType, { description: '按 ID 查询文章详情', nullable: true })
   async blogPost(@Args() args: BlogPostArgs): Promise<BlogPostDetailObjectType | null> {
-    return this.getBlogPostByIdUsecase.execute(args.id, { publishedOnly: true });
+    return this.viewBlogPostUsecase.viewById(args.id);
   }
 
   @Query(() => BlogPostDetailObjectType, { description: '按 slug 查询文章详情', nullable: true })
   async blogPostBySlug(
     @Args('slug', { type: () => String, description: 'URL slug' }) slug: string,
   ): Promise<BlogPostDetailObjectType | null> {
-    return this.getBlogPostBySlugUsecase.execute(slug, { publishedOnly: true });
+    return this.viewBlogPostUsecase.viewBySlug(slug);
   }
 
   @Query(() => BlogPostsListResponse, { description: '查询已发布文章列表（公开）' })

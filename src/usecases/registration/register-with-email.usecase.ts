@@ -44,14 +44,7 @@ export class RegisterWithEmailUsecase {
    * @returns 注册结果
    */
   async execute(params: RegisterWithEmailParams): Promise<RegisterWithEmailResult> {
-    const {
-      loginName,
-      loginEmail,
-      loginPassword,
-      nickname,
-      inviteToken,
-      clientIp,
-    } = params;
+    const { loginName, loginEmail, loginPassword, nickname, inviteToken, clientIp } = params;
     // 强制使用 REGISTRANT：注册用户仅分配 REGISTRANT 访问组，其他角色需管理员在数据库手动调整
     const type = RegisterTypeEnum.REGISTRANT;
     const normalizedInput = normalizeRegisterWithEmailInput({ loginEmail, nickname });

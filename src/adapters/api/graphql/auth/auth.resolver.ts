@@ -13,9 +13,7 @@ import { AuthLoginInput } from './dto/auth-login.input';
  */
 @Resolver()
 export class AuthResolver {
-  constructor(
-    private readonly loginWithPasswordUsecase: LoginWithPasswordUsecase,
-  ) {}
+  constructor(private readonly loginWithPasswordUsecase: LoginWithPasswordUsecase) {}
 
   @Mutation(() => LoginResult)
   async login(@Args('input') input: AuthLoginInput): Promise<LoginResult> {
