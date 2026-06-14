@@ -70,6 +70,9 @@ export class BlogPostDetailObjectType {
   @Field(() => Date, { description: '发布时间', nullable: true })
   publishedAt!: Date | null;
 
+  @Field(() => Date, { description: '删除时间', nullable: true })
+  deletedAt!: Date | null;
+
   @Field(() => BlogPostNeighborObjectType, { description: '上一篇', nullable: true })
   prevPost!: BlogPostNeighborObjectType | null;
 

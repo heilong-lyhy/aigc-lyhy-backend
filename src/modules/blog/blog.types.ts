@@ -64,6 +64,7 @@ export interface BlogPostDetailView {
   readonly commentCount: number;
   readonly isPinned: boolean;
   readonly publishedAt: Date | null;
+  readonly deletedAt: Date | null;
   readonly prevPost: BlogPostNeighborView | null;
   readonly nextPost: BlogPostNeighborView | null;
   readonly createdAt: Date;

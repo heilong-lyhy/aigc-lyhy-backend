@@ -316,6 +316,7 @@ export class BlogPostQueryService {
       commentCount: entity.commentCount,
       isPinned: entity.isPinned,
       publishedAt: entity.publishedAt,
+      deletedAt: entity.deletedAt,
       prevPost,
       nextPost,
       createdAt: entity.createdAt,
