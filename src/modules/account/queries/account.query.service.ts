@@ -6,7 +6,7 @@ import {
   UserAccountView,
 } from '@app-types/models/account.types';
 import { UserInfoView } from '@app-types/models/auth.types';
-import { Gender, UserState } from '@app-types/models/user-info.types';
+import { UserState } from '@app-types/models/user-info.types';
 import { UsecaseSession } from '@app-types/auth/session.types';
 import { hasRole, normalizeAccessGroup } from '@core/account/policy/role-access.policy';
 import { canViewUserInfo } from '@core/account/policy/user-info-visibility.policy';
@@ -268,9 +268,19 @@ export class AccountQueryService {
     return this.buildUserInfoView(base, accountId, finalAccessGroup);
   }
 
-  async getUserInfoViewForLogin(params: { accountId: number }): Promise<UserInfoView> {
-    const base = await this.findUserInfoByAccountId(params.accountId);
-    const finalAccessGroup = normalizeAccessGroup(base?.accessGroup, {
+  async getUserInfoViewForLogin(params: {
+    accountId: number;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<UserInfoView> {
+    const base = await this.findUserInfoByAccountId(params.accountId, params.transactionContext);
+    if (!base) {
+      throw new DomainError(
+        ACCOUNT_ERROR.USER_INFO_NOT_FOUND,
+        `账户 ID ${params.accountId} 对应的用户信息不存在`,
+      );
+    }
+
+    const finalAccessGroup = normalizeAccessGroup(base.accessGroup, {
       fallbackToRegistrant: true,
     });
 
@@ -293,7 +303,7 @@ export class AccountQueryService {
   }
 
   private buildUserInfoView(
-    base: UserInfoEntity | null,
+    base: UserInfoEntity,
     accountId: number,
     accessGroup: IdentityTypeEnum[],
   ): UserInfoView {
@@ -307,39 +317,39 @@ export class AccountQueryService {
     };
   }
 
-  private buildBasicFields(base: UserInfoEntity | null) {
+  private buildBasicFields(base: UserInfoEntity) {
     return {
-      nickname: base?.nickname ?? '',
-      gender: base?.gender ?? Gender.SECRET,
-      birthDate: base?.birthDate ?? null,
-      avatarUrl: base?.avatarUrl ?? null,
-      signature: base?.signature ?? null,
+      nickname: base.nickname,
+      gender: base.gender,
+      birthDate: base.birthDate,
+      avatarUrl: base.avatarUrl,
+      signature: base.signature,
     };
   }
 
-  private buildContactFields(base: UserInfoEntity | null) {
+  private buildContactFields(base: UserInfoEntity) {
     return {
-      email: base?.email ?? null,
-      address: base?.address ?? null,
-      phone: base?.phone ?? null,
+      email: base.email,
+      address: base.address,
+      phone: base.phone,
     };
   }
 
-  private buildExtendedFields(base: UserInfoEntity | null) {
+  private buildExtendedFields(base: UserInfoEntity) {
     return {
-      tags: this.normalizeTags(base?.tags),
-      geographic: base?.geographic ?? null,
-      metaDigest: base?.metaDigest ?? null,
+      tags: this.normalizeTags(base.tags),
+      geographic: base.geographic,
+      metaDigest: base.metaDigest,
     };
   }
 
-  private buildSystemFields(base: UserInfoEntity | null) {
+  private buildSystemFields(base: UserInfoEntity) {
     return {
-      notifyCount: base?.notifyCount ?? 0,
-      unreadCount: base?.unreadCount ?? 0,
-      userState: base?.userState ?? UserState.PENDING,
-      createdAt: base?.createdAt ?? new Date(),
-      updatedAt: base?.updatedAt ?? new Date(),
+      notifyCount: base.notifyCount,
+      unreadCount: base.unreadCount,
+      userState: base.userState,
+      createdAt: base.createdAt,
+      updatedAt: base.updatedAt,
     };
   }
 

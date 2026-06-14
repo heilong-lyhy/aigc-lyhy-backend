@@ -43,7 +43,7 @@ export class LoginBootstrapQueryService {
     userInfo: {
       id: number;
       accountId: number;
-      nickname: string | null;
+      nickname: string;
       avatarUrl: string | null;
       createdAt: Date;
       updatedAt: Date;
@@ -70,7 +70,7 @@ export class LoginBootstrapQueryService {
       userInfo: {
         id: params.userInfo.id,
         accountId: params.userInfo.accountId,
-        nickname: params.userInfo.nickname ?? '',
+        nickname: params.userInfo.nickname,
         avatarUrl: params.userInfo.avatarUrl,
         createdAt: params.userInfo.createdAt,
         updatedAt: params.userInfo.updatedAt,

@@ -4,6 +4,8 @@
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BlogPostStatus } from '@app-types/models/blog.types';
+import { BLOG_ERROR } from '@core/common/errors';
+import { DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
@@ -69,7 +71,10 @@ export class BlogPostQueryService {
   ): Promise<number> {
     const repo = this.getPostRepo(transactionContext);
     const entity = await repo.findOne({ where: { id }, select: { likeCount: true } });
-    return entity?.likeCount ?? 0;
+    if (!entity) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, `文章 ID ${id} 不存在`);
+    }
+    return entity.likeCount;
   }
 
   async findPostBySlug(
