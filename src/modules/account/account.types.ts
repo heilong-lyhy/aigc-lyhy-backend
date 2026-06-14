@@ -47,7 +47,7 @@ export interface AccountLoginBootstrapSnapshot {
     readonly accountId: number;
     readonly nickname: string | null;
     readonly avatarUrl: string | null;
-    readonly accessGroup: IdentityTypeEnum[] | null;
+    readonly accessGroup: IdentityTypeEnum[];
     readonly metaDigest: IdentityTypeEnum[] | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;

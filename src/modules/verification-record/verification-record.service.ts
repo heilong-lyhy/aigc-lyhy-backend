@@ -15,9 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { VerificationRecordEntity } from './verification-record.entity';
-import type {
-  VerificationRecordDetailView,
-} from './verification-record.types';
+import type { VerificationRecordDetailView } from './verification-record.types';
 
 export type VerificationRecordConsumeTargetConstraint =
   | { mode: 'IGNORE' }

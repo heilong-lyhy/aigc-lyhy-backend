@@ -1,6 +1,7 @@
 // src/adapters/api/graphql/guards/roles.guard.ts
 
 import { JwtPayload } from '@app-types/jwt.types';
+import { expandRoles } from '@core/account/policy/role-access.policy';
 import { DomainError, JWT_ERROR, PERMISSION_ERROR } from '@core/common/errors/domain-error';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -151,15 +152,18 @@ export class RolesGuard implements CanActivate {
   }
 
   /**
-   * 断言用户拥有至少一个所需角色
+   * 断言用户拥有至少一个所需角色（含角色层级展开）
+   * 使用 core/expandRoles 展开角色层级，ADMIN 自动包含 STAFF、GUEST
    */
   private assertHasAnyRequiredRole(user: JwtPayload, requiredRoles: string[]): void {
-    const normalizedRequiredRoles = requiredRoles.map((role) => role.toLowerCase());
-    const normalizedUserRoles = user.accessGroup.map((role) =>
-      typeof role === 'string' ? role.toLowerCase() : String(role).toLowerCase(),
+    const expandedUserRoles = expandRoles(user.accessGroup);
+    const expandedRoleNames = new Set(expandedUserRoles.map((r) => String(r).toLowerCase()));
+
+    const hasRequiredRole = requiredRoles.some((role) =>
+      expandedRoleNames.has(String(role).toLowerCase()),
     );
-    const hasRole = normalizedRequiredRoles.some((role) => normalizedUserRoles.includes(role));
-    if (!hasRole) {
+
+    if (!hasRequiredRole) {
       throw new DomainError(PERMISSION_ERROR.INSUFFICIENT_PERMISSIONS, '缺少所需角色', {
         requiredRoles,
         userRoles: user.accessGroup,

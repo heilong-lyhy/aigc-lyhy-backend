@@ -4,7 +4,7 @@ import { type UsecaseSession } from '@app-types/auth/session.types';
 import { IdentityTypeEnum } from '@app-types/models/account.types';
 import { UserInfoView } from '@app-types/models/auth.types';
 import { Gender, UserState, type GeographicInfo } from '@app-types/models/user-info.types';
-import { hasRole } from '@core/account/policy/role-access.policy';
+import { hasRole, normalizeAccessGroup } from '@core/account/policy/role-access.policy';
 import { ACCOUNT_ERROR, DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import {
@@ -491,7 +491,7 @@ export class UpdateAccessGroupUsecase {
       throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '仅 admin / staff 可调整访问组');
     }
 
-    const normalizedAccessGroup = this.normalizeAccessGroup(accessGroup);
+    const normalizedAccessGroup = normalizeAccessGroup(accessGroup);
     if (normalizedAccessGroup.length === 0) {
       throw new DomainError(ACCOUNT_ERROR.OPERATION_NOT_SUPPORTED, '访问组不能为空');
     }
@@ -566,22 +566,5 @@ export class UpdateAccessGroupUsecase {
     if (!value) return null;
     const enumValues = Object.values(IdentityTypeEnum) as string[];
     return enumValues.includes(value) ? (value as IdentityTypeEnum) : null;
-  }
-
-  /**
-   * 去重访问组并保持顺序
-   */
-  private normalizeAccessGroup(input: IdentityTypeEnum[]): IdentityTypeEnum[] {
-    const out: IdentityTypeEnum[] = [];
-    const seen = new Set<IdentityTypeEnum>();
-    const validRoles = new Set<string>(Object.values(IdentityTypeEnum));
-    for (const item of input) {
-      if (!validRoles.has(String(item))) continue;
-      if (!seen.has(item)) {
-        seen.add(item);
-        out.push(item);
-      }
-    }
-    return out;
   }
 }

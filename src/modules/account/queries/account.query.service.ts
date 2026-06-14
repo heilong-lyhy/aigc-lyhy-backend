@@ -8,7 +8,7 @@ import {
 import { UserInfoView } from '@app-types/models/auth.types';
 import { Gender, UserState } from '@app-types/models/user-info.types';
 import { UsecaseSession } from '@app-types/auth/session.types';
-import { hasRole } from '@core/account/policy/role-access.policy';
+import { hasRole, normalizeAccessGroup } from '@core/account/policy/role-access.policy';
 import { canViewUserInfo } from '@core/account/policy/user-info-visibility.policy';
 import { ACCOUNT_ERROR } from '@core/common/errors';
 import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
@@ -232,7 +232,7 @@ export class AccountQueryService {
         accountId: userInfo.accountId,
         nickname: userInfo.nickname,
         avatarUrl: userInfo.avatarUrl,
-        accessGroup: userInfo.accessGroup ?? null,
+        accessGroup: normalizeAccessGroup(userInfo.accessGroup, { fallbackToRegistrant: true }),
         metaDigest: userInfo.metaDigest ?? null,
         createdAt: userInfo.createdAt,
         updatedAt: userInfo.updatedAt,
@@ -263,18 +263,16 @@ export class AccountQueryService {
       );
     }
 
-    const finalAccessGroup: IdentityTypeEnum[] = base.accessGroup?.length
-      ? base.accessGroup
-      : [IdentityTypeEnum.REGISTRANT];
+    const finalAccessGroup = normalizeAccessGroup(base.accessGroup, { fallbackToRegistrant: true });
 
     return this.buildUserInfoView(base, accountId, finalAccessGroup);
   }
 
   async getUserInfoViewForLogin(params: { accountId: number }): Promise<UserInfoView> {
     const base = await this.findUserInfoByAccountId(params.accountId);
-    const finalAccessGroup: IdentityTypeEnum[] = base?.accessGroup?.length
-      ? base.accessGroup
-      : [IdentityTypeEnum.REGISTRANT];
+    const finalAccessGroup = normalizeAccessGroup(base?.accessGroup, {
+      fallbackToRegistrant: true,
+    });
 
     return this.buildUserInfoView(base, params.accountId, finalAccessGroup);
   }

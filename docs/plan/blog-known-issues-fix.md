@@ -233,7 +233,7 @@ private resolveUserIdentifier(context: GraphQLContext, fallback: string): string
 
 1. **问题 5（点赞账号划分）**：已完成 ✅
 2. **问题 2（文件上传）**：已完成 ✅
-3. **问题 1（ADMIN 权限）**：需排查确认，可能仅需数据库修正
+3. **问题 1（ADMIN 权限）**：已完成 ✅ — 后端代码逻辑正确，根因为数据层面 ADMIN 账户的 access_group 未包含 ADMIN 角色，已创建 migration 1773930500000 修复
 4. **问题 4（回收站）**：纯前端问题，后端无需修改
 5. **问题 3（置顶展示）**：纯前端问题，后端无需修改
 
