@@ -85,7 +85,11 @@ async function bootstrap() {
     app.use(mod.default({ maxFileSize, maxFiles: 1 }));
   } catch (error: unknown) {
     const reason = error instanceof Error ? error.message : String(error);
-    logger.warn(`graphql-upload 中间件加载失败，文件上传 mutation 将不可用: ${reason}`);
+    const stack = error instanceof Error ? error.stack : undefined;
+    logger.warn(
+      `graphql-upload 中间件加载失败，文件上传 mutation 将不可用: ${reason}` +
+        (stack ? `\n${stack}` : ''),
+    );
   }
 
   // 启用 class-validator 的依赖注入支持

@@ -4,6 +4,8 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SkipThrottle } from '@nestjs/throttler';
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 import { UploadBlogFileUsecase } from '@usecases/blog/upload-blog-file.usecase';
 import { DeleteBlogFileUsecase } from '@usecases/blog/delete-blog-file.usecase';
 import { ListBlogFilesUsecase } from '@usecases/blog/blog-read.usecase';
@@ -56,11 +58,14 @@ export class BlogFileResolver {
     const upload = await input.file;
     const buffer = Buffer.from(await upload.createReadStream().toArray());
 
+    // 生成唯一存储文件名：UUID + 原始扩展名，避免中文/特殊字符和文件名冲突
+    const storedName = this.generateStoredName(upload.filename);
+
     const { file } = await this.uploadBlogFileUsecase.execute({
       originalName: upload.filename,
       mimeType: upload.mimetype,
       fileSize: buffer.length,
-      storedName: upload.filename,
+      storedName,
       fileType: input.fileType ?? BlogFileType.IMAGE,
       buffer,
     });
@@ -76,5 +81,14 @@ export class BlogFileResolver {
   ): Promise<boolean> {
     await this.deleteBlogFileUsecase.execute(id);
     return true;
+  }
+
+  /**
+   * 生成唯一存储文件名：UUID + 原始扩展名
+   * 避免中文/特殊字符导致的存储路径问题和文件名冲突
+   */
+  private generateStoredName(originalFilename: string): string {
+    const ext = extname(originalFilename).toLowerCase();
+    return `${randomUUID()}${ext}`;
   }
 }

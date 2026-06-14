@@ -31,6 +31,7 @@ import { VerificationRecordResolver } from './verification-record/verification-r
 
 // Guards
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
 import {
@@ -106,6 +107,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     // Guards
     QmWorkerEntryGuard,
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
     RolesGuard,
     JwtStrategy,
   ],
@@ -122,6 +124,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UserInfoResolver,
     QmWorkerEntryGuard,
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
     RolesGuard,
     JwtStrategy,
   ],
