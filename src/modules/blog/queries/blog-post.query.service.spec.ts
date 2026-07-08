@@ -8,7 +8,7 @@ import { BlogPostTagEntity } from '../entities/blog-post-tag.entity';
 import { BlogPostQueryService } from './blog-post.query.service';
 import { BlogCategoryQueryService } from './blog-category.query.service';
 import { BlogTagQueryService } from './blog-tag.query.service';
-import { PaginationQueryService } from '@modules/common/pagination.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 
 describe('BlogPostQueryService', () => {
   let service: BlogPostQueryService;
@@ -64,7 +64,7 @@ describe('BlogPostQueryService', () => {
         { provide: getRepositoryToken(BlogPostTagEntity), useValue: mockPostTagRepo },
         { provide: BlogCategoryQueryService, useValue: mockCategoryQueryService },
         { provide: BlogTagQueryService, useValue: mockTagQueryService },
-        { provide: PaginationQueryService, useValue: mockPaginationService },
+        { provide: PaginationService, useValue: mockPaginationService },
       ],
     }).compile();
 

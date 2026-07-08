@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { BlogCommentEntity } from '../entities/blog-comment.entity';
 import { BlogCommentQueryService } from './blog-comment.query.service';
-import { PaginationQueryService } from '@modules/common/pagination.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 
 describe('BlogCommentQueryService', () => {
   let service: BlogCommentQueryService;
@@ -41,7 +41,7 @@ describe('BlogCommentQueryService', () => {
       providers: [
         BlogCommentQueryService,
         { provide: getRepositoryToken(BlogCommentEntity), useValue: mockCommentRepo },
-        { provide: PaginationQueryService, useValue: mockPaginationService },
+        { provide: PaginationService, useValue: mockPaginationService },
       ],
     }).compile();
 

@@ -1,6 +1,11 @@
 // src/core/common/text/text.helper.ts
 
 /**
+ * 简单的文本 trim 处理
+ * @param value 待处理的值
+ * @returns 如果是字符串则返回 trim 后的结果，否则返回原值
+ */
+/**
  * 简单的文本 trim 处理，空白字符串转为 undefined
  * @param value 待处理的值
  * @returns 如果是字符串则返回 trim 后的结果（空白则返回 undefined），否则返回原值
@@ -30,22 +35,6 @@ export function toLowerCase(value: unknown): string | undefined {
     return value.toLowerCase();
   }
   return value as string | undefined;
-}
-
-/**
- * 邮箱脱敏，避免日志泄露。
- * 本地部分保留前 2 位（不足 3 位则保留首字符），其余用 *** 替代。
- * @param email 原始邮箱地址
- * @returns 脱敏后的邮箱
- */
-export function maskEmail(email: string): string {
-  const parts = email.split('@');
-  if (parts.length !== 2) return '***';
-  const [localPart, domainPart] = parts;
-  if (localPart.length <= 2) {
-    return `${localPart.charAt(0) || '*'}***@${domainPart}`;
-  }
-  return `${localPart.slice(0, 2)}***@${domainPart}`;
 }
 
 /**

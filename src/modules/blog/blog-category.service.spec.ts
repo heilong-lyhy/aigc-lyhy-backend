@@ -1,5 +1,4 @@
 // src/modules/blog/blog-category.service.spec.ts
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
 import { DomainError } from '@core/common/errors/domain-error';
 import { Test, TestingModule } from '@nestjs/testing';

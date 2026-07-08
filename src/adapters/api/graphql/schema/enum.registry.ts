@@ -20,12 +20,14 @@ import {
 import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { registerEnumType } from '@nestjs/graphql';
 import { GqlPaginationMode, GqlSortDirection } from '@adapters/api/graphql/pagination.enums';
+import { OrderDirection } from '@app-types/common/sort.types'; // [MERGED]
 import {
-  MagicItemCraftTaskQualityLevel,
-  MagicItemCraftTaskStatus,
-  MagicItemCraftTaskType,
-} from '@app-types/models/magic-item-craft.types';
-import { BlogPostStatus, BlogCommentStatus, BlogFileType } from '@app-types/models/blog.types';
+  // [KEPT:业务保留]
+  MagicItemCraftTaskQualityLevel, // [KEPT:业务保留]
+  MagicItemCraftTaskStatus, // [KEPT:业务保留]
+  MagicItemCraftTaskType, // [KEPT:业务保留]
+} from '@app-types/models/magic-item-craft.types'; // [KEPT:业务保留]
+import { BlogPostStatus, BlogCommentStatus, BlogFileType } from '@app-types/models/blog.types'; // [KEPT:业务保留]
 
 export function registerEnums(): { enums: string[] } {
   const registeredEnums: string[] = [];
@@ -58,10 +60,13 @@ export function registerEnums(): { enums: string[] } {
   registeredEnums.push('VerificationRecordType');
   registerEnumType(CreatableVerificationRecordType, { name: 'CreatableVerificationRecordType' });
   registeredEnums.push('CreatableVerificationRecordType');
+  registerEnumType(OrderDirection, { name: 'OrderDirection' }); // [MERGED]
+  registeredEnums.push('OrderDirection'); // [MERGED]
   registerEnumType(GqlPaginationMode, { name: 'PaginationMode' });
   registeredEnums.push('PaginationMode');
   registerEnumType(GqlSortDirection, { name: 'SortDirection' });
   registeredEnums.push('SortDirection');
+  // [KEPT:业务保留] - 以下为业务枚举
   registerEnumType(MagicItemCraftTaskStatus, {
     name: 'MagicItemCraftTaskStatus',
     description: '任务状态',

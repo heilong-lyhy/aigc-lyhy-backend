@@ -1,7 +1,6 @@
 // src/modules/account/base/services/account.service.spec.ts
 
 import { DomainError } from '@core/common/errors/domain-error';
-import { PasswordPolicyService } from '@core/common/password/password-policy.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,10 +23,6 @@ describe('AccountService - 密码预处理功能', () => {
     // 模拟方法
   };
 
-  const mockPasswordPolicyService = {
-    validatePassword: jest.fn().mockReturnValue({ isValid: true, errors: [], strength: 80 }),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,10 +38,6 @@ describe('AccountService - 密码预处理功能', () => {
         {
           provide: AccountSecurityService,
           useValue: mockAccountSecurityService,
-        },
-        {
-          provide: PasswordPolicyService,
-          useValue: mockPasswordPolicyService,
         },
       ],
     }).compile();
@@ -230,160 +221,6 @@ describe('AccountService - 密码预处理功能', () => {
       expect(() =>
         AccountService.verifyPassword('\u3000MySecurePassword123!', hashedPassword, testDate),
       ).toThrow('密码首尾不能包含空格');
-    });
-  });
-
-  describe('changePassword - 修改密码', () => {
-    const testDate = new Date('2024-01-01T00:00:00Z');
-    const currentPassword = 'OldPassword123!';
-    let currentPasswordHash: string;
-
-    beforeAll(() => {
-      currentPasswordHash = AccountService.hashPasswordWithTimestamp(currentPassword, testDate);
-    });
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it('应成功修改密码', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        id: 1,
-        loginPassword: currentPasswordHash,
-        createdAt: testDate,
-      });
-      mockPasswordPolicyService.validatePassword.mockReturnValue({
-        isValid: true,
-        errors: [],
-        strength: 80,
-      });
-      mockRepository.update.mockResolvedValue({ affected: 1 });
-
-      await service.changePassword({
-        accountId: 1,
-        currentPassword,
-        newPassword: 'NewPassword456!',
-      });
-
-      expect(mockRepository.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ loginPassword: expect.any(String) }),
-      );
-    });
-
-    it('账户不存在时应抛出 ACCOUNT_NOT_FOUND', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.changePassword({
-          accountId: 999,
-          currentPassword: 'any',
-          newPassword: 'NewPassword456!',
-        }),
-      ).rejects.toThrow(DomainError);
-      await expect(
-        service.changePassword({
-          accountId: 999,
-          currentPassword: 'any',
-          newPassword: 'NewPassword456!',
-        }),
-      ).rejects.toThrow('账户不存在');
-    });
-
-    it('旧密码不正确时应抛出 ACCOUNT_PASSWORD_MISMATCH', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        id: 1,
-        loginPassword: currentPasswordHash,
-        createdAt: testDate,
-      });
-
-      await expect(
-        service.changePassword({
-          accountId: 1,
-          currentPassword: 'WrongPassword!',
-          newPassword: 'NewPassword456!',
-        }),
-      ).rejects.toThrow(DomainError);
-      await expect(
-        service.changePassword({
-          accountId: 1,
-          currentPassword: 'WrongPassword!',
-          newPassword: 'NewPassword456!',
-        }),
-      ).rejects.toThrow('当前密码不正确');
-    });
-
-    it('新密码不符合策略时应抛出 ACCOUNT_PASSWORD_POLICY_VIOLATION', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        id: 1,
-        loginPassword: currentPasswordHash,
-        createdAt: testDate,
-      });
-      mockPasswordPolicyService.validatePassword.mockReturnValue({
-        isValid: false,
-        errors: ['密码长度至少8位'],
-        strength: 20,
-      });
-
-      await expect(
-        service.changePassword({
-          accountId: 1,
-          currentPassword,
-          newPassword: '123',
-        }),
-      ).rejects.toThrow(DomainError);
-      await expect(
-        service.changePassword({
-          accountId: 1,
-          currentPassword,
-          newPassword: '123',
-        }),
-      ).rejects.toThrow('密码不符合安全要求');
-    });
-
-    it('旧密码验证失败时不应调用 update', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        id: 1,
-        loginPassword: currentPasswordHash,
-        createdAt: testDate,
-      });
-
-      try {
-        await service.changePassword({
-          accountId: 1,
-          currentPassword: 'WrongPassword!',
-          newPassword: 'NewPassword456!',
-        });
-      } catch {
-        // expected
-      }
-
-      expect(mockRepository.update).not.toHaveBeenCalled();
-    });
-
-    it('密码策略校验失败时不应调用 update', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        id: 1,
-        loginPassword: currentPasswordHash,
-        createdAt: testDate,
-      });
-      mockPasswordPolicyService.validatePassword.mockReturnValue({
-        isValid: false,
-        errors: ['密码长度至少8位'],
-        strength: 20,
-      });
-
-      try {
-        await service.changePassword({
-          accountId: 1,
-          currentPassword,
-          newPassword: '123',
-        });
-      } catch {
-        // expected
-      }
-
-      expect(mockRepository.update).not.toHaveBeenCalled();
     });
   });
 

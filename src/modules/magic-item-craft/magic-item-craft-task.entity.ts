@@ -23,6 +23,9 @@ export class MagicItemCraftTaskEntity {
   @Column({ name: 'trace_id', type: 'varchar', length: 128 })
   traceId!: string;
 
+  @Column({ name: 'job_id', type: 'varchar', length: 128, nullable: true }) // [KEPT:业务保留]
+  jobId!: string | null;
+
   @Column({ name: 'item_name', type: 'varchar', length: 255 })
   itemName!: string;
 

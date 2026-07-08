@@ -1,7 +1,6 @@
 // src/types/auth/login-flow.types.ts
 
 import { AccountStatus, AudienceTypeEnum, IdentityTypeEnum } from '@app-types/models/account.types';
-import type { UserInfoView } from '@app-types/models/auth.types';
 
 /**
  * ExecuteLoginFlowUsecase 输出类型
@@ -74,8 +73,6 @@ export interface EnrichedLoginResult {
   // 账号和用户信息（改为可选字段）
   account?: MinimalAccountInfo;
   userInfo?: MinimalUserInfo;
-  /** 完整用户信息视图，供适配器层映射为 DTO */
-  userInfoView?: UserInfoView;
 
   // 警告信息（仅在非理想路径返回）
   warnings?: string[];

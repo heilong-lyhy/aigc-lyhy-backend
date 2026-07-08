@@ -4,9 +4,9 @@ import 'reflect-metadata';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { useContainer } from 'class-validator';
-import cors from 'cors';
+import cors from 'cors'; // [KEPT:业务保留] - 使用 cors 中间件而非 app.enableCors
 import type { Express } from 'express';
-import helmet from 'helmet';
+import helmet from 'helmet'; // [KEPT:业务保留] - 业务需要 Helmet 安全头
 import { Logger } from 'nestjs-pino';
 import { initGraphQLSchema } from '@src/adapters/api/graphql/schema/schema.init';
 import { ApiModule } from '@src/bootstraps/api/api.module';
@@ -38,8 +38,6 @@ async function bootstrap() {
           // 允许无 Origin 的请求（如服务端调用、curl 等）
           if (!origin) return callback(null, true);
           if (origins.includes(origin)) return callback(null, true);
-          // cors 包的 origin 数组匹配对非标准端口的 Origin 处理存在差异，
-          // 使用函数匹配确保带端口的 Origin 也能正确比较
           callback(null, false);
         },
         credentials: configService.get<boolean>('server.cors.credentials', true),
@@ -51,7 +49,7 @@ async function bootstrap() {
     );
   }
 
-  // 安全头：Helmet 中间件（CSP 需兼容 GraphQL Playground，按环境调整）
+  // 安全头：Helmet 中间件（CSP 需兼容 GraphQL Playground，按环境调整） // [KEPT:业务保留]
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
   const isDev = nodeEnv !== 'production';
   app.use(
@@ -73,11 +71,11 @@ async function bootstrap() {
     }),
   );
 
-  // 隐匿技术栈：移除 Express 默认的 X-Powered-By 响应头（Helmet 已覆盖，保留双保险）
+  // 隐匿技术栈：移除 Express 默认的 X-Powered-By 响应头
   const expressApp = app.getHttpAdapter().getInstance() as unknown as Express;
   expressApp.disable('x-powered-by');
 
-  // 启用 GraphQL 文件上传中间件（graphql-upload v17 ESM-only，使用动态导入）
+  // 启用 GraphQL 文件上传中间件（graphql-upload v17 ESM-only，使用动态导入） // [KEPT:业务保留]
   const logger = app.get(Logger);
   try {
     const mod = await import('graphql-upload/graphqlUploadExpress.mjs');

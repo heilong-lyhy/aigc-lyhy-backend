@@ -8,7 +8,6 @@
 
 import { DynamicModule, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PasswordPolicyService } from '@core/common/password/password-policy.service';
 import { FieldEncryptionModule } from '@src/infrastructure/field-encryption/field-encryption.module';
 
 import { AccountFieldEncryptionRegistrar } from './account-field-encryption.registrar';
@@ -32,7 +31,6 @@ export class AccountModule {
       ],
       providers: [
         AccountFieldEncryptionRegistrar,
-        PasswordPolicyService,
         AccountService,
         AccountQueryService,
         AccountSecurityService,

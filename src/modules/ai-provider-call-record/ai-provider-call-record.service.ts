@@ -1,10 +1,9 @@
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { DomainError, THIRDPARTY_ERROR } from '@core/common/errors/domain-error';
-import { isUniqueConstraintViolation } from '@modules/common/database/database-error.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
-import { Repository, type EntityManager } from 'typeorm';
+import { QueryFailedError, Repository, type EntityManager } from 'typeorm';
 import { AiProviderCallRecordEntity } from './ai-provider-call-record.entity';
 import type {
   AiProviderCallRecordProviderStatus,
@@ -88,6 +87,7 @@ export interface AiProviderCallRecordView {
 @Injectable()
 export class AiProviderCallRecordService {
   private static readonly CREATE_RECORD_MAX_RETRY = 5;
+  private static readonly MYSQL_UNSIGNED_INT_MAX = 4294967295;
 
   constructor(
     @InjectRepository(AiProviderCallRecordEntity)
@@ -253,11 +253,43 @@ export class AiProviderCallRecordService {
   }
 
   private isTraceSeqUniqueConflict(error: unknown): boolean {
-    if (!isUniqueConstraintViolation(error)) {
-      return false;
+    const info = this.getSqlErrorInfo(error);
+    return (
+      (info.code === 'ER_DUP_ENTRY' || info.errno === 1062 || info.sqlState === '23000') &&
+      this.hasTraceSeqUniqueName(info.message)
+    );
+  }
+
+  private getSqlErrorInfo(error: unknown): {
+    code?: string;
+    errno?: number;
+    sqlState?: string;
+    message?: string;
+  } {
+    if (error instanceof QueryFailedError) {
+      const driverError = (
+        error as unknown as {
+          driverError?: {
+            code?: string;
+            errno?: number;
+            sqlState?: string;
+            message?: string;
+          };
+        }
+      ).driverError;
+      return {
+        code: driverError?.code ?? (error as { code?: string }).code,
+        errno: driverError?.errno ?? (error as { errno?: number }).errno,
+        sqlState: driverError?.sqlState ?? (error as { sqlState?: string }).sqlState,
+        message: driverError?.message ?? error.message,
+      };
     }
-    const message = error instanceof Error ? error.message : undefined;
-    return this.hasTraceSeqUniqueName(message);
+    return {
+      code: (error as { code?: string }).code,
+      errno: (error as { errno?: number }).errno,
+      sqlState: (error as { sqlState?: string }).sqlState,
+      message: error instanceof Error ? error.message : undefined,
+    };
   }
 
   private hasTraceSeqUniqueName(message?: string): boolean {
@@ -310,7 +342,11 @@ export class AiProviderCallRecordService {
       return null;
     }
     const latencyMs = input.providerFinishedAt.getTime() - input.providerStartedAt.getTime();
-    if (!Number.isFinite(latencyMs)) {
+    if (
+      !Number.isFinite(latencyMs) ||
+      latencyMs < 0 ||
+      latencyMs > AiProviderCallRecordService.MYSQL_UNSIGNED_INT_MAX
+    ) {
       return null;
     }
     return latencyMs;

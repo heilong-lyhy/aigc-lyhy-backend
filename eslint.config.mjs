@@ -156,6 +156,10 @@ function isMixedServiceFilePath(filePath) {
     return false;
   }
   const normalized = resolved.split(path.sep).join('/');
+  // [KEPT:业务保留] pagination.service 是纯只读分页服务，不属于 mixed read/write service
+  if (normalized.includes('/common/pagination.service')) {
+    return false;
+  }
   if (normalized.includes('/services/') || normalized.includes('/service/')) {
     return true;
   }

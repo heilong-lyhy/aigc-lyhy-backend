@@ -1,7 +1,6 @@
 // src/modules/async-task-record/async-task-record.types.ts
 
 import { RECORD_SOURCES, type RecordSource } from '@app-types/common/record-source.types';
-import type { AsyncTaskRecordEntity } from './async-task-record.entity';
 
 export const ASYNC_TASK_RECORD_SOURCES = RECORD_SOURCES;
 
@@ -16,6 +15,10 @@ export const ASYNC_TASK_RECORD_STATUSES = [
 ] as const;
 
 export type AsyncTaskRecordStatus = (typeof ASYNC_TASK_RECORD_STATUSES)[number];
+export type AsyncTaskRecordTerminalStatus = Extract<
+  AsyncTaskRecordStatus,
+  'succeeded' | 'failed' | 'cancelled'
+>;
 
 export interface AsyncTaskRecordView {
   readonly id: number;
@@ -109,9 +112,11 @@ export interface RecordAsyncTaskStartedInput {
   readonly bizKey: string;
   readonly bizSubKey?: string | null;
   readonly source: AsyncTaskRecordSource;
+  readonly overwriteExistingSource?: boolean;
   readonly reason?: string | null;
   readonly dedupKey?: string | null;
   readonly maxAttempts?: number | null;
+  readonly overwriteExistingMaxAttempts?: boolean;
   readonly enqueuedAt?: Date;
   readonly startedAt?: Date;
   readonly occurredAt?: Date | null;
@@ -129,10 +134,12 @@ export interface RecordAsyncTaskFinishedInput {
   readonly bizKey: string;
   readonly bizSubKey?: string | null;
   readonly source: AsyncTaskRecordSource;
-  readonly status: 'succeeded' | 'failed';
+  readonly overwriteExistingSource?: boolean;
+  readonly status: AsyncTaskRecordTerminalStatus;
   readonly reason?: string | null;
   readonly dedupKey?: string | null;
   readonly maxAttempts?: number | null;
+  readonly overwriteExistingMaxAttempts?: boolean;
   readonly enqueuedAt?: Date;
   readonly startedAt?: Date | null;
   readonly finishedAt?: Date;
@@ -164,37 +171,11 @@ export interface CreateAsyncTaskRecordInput {
 
 export interface UpdateAsyncTaskRecordStatusInput {
   readonly status?: AsyncTaskRecordStatus;
+  readonly source?: AsyncTaskRecordSource;
   readonly attemptCount?: number;
+  readonly maxAttempts?: number | null;
   readonly startedAt?: Date | null;
   readonly finishedAt?: Date | null;
   readonly reason?: string | null;
   readonly occurredAt?: Date | null;
-}
-
-/** Entity → View 映射纯函数，service 与 query.service 共用 */
-export function mapAsyncTaskRecordToView(entity: AsyncTaskRecordEntity): AsyncTaskRecordView {
-  return {
-    id: entity.id,
-    queueName: entity.queueName,
-    jobName: entity.jobName,
-    jobId: entity.jobId,
-    traceId: entity.traceId,
-    actorAccountId: entity.actorAccountId,
-    actorActiveRole: entity.actorActiveRole,
-    bizType: entity.bizType,
-    bizKey: entity.bizKey,
-    bizSubKey: entity.bizSubKey,
-    source: entity.source,
-    reason: entity.reason,
-    occurredAt: entity.occurredAt,
-    dedupKey: entity.dedupKey,
-    status: entity.status,
-    attemptCount: entity.attemptCount,
-    maxAttempts: entity.maxAttempts,
-    enqueuedAt: entity.enqueuedAt,
-    startedAt: entity.startedAt,
-    finishedAt: entity.finishedAt,
-    createdAt: entity.createdAt,
-    updatedAt: entity.updatedAt,
-  };
 }

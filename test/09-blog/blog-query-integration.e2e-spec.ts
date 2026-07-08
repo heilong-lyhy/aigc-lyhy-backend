@@ -15,9 +15,7 @@ import { BlogPostQueryService } from '../../src/modules/blog/queries/blog-post.q
 import { BlogCategoryQueryService } from '../../src/modules/blog/queries/blog-category.query.service';
 import { BlogTagQueryService } from '../../src/modules/blog/queries/blog-tag.query.service';
 import { BlogCommentQueryService } from '../../src/modules/blog/queries/blog-comment.query.service';
-import { BlogCommentEntity } from '../../src/modules/blog/entities/blog-comment.entity';
 import { BlogPostStatus, BlogCommentStatus } from '@app-types/models/blog.types';
-import { PaginationService } from '../../src/modules/common/pagination.service';
 import { initGraphQLSchema } from '../../src/adapters/api/graphql/schema/schema.init';
 
 describe('Blog QueryService Integration (e2e)', () => {
@@ -31,7 +29,6 @@ describe('Blog QueryService Integration (e2e)', () => {
   let categoryQueryService: BlogCategoryQueryService;
   let tagQueryService: BlogTagQueryService;
   let commentQueryService: BlogCommentQueryService;
-  let paginationService: PaginationService;
 
   beforeAll(async () => {
     initGraphQLSchema();
@@ -52,7 +49,6 @@ describe('Blog QueryService Integration (e2e)', () => {
     categoryQueryService = moduleFixture.get<BlogCategoryQueryService>(BlogCategoryQueryService);
     tagQueryService = moduleFixture.get<BlogTagQueryService>(BlogTagQueryService);
     commentQueryService = moduleFixture.get<BlogCommentQueryService>(BlogCommentQueryService);
-    paginationService = moduleFixture.get<PaginationService>(PaginationService);
 
     await app.init();
   }, 30000);
@@ -168,24 +164,12 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('应返回第 1 页数据', async () => {
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 1,
         pageSize: 5,
         status: BlogPostStatus.PUBLISHED,
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 1,
-          pageSize: 5,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(5);
@@ -194,24 +178,12 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('应返回第 2 页数据', async () => {
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 2,
         pageSize: 5,
         status: BlogPostStatus.PUBLISHED,
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 2,
-          pageSize: 5,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(5);
@@ -220,24 +192,12 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('超出范围时应返回空列表', async () => {
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 10,
         pageSize: 5,
         status: BlogPostStatus.PUBLISHED,
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 10,
-          pageSize: 5,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(0);
@@ -270,25 +230,13 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('按标题搜索应返回匹配结果', async () => {
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 1,
         pageSize: 10,
         status: BlogPostStatus.PUBLISHED,
         title: 'NestJS',
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 1,
-          pageSize: 10,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(1);
@@ -296,25 +244,13 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('无匹配时应返回空结果', async () => {
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 1,
         pageSize: 10,
         status: BlogPostStatus.PUBLISHED,
         title: '不存在的关键词',
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 1,
-          pageSize: 10,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(0);
@@ -331,25 +267,13 @@ describe('Blog QueryService Integration (e2e)', () => {
         status: BlogPostStatus.PUBLISHED,
       });
 
-      const qb = postQueryService.createPostQueryBuilder({
+      const result = await postQueryService.paginatePosts({
         page: 1,
         pageSize: 10,
         status: BlogPostStatus.PUBLISHED,
         categoryId: cat.id,
-      });
-
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: {
-          mode: 'OFFSET',
-          page: 1,
-          pageSize: 10,
-          withTotal: true,
-          sorts: [{ field: 'createdAt', direction: 'DESC' }],
-        },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field) => (field === 'createdAt' ? 'post.created_at' : null),
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
 
       expect(result.items).toHaveLength(1);
@@ -390,58 +314,40 @@ describe('Blog QueryService Integration (e2e)', () => {
     });
 
     it('公开查询应只返回已审核通过的评论', async () => {
-      const qb = commentQueryService.createCommentByPostQueryBuilder({
+      const result = await commentQueryService.paginateCommentsByPost({
         postId,
         page: 1,
         pageSize: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'ASC',
       });
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'ASC' }],
-        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
-      });
-      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
-      expect(comments).toHaveLength(5);
-      comments.forEach((c) => expect(c.status).toBe(BlogCommentStatus.APPROVED));
+      expect(result.items).toHaveLength(5);
+      result.items.forEach((c) => expect(c.status).toBe(BlogCommentStatus.APPROVED));
     });
 
     it('管理端查询应返回所有评论', async () => {
-      const qb = commentQueryService.createCommentQueryBuilder({
+      const result = await commentQueryService.paginateComments({
         page: 1,
         pageSize: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
-      });
-      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
-      expect(comments).toHaveLength(8);
+      expect(result.items).toHaveLength(8);
     });
 
     it('管理端按状态筛选应返回对应评论', async () => {
-      const qb = commentQueryService.createCommentQueryBuilder({
+      const result = await commentQueryService.paginateComments({
         page: 1,
         pageSize: 20,
         status: BlogCommentStatus.PENDING,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
       });
-      const result = await paginationService.paginateQuery({
-        qb,
-        params: { mode: 'OFFSET', page: 1, pageSize: 20 },
-        allowedSorts: ['createdAt'],
-        defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-        resolveColumn: (field: string) => (field === 'createdAt' ? 'comment.created_at' : null),
-      });
-      const comments = result.items.map((e: BlogCommentEntity) => commentQueryService.toView(e));
 
-      expect(comments).toHaveLength(3);
-      comments.forEach((c) => expect(c.status).toBe(BlogCommentStatus.PENDING));
+      expect(result.items).toHaveLength(3);
+      result.items.forEach((c) => expect(c.status).toBe(BlogCommentStatus.PENDING));
     });
   });
 

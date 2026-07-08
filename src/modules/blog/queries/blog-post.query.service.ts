@@ -9,7 +9,7 @@ import { DomainError } from '@core/common/errors/domain-error';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaginationQueryService } from '@modules/common/pagination.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.types';
@@ -64,7 +64,7 @@ export class BlogPostQueryService {
     private readonly postTagRepo: Repository<BlogPostTagEntity>,
     private readonly categoryQueryService: BlogCategoryQueryService,
     private readonly tagQueryService: BlogTagQueryService,
-    private readonly paginationService: PaginationQueryService,
+    private readonly paginationService: PaginationService,
   ) {}
 
   async findPostById(

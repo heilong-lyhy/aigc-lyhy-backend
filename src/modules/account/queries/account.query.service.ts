@@ -6,9 +6,9 @@ import {
   UserAccountView,
 } from '@app-types/models/account.types';
 import { UserInfoView } from '@app-types/models/auth.types';
-import { UserState } from '@app-types/models/user-info.types';
+import { Gender, UserState } from '@app-types/models/user-info.types';
 import { UsecaseSession } from '@app-types/auth/session.types';
-import { hasRole, normalizeAccessGroup } from '@core/account/policy/role-access.policy';
+import { hasRole } from '@core/account/policy/role-access.policy';
 import { canViewUserInfo } from '@core/account/policy/user-info-visibility.policy';
 import { ACCOUNT_ERROR } from '@core/common/errors';
 import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
@@ -232,7 +232,7 @@ export class AccountQueryService {
         accountId: userInfo.accountId,
         nickname: userInfo.nickname,
         avatarUrl: userInfo.avatarUrl,
-        accessGroup: normalizeAccessGroup(userInfo.accessGroup, { fallbackToRegistrant: true }),
+        accessGroup: userInfo.accessGroup ?? null,
         metaDigest: userInfo.metaDigest ?? null,
         createdAt: userInfo.createdAt,
         updatedAt: userInfo.updatedAt,
@@ -263,26 +263,18 @@ export class AccountQueryService {
       );
     }
 
-    const finalAccessGroup = normalizeAccessGroup(base.accessGroup, { fallbackToRegistrant: true });
+    const finalAccessGroup: IdentityTypeEnum[] = base.accessGroup?.length
+      ? base.accessGroup
+      : [IdentityTypeEnum.REGISTRANT];
 
     return this.buildUserInfoView(base, accountId, finalAccessGroup);
   }
 
-  async getUserInfoViewForLogin(params: {
-    accountId: number;
-    transactionContext?: PersistenceTransactionContext;
-  }): Promise<UserInfoView> {
-    const base = await this.findUserInfoByAccountId(params.accountId, params.transactionContext);
-    if (!base) {
-      throw new DomainError(
-        ACCOUNT_ERROR.USER_INFO_NOT_FOUND,
-        `账户 ID ${params.accountId} 对应的用户信息不存在`,
-      );
-    }
-
-    const finalAccessGroup = normalizeAccessGroup(base.accessGroup, {
-      fallbackToRegistrant: true,
-    });
+  async getUserInfoViewForLogin(params: { accountId: number }): Promise<UserInfoView> {
+    const base = await this.findUserInfoByAccountId(params.accountId);
+    const finalAccessGroup: IdentityTypeEnum[] = base?.accessGroup?.length
+      ? base.accessGroup
+      : [IdentityTypeEnum.REGISTRANT];
 
     return this.buildUserInfoView(base, params.accountId, finalAccessGroup);
   }
@@ -303,7 +295,7 @@ export class AccountQueryService {
   }
 
   private buildUserInfoView(
-    base: UserInfoEntity,
+    base: UserInfoEntity | null,
     accountId: number,
     accessGroup: IdentityTypeEnum[],
   ): UserInfoView {
@@ -317,39 +309,39 @@ export class AccountQueryService {
     };
   }
 
-  private buildBasicFields(base: UserInfoEntity) {
+  private buildBasicFields(base: UserInfoEntity | null) {
     return {
-      nickname: base.nickname,
-      gender: base.gender,
-      birthDate: base.birthDate,
-      avatarUrl: base.avatarUrl,
-      signature: base.signature,
+      nickname: base?.nickname ?? '',
+      gender: base?.gender ?? Gender.SECRET,
+      birthDate: base?.birthDate ?? null,
+      avatarUrl: base?.avatarUrl ?? null,
+      signature: base?.signature ?? null,
     };
   }
 
-  private buildContactFields(base: UserInfoEntity) {
+  private buildContactFields(base: UserInfoEntity | null) {
     return {
-      email: base.email,
-      address: base.address,
-      phone: base.phone,
+      email: base?.email ?? null,
+      address: base?.address ?? null,
+      phone: base?.phone ?? null,
     };
   }
 
-  private buildExtendedFields(base: UserInfoEntity) {
+  private buildExtendedFields(base: UserInfoEntity | null) {
     return {
-      tags: this.normalizeTags(base.tags),
-      geographic: base.geographic,
-      metaDigest: base.metaDigest,
+      tags: this.normalizeTags(base?.tags),
+      geographic: base?.geographic ?? null,
+      metaDigest: base?.metaDigest ?? null,
     };
   }
 
-  private buildSystemFields(base: UserInfoEntity) {
+  private buildSystemFields(base: UserInfoEntity | null) {
     return {
-      notifyCount: base.notifyCount,
-      unreadCount: base.unreadCount,
-      userState: base.userState,
-      createdAt: base.createdAt,
-      updatedAt: base.updatedAt,
+      notifyCount: base?.notifyCount ?? 0,
+      unreadCount: base?.unreadCount ?? 0,
+      userState: base?.userState ?? UserState.PENDING,
+      createdAt: base?.createdAt ?? new Date(),
+      updatedAt: base?.updatedAt ?? new Date(),
     };
   }
 

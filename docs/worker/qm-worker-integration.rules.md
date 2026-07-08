@@ -57,6 +57,42 @@ Source of truth: This file defines QM worker integration rules; code examples el
    - 不重造审计与错误语义。
    - 需要例外时，必须先说明现有模式为何不适用。
 
+## 分阶段接入约束
+
+- 可以先注册 runtime job contract，再补 admission、审计和 worker consumer。
+- contract 已注册但 worker consumer 未接入时，不得暴露会真实入队该 job 的 adapter / public usecase 入口。
+- 内部门面若提前存在，只能服务后续阶段的 admission / housekeeping，不得绕过 Async Task Record。
+- queue health / admission gate 只能把 Redis、BullMQ probe 或外部队列运行时异常映射为“队列不可用”。
+- 本地注册、DI wiring、queueName / jobName 不合法等确定性配置错误必须继续抛出，不得进入等待或重试语义。
+- admission / housekeeping 可在 worker consumer 接入前作为内部 usecase 存在，但不得接外部 adapter 或
+  public usecase 入口。
+- housekeeping 修复已链接 Async Task Record 时，应验证记录存在且与 queue/job/trace 匹配后才跳过；
+  不得仅凭本地 linkage id 判定审计链路完整。
+- housekeeping terminal reconcile 不得覆盖已有但不同的 Async Task Record 终态；这类 mismatch 应记录并跳过。
+- workflow handler 应作为带 `AiWorkflowHandlerProvider()` decorator 的 Nest provider 注册，由 worker
+  usecase registry 通过 provider discovery 收集；不得在 registry 内硬编码 handler 列表。
+- workflow queue/job 名称以 BullMQ constants 为运行时真源；业务层需要复用时，通过 queue module 的
+  常量 alias 引用，不得另起裸字符串真源。
+- workflow worker consumer 可先于默认业务 handler 接入；当 registry 中没有匹配 handler 时，应作为
+  non-retryable 失败处理并写入审计记录，不通过 BullMQ retry 等待 handler 后续上线。
+- 对外 adapter / public usecase 暴露 workflow 入队前，必须确认目标 workflowType 已有 handler
+  注册，或调用方明确接受 handler 缺失即任务失败的语义。
+- workflow handler 不直接写 AsyncTaskRecord 或 ai_provider_call_record；worker usecase 统一收敛
+  lifecycle 与 provider-call 审计写入。
+- workflow handler 自己定义 prompt、provider input、provider output 解析和 output payload schema；通用
+  worker 层不做业务语义翻译。
+- handler 如果已经完成真实 provider 请求，但后续解析 provider output 或校验 output schema 失败，应通过
+  non-retryable workflow error 携带 provider-call 结果，让 worker usecase 先写 provider-call 审计，再把
+  workflow 标记为失败。
+- 基线内置的 `generic_text_generate` 只提供通用文本生成 workflow handler：
+  - input payload 固定为 `userPrompt`、可选 `systemPrompt` / `context` / `provider`、必填 `model`。
+  - workflow context 中存在 provider / model 快照时，payload 中的 provider / model 必须与快照一致。
+  - `systemPrompt`、`context` 与 `userPrompt` 组装后传给现有 generate provider。
+  - 组装后的 prompt 复用现有 generate 入口的 12000 字符上限。
+  - 非法 input、快照不一致或 prompt 超限属于 non-retryable workflow 失败，不调用 provider。
+- 下游项目仍负责业务 GraphQL/API 入口、业务 handler、示例 / demo handler、敏感 payload 加密或外部存储、
+  retention、ops 查询与 workflow 真实第三方 smoke；这些不属于基线默认能力。
+
 ## 落位规范
 
 - 入口层（Resolver / Controller）
@@ -108,6 +144,7 @@ Source of truth: This file defines QM worker integration rules; code examples el
 - 真实第三方 Smoke：`test/99-third-party-live-smoke/`
 - 参考：
   - `test/08-qm-worker/ai-graphql-queue.e2e-spec.ts`
+  - `test/08-qm-worker/ai-workflow-generic-handler.e2e-spec.ts`
   - `test/99-third-party-live-smoke/ai-qwen-generate-real.e2e-spec.ts`
 
 ## 新增一个队列的最短清单

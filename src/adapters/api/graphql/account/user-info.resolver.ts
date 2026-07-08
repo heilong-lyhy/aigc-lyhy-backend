@@ -1,6 +1,7 @@
 // 文件位置：src/adapters/api/graphql/account/user-info.resolver.ts
 import { IdentityTypeEnum } from '@app-types/models/account.types';
-import { GeographicInfo } from '@app-types/models/user-info.types';
+import { UserInfoView } from '@app-types/models/auth.types';
+import { type GeographicInfo } from '@app-types/models/user-info.types';
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { mapJwtToUsecaseSession, type UsecaseSession } from '@app-types/auth/session.types';
@@ -16,7 +17,6 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { BasicUserInfoDTO } from './dto/basic-user-info.dto';
 import { UserInfoDTO } from './dto/user-info.dto';
-import { mapUserInfoViewToDTO, mapUserInfoViewToBasicDTO } from './dto/user-info.mapper';
 import {
   UpdateAccessGroupInput,
   UpdateAccessGroupResult,
@@ -53,7 +53,7 @@ export class UserInfoResolver {
       targetAccountId: accountId,
       detail: 'FULL',
     });
-    return mapUserInfoViewToDTO(view);
+    return this.mapViewToDTO(view);
   }
 
   /**
@@ -73,7 +73,57 @@ export class UserInfoResolver {
       targetAccountId: accountId,
       detail: 'BASIC',
     });
-    return mapUserInfoViewToBasicDTO(view);
+    return this.mapViewToBasicDTO(view);
+  }
+
+  /**
+   * 将领域视图映射为 GraphQL 完整 DTO
+   */
+  private mapViewToDTO(view: UserInfoView): UserInfoDTO {
+    return {
+      id: view.accountId,
+      accountId: view.accountId,
+      nickname: view.nickname,
+      gender: view.gender,
+      birthDate: view.birthDate,
+      avatarUrl: view.avatarUrl,
+      email: view.email,
+      signature: view.signature,
+      accessGroup: view.accessGroup,
+      address: view.address,
+      phone: view.phone,
+      tags: view.tags,
+      geographic: this.serializeGeographic(view.geographic),
+      notifyCount: view.notifyCount,
+      unreadCount: view.unreadCount,
+      userState: view.userState,
+      createdAt: view.createdAt,
+      updatedAt: view.updatedAt,
+    };
+  }
+
+  /**
+   * 将领域视图映射为 GraphQL 基础 DTO
+   */
+  private mapViewToBasicDTO(view: UserInfoView): BasicUserInfoDTO {
+    return {
+      id: view.accountId,
+      accountId: view.accountId,
+      nickname: view.nickname,
+      gender: view.gender,
+      avatarUrl: view.avatarUrl,
+      phone: view.phone,
+    };
+  }
+
+  private serializeGeographic(
+    geo: { province?: string | null; city?: string | null } | null,
+  ): string | null {
+    if (!geo) return null;
+    const parts: string[] = [];
+    if (geo.province) parts.push(geo.province);
+    if (geo.city) parts.push(geo.city);
+    return parts.length > 0 ? parts.join(', ') : null;
   }
 
   /**
@@ -119,7 +169,7 @@ export class UserInfoResolver {
     });
     return {
       isUpdated,
-      userInfo: mapUserInfoViewToDTO(view),
+      userInfo: this.mapViewToDTO(view),
     };
   }
 

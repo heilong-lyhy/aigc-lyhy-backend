@@ -8,6 +8,7 @@
   - `docs/api/`: API / GraphQL adapter rules
   - `docs/worker/`: worker / queue / async-consumer rules
   - `docs/project-convention/`: project-specific conventions
+  - `docs/generated/`: generated local observation docs; do not edit manually
   - `docs/frontend/`: optional frontend-facing contract notes and cross-repo alignment drafts, not backend source of truth
   - `docs/deprecated/`: historical design background only, not implementation guidance
   - `plans/`: active plans, priorities, followups and deliverables
@@ -56,6 +57,14 @@
   - Boundary contract or port/contract naming:
     - `docs/common/boundary-contract.rules.md`
 
+  - Capability plugin / ability modularization:
+    - `docs/common/capability-plugin.rules.md`
+    - `docs/common/capability-plugin-authoring.guide.md` when adding, reviewing, or merging capability code
+    - `docs/generated/capabilities-current.md` when you need the current generated capability id list
+    - `docs/common/boundary-contract.rules.md` when adding dispatcher / runtime contracts
+    - `docs/worker/qm-worker-integration.rules.md` when adding queue transport or worker consumer
+    - `docs/api/graphql-error-contract-current.md` when changing capability-aware GraphQL behavior
+
   - Input normalization:
     - `docs/project-convention/input-field-design.md`
     - `docs/project-convention/input-normalize-v1-boundaries.md`
@@ -75,6 +84,13 @@
     - `docs/common/queue-identifiers.rules.md`
     - `docs/common/ai-task-lifecycle-audit.rules.md`
     - `docs/project-convention/ai-provider-call-persistence.rules.md`
+
+  - AI workflow context / admission / worker handler:
+    - `docs/common/queue-identifiers.rules.md`
+    - `docs/common/ai-task-lifecycle-audit.rules.md`
+    - `docs/worker/qm-worker-integration.rules.md`
+    - `docs/worker/worker-adapter.rules.md`
+    - `docs/worker/worker-usecase.rules.md`
 
   - Add a new worker queue:
     - `docs/worker/qm-worker-integration.rules.md`
@@ -105,6 +121,9 @@
   ## One-Line Meanings
 
   - `core.rules`: pure domain only
+  - `capability-plugin.rules`: capability plugin boundaries, runtime semantics, transport and contribution rules
+  - `capability-plugin-authoring.guide.md`: capability authoring, merge and validation checklist for AI agents
+  - `generated/capabilities-current.md`: generated local capability id list
   - `eslint-architecture-rules.md`: executable lint rule map and architecture validation commands
   - `boundary-contract.rules`: layer-owned contract naming and port/contract distinction
   - `aggregate.rules`: aggregate root and child-entity write boundaries
@@ -126,7 +145,7 @@
   - `input-normalize-v1-boundaries.md`: primitive normalize boundaries
   - `time-field-design.md`: `TIMESTAMP(3)` vs `DATE` vs `DATETIME`
   - `time-normalize-v1-boundaries.md`: parse / normalize / format / guard boundaries
-  - `qm-worker-integration.rules.md`: new queue integration checklist
+  - `qm-worker-integration.rules.md`: queue integration checklist, AI workflow handler registration and generic workflow boundary
   - `worker-adapter.rules.md`: worker adapter boundary
   - `worker-usecase.rules.md`: worker usecase boundary
   - `email-worker-delivery.rules.md`: email delivery runtime boundary

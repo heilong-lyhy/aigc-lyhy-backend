@@ -1,10 +1,10 @@
 // src/modules/common/pagination.module.ts
-// 绑定分页器与游标签名器实现，并导出 PaginationQueryService
+// 绑定分页器与游标签名器实现，并导出 PaginationService
 
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { PaginationQueryService } from './pagination.query.service';
+import { PaginationService } from './pagination.service';
 import { PAGINATION_TOKENS } from './tokens/pagination.tokens';
 
 import { HmacCursorSigner } from '@src/infrastructure/security/hmac-signer';
@@ -34,8 +34,8 @@ import { TypeOrmSort } from '@src/infrastructure/typeorm/sort/typeorm-sort';
       provide: 'DEFAULT_SORT_RESOLVER',
       useFactory: () => new TypeOrmSort([], {}),
     },
-    PaginationQueryService,
+    PaginationService,
   ],
-  exports: [PAGINATION_TOKENS.PAGINATOR, PAGINATION_TOKENS.CURSOR_SIGNER, PaginationQueryService],
+  exports: [PAGINATION_TOKENS.PAGINATOR, PAGINATION_TOKENS.CURSOR_SIGNER, PaginationService],
 })
 export class PaginationModule {}

@@ -1,7 +1,5 @@
 // src/core/common/password/password-policy.service.ts
 
-import { validatePasswordNormalize } from './normalize-password';
-
 /**
  * 密码策略配置
  */
@@ -152,9 +150,26 @@ export class PasswordPolicyService {
     password: string,
     config: Partial<PasswordPolicyConfig> = {},
   ): PasswordValidationResult {
-    // 统一密码预处理：空/空白检查 + NFKC 规范化 + 首尾空格检查
-    // validatePasswordNormalize 不合法时直接抛 DomainError，合法时返回规范化后的密码
-    const normalizedPassword = validatePasswordNormalize(password);
+    // 预处理：trim 并拒绝纯空白密码
+    if (!password || !password.trim()) {
+      return {
+        isValid: false,
+        errors: ['密码不能为空或纯空白字符'],
+        strength: 0,
+      };
+    }
+
+    // NFKC 规范化处理，避免全角/兼容字符绕过
+    const normalizedPassword = password.normalize('NFKC');
+
+    // 检查首尾空格
+    if (normalizedPassword !== normalizedPassword.trim()) {
+      return {
+        isValid: false,
+        errors: ['密码首尾不能包含空格'],
+        strength: 0,
+      };
+    }
 
     const finalConfig = { ...this.defaultConfig, ...config };
     const errors: string[] = [];

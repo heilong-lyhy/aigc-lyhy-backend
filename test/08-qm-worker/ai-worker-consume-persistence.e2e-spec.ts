@@ -440,6 +440,9 @@ describe('AI Worker 消费落库阶段（e2e）', () => {
   }, 60000);
 
   afterAll(async () => {
+    if (workerRuntime) {
+      await workerRuntime.stop();
+    }
     if (workerApp) {
       await workerApp.close();
     }
@@ -979,6 +982,15 @@ describe('AI Worker 消费落库阶段（e2e）', () => {
         timeoutMs: 20000,
         pollMs: 150,
       });
+      const record = await waitAsyncTaskRecord({
+        dataSource,
+        queueName: BULLMQ_QUEUES.AI,
+        jobId,
+        statuses: ['failed'],
+        timeoutMs: 20000,
+        pollMs: 150,
+      });
+      expect(record.status).toBe('failed');
       expect(providerCallRecord.providerStatus).toBe('failed');
       expect(providerCallRecord.normalizedErrorCode).toBe('ai_provider_auth_failed');
       expect(providerCallRecord.providerErrorCode).toBe('invalid_api_key');
@@ -1110,6 +1122,15 @@ describe('AI Worker 消费落库阶段（e2e）', () => {
         timeoutMs: 20000,
         pollMs: 150,
       });
+      const record = await waitAsyncTaskRecord({
+        dataSource,
+        queueName: BULLMQ_QUEUES.AI,
+        jobId,
+        statuses: ['failed'],
+        timeoutMs: 20000,
+        pollMs: 150,
+      });
+      expect(record.status).toBe('failed');
       expect(providerCallRecord.taskType).toBe('embed');
       expect(providerCallRecord.providerStatus).toBe('failed');
       expect(providerCallRecord.provider).toBe('mock-embed');

@@ -11,9 +11,12 @@ import { DomainError, THIRDPARTY_ERROR } from '@core/common/errors/domain-error'
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ThirdPartyProvider } from './interfaces/third-party-provider.interface';
-import { WeAppProvider } from './providers/weapp.provider';
-import { mapThirdPartyAuthToView } from './third-party-auth.view-mapper';
+import {
+  THIRD_PARTY_PROVIDER_TOKENS,
+  ThirdPartyProvider,
+  WeAppProviderContract,
+  WeAppQrcodeImage,
+} from './contracts/third-party-provider.contract';
 import { ThirdPartyAuthEntity } from './third-party-auth.entity';
 
 /** 第三方认证提供者映射的依赖注入标识 */
@@ -30,7 +33,8 @@ export class ThirdPartyAuthService {
     private readonly thirdPartyAuthRepository: Repository<ThirdPartyAuthEntity>,
     @Inject(PROVIDER_MAP)
     private readonly adapters: Map<ThirdPartyProviderEnum, ThirdPartyProvider>,
-    private readonly weappProvider: WeAppProvider,
+    @Inject(THIRD_PARTY_PROVIDER_TOKENS.WEAPP)
+    private readonly weappProvider: WeAppProviderContract,
   ) {}
 
   /**
@@ -114,8 +118,8 @@ export class ThirdPartyAuthService {
       accountId,
       provider: input.provider,
       providerUserId: input.providerUserId,
-      unionId: input.unionId ?? null,
-      accessToken: input.accessToken ?? null,
+      unionId: input.unionId,
+      accessToken: input.accessToken,
     });
 
     const saved = await this.thirdPartyAuthRepository.save(thirdPartyAuth);
@@ -149,8 +153,68 @@ export class ThirdPartyAuthService {
     return true;
   }
 
+  /**
+   * 注册流程中的第三方账户绑定
+   * 直接接受 ThirdPartySession 数据，适用于注册场景
+   * @param params 绑定参数
+   * @param params.accountId 账户 ID
+   * @param params.provider 第三方平台类型
+   * @param params.session 第三方会话信息
+   * @returns 绑定后的第三方认证实体
+   * @throws HttpException 当绑定冲突时抛出异常
+   */
+  async bindThirdPartyForRegistration(params: {
+    accountId: number;
+    provider: ThirdPartyProviderEnum;
+    session: ThirdPartySession;
+  }): Promise<ThirdPartyAuthView> {
+    const { accountId, provider, session } = params;
+
+    // 检查当前账户是否已绑定该平台
+    const existedByAccount = await this.thirdPartyAuthRepository.findOne({
+      where: { accountId, provider },
+    });
+    if (existedByAccount) {
+      throw new DomainError(
+        THIRDPARTY_ERROR.ACCOUNT_ALREADY_BOUND,
+        `该账户已绑定 ${provider} 平台`,
+      );
+    }
+
+    // 检查该第三方账户是否已被其他用户绑定
+    const existedByProvider = await this.thirdPartyAuthRepository.findOne({
+      where: { provider, providerUserId: session.providerUserId },
+    });
+    if (existedByProvider) {
+      throw new DomainError(
+        THIRDPARTY_ERROR.ACCOUNT_ALREADY_BOUND,
+        `该 ${provider} 账户已被其他用户绑定`,
+      );
+    }
+
+    // 创建新的绑定关系
+    const thirdPartyAuth = this.thirdPartyAuthRepository.create({
+      accountId,
+      provider,
+      providerUserId: session.providerUserId,
+      unionId: session.unionId || null,
+      accessToken: null, // ThirdPartySession 中没有 accessToken，设为 null
+    });
+
+    const saved = await this.thirdPartyAuthRepository.save(thirdPartyAuth);
+    return this.toView(saved);
+  }
+
   private toView(record: ThirdPartyAuthEntity): ThirdPartyAuthView {
-    return mapThirdPartyAuthToView(record);
+    return {
+      id: record.id,
+      accountId: record.accountId,
+      provider: record.provider,
+      providerUserId: record.providerUserId,
+      unionId: record.unionId ?? null,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
   }
 
   /**
@@ -169,6 +233,34 @@ export class ThirdPartyAuthService {
       phoneCode: params.phoneCode,
       accessToken,
       audience: params.audience,
+    });
+  }
+
+  /**
+   * 生成微信小程序二维码
+   * @param params 生成参数
+   * @returns 二维码图片数据
+   */
+  async generateWeappQrcode(params: {
+    audience: AudienceTypeEnum;
+    scene: string;
+    page?: string;
+    width?: number;
+    checkPath?: boolean;
+    envVersion?: 'develop' | 'trial' | 'release';
+    isHyaline?: boolean;
+  }): Promise<WeAppQrcodeImage> {
+    const accessToken = await this.weappProvider.getAccessToken({
+      audience: params.audience,
+    });
+    return await this.weappProvider.createWxaCodeUnlimit({
+      accessToken,
+      scene: params.scene,
+      page: params.page,
+      width: params.width,
+      checkPath: params.checkPath,
+      envVersion: params.envVersion,
+      isHyaline: params.isHyaline,
     });
   }
 }

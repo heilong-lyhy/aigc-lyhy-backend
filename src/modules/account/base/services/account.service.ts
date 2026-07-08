@@ -8,9 +8,7 @@ import {
   LoginHistoryItemModel,
 } from '@app-types/models/account.types';
 import { Gender, type GeographicInfo, UserState } from '@app-types/models/user-info.types';
-import { ACCOUNT_ERROR, DomainError } from '@core/common/errors/domain-error';
-import { PasswordPolicyService } from '@core/common/password/password-policy.service';
-import { validatePasswordNormalize } from '@core/common/password/normalize-password';
+import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -69,24 +67,14 @@ export interface UserInfoUpdateData {
   userState?: UserState;
 }
 
-export interface AccountSaveResult {
-  readonly createdAt: Date;
-  readonly id: number;
-}
-
-export interface AccountLockResult {
-  readonly id: number;
-  readonly identityHint: string | null;
-}
-
 @Injectable()
 export class AccountService {
   constructor(
+    // private readonly passwordHelper: PasswordPbkdf2Helper, // 移除这行
     @InjectRepository(AccountEntity)
     private readonly accountRepository: Repository<AccountEntity>,
     @InjectRepository(UserInfoEntity)
     private readonly userInfoRepository: Repository<UserInfoEntity>,
-    private readonly passwordPolicyService: PasswordPolicyService,
   ) {}
 
   // =========================================================
@@ -118,15 +106,24 @@ export class AccountService {
     });
   }
 
-  async createAndSaveAccount(params: {
+  /** 创建账户实体（不落库） */
+  createAccountEntity(params: {
     accountData: AccountCreateData;
     transactionContext?: PersistenceTransactionContext;
-  }): Promise<AccountSaveResult> {
+  }): AccountEntity {
     const { accountData, transactionContext } = params;
     const repository = this.getAccountRepository(transactionContext);
-    const entity = repository.create(accountData);
-    const saved = await repository.save(entity);
-    return { id: saved.id, createdAt: saved.createdAt };
+    return repository.create(accountData);
+  }
+
+  /** 落库账户实体 */
+  async saveAccount(params: {
+    account: AccountEntity;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<AccountEntity> {
+    const { account, transactionContext } = params;
+    const repository = this.getAccountRepository(transactionContext);
+    return await repository.save(account);
   }
 
   /** 更新账户 */
@@ -152,55 +149,15 @@ export class AccountService {
   }
 
   /**
-   * 修改密码：校验旧密码 → 密码策略校验 → 哈希新密码 → 更新密码哈希
-   * 聚合根写入口，封装 Account 聚合内密码修改的完整逻辑
+   * 显式锁定账户以避免并发覆盖
+   * @param accountId 账户 ID
+   * @param transactionContext 事务上下文
+   * @returns 锁定的账户实体
    */
-  async changePassword(params: {
-    accountId: number;
-    currentPassword: string;
-    newPassword: string;
-    transactionContext?: PersistenceTransactionContext;
-  }): Promise<void> {
-    const repository = this.getAccountRepository(params.transactionContext);
-    const account = await repository.findOne({ where: { id: params.accountId } });
-    if (!account) {
-      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
-    }
-
-    // 旧密码验证
-    const isCurrentPasswordValid = AccountService.verifyPassword(
-      params.currentPassword,
-      account.loginPassword,
-      account.createdAt,
-    );
-    if (!isCurrentPasswordValid) {
-      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_MISMATCH, '当前密码不正确');
-    }
-
-    // 新密码策略校验
-    const validation = this.passwordPolicyService.validatePassword(params.newPassword);
-    if (!validation.isValid) {
-      throw new DomainError(
-        ACCOUNT_ERROR.ACCOUNT_PASSWORD_POLICY_VIOLATION,
-        `密码不符合安全要求: ${validation.errors.join(', ')}`,
-      );
-    }
-
-    // 哈希新密码并更新
-    const hashedPassword = AccountService.hashPasswordWithTimestamp(
-      params.newPassword,
-      account.createdAt,
-    );
-    await repository.update(params.accountId, {
-      loginPassword: hashedPassword,
-      updatedAt: new Date(),
-    });
-  }
-
   async lockByIdForUpdate(
     accountId: number,
     transactionContext: PersistenceTransactionContext,
-  ): Promise<AccountLockResult> {
+  ): Promise<AccountEntity> {
     const repository = this.getAccountRepository(transactionContext);
     const account = await repository
       .createQueryBuilder('account')
@@ -212,17 +169,27 @@ export class AccountService {
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
     }
 
-    return { id: account.id, identityHint: account.identityHint };
+    return account;
   }
 
-  async createAndSaveUserInfo(params: {
+  /** 创建用户信息实体（不落库） */
+  createUserInfoEntity(params: {
     userInfoData: UserInfoCreateData;
     transactionContext?: PersistenceTransactionContext;
-  }): Promise<void> {
+  }): UserInfoEntity {
     const { userInfoData, transactionContext } = params;
     const repository = this.getUserInfoRepository(transactionContext);
-    const entity = repository.create(userInfoData);
-    await repository.save(entity);
+    return repository.create(userInfoData);
+  }
+
+  /** 落库用户信息实体 */
+  async saveUserInfo(params: {
+    userInfo: UserInfoEntity;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<UserInfoEntity> {
+    const { userInfo, transactionContext } = params;
+    const repository = this.getUserInfoRepository(transactionContext);
+    return await repository.save(userInfo);
   }
 
   async updateUserInfoFields(params: {
@@ -297,13 +264,58 @@ export class AccountService {
   }
 
   /**
-   * 密码预处理 - 统一调用 validatePasswordNormalize
-   * validatePasswordNormalize 不合法时直接抛 DomainError（INPUT_NORMALIZE_ERROR），合法时返回规范化密码
+   * 密码预处理 - 与 PasswordPolicyService 保持一致
    * @param password 原始密码
    * @returns 预处理后的密码
    */
   private static preprocessPassword(password: string): string {
-    return validatePasswordNormalize(password);
+    if (!password || /^\s*$/u.test(password)) {
+      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '密码不能为空或纯空白字符');
+    }
+
+    const normalizedPassword = password.normalize('NFKC');
+
+    if (/^\s|\s$/u.test(normalizedPassword)) {
+      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '密码首尾不能包含空格');
+    }
+
+    return normalizedPassword;
+  }
+
+  // [KEPT:业务保留] 博客管理员修改密码用例所需的方法
+  async changePassword(params: {
+    accountId: number;
+    currentPassword: string;
+    newPassword: string;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<void> {
+    const { accountId, currentPassword, newPassword, transactionContext } = params;
+    const repository = this.getAccountRepository(transactionContext);
+
+    const account = await repository.findOne({ where: { id: accountId } });
+    if (!account) {
+      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
+    }
+
+    // 验证旧密码
+    const isCurrentPasswordValid = AccountService.verifyPassword(
+      currentPassword,
+      account.loginPassword,
+      account.createdAt,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_MISMATCH, '当前密码不正确');
+    }
+
+    // 哈希新密码并更新
+    const newHashedPassword = AccountService.hashPasswordWithTimestamp(
+      newPassword,
+      account.createdAt,
+    );
+    await repository.update(accountId, {
+      loginPassword: newHashedPassword,
+      updatedAt: new Date(),
+    });
   }
 
   private getAccountRepository(

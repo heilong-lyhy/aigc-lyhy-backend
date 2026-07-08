@@ -44,9 +44,15 @@ export class RegisterWithEmailUsecase {
    * @returns 注册结果
    */
   async execute(params: RegisterWithEmailParams): Promise<RegisterWithEmailResult> {
-    const { loginName, loginEmail, loginPassword, nickname, inviteToken, clientIp } = params;
-    // 强制使用 REGISTRANT：注册用户仅分配 REGISTRANT 访问组，其他角色需管理员在数据库手动调整
-    const type = RegisterTypeEnum.REGISTRANT;
+    const {
+      loginName,
+      loginEmail,
+      loginPassword,
+      nickname,
+      type = RegisterTypeEnum.REGISTRANT,
+      inviteToken,
+      clientIp,
+    } = params;
     const normalizedInput = normalizeRegisterWithEmailInput({ loginEmail, nickname });
     const normalizedLoginEmail = normalizedInput.loginEmail;
     const normalizedNickname = normalizedInput.nickname;
@@ -213,7 +219,7 @@ export class RegisterWithEmailUsecase {
         );
       }
 
-      const savedAccount = await this.accountService.createAndSaveAccount({
+      const account = this.accountService.createAccountEntity({
         transactionContext,
         accountData: {
           loginName,
@@ -225,6 +231,7 @@ export class RegisterWithEmailUsecase {
           updatedAt: new Date(),
         },
       });
+      const savedAccount = await this.accountService.saveAccount({ account, transactionContext });
 
       await this.accountService.updateAccountPasswordHash({
         accountId: savedAccount.id,
@@ -235,7 +242,7 @@ export class RegisterWithEmailUsecase {
         transactionContext,
       });
 
-      await this.accountService.createAndSaveUserInfo({
+      const userInfo = this.accountService.createUserInfoEntity({
         transactionContext,
         userInfoData: {
           accountId: savedAccount.id,
@@ -247,6 +254,7 @@ export class RegisterWithEmailUsecase {
           updatedAt: new Date(),
         },
       });
+      await this.accountService.saveUserInfo({ userInfo, transactionContext });
 
       return await this.accountQueryService.getUserAccountViewById({
         accountId: savedAccount.id,

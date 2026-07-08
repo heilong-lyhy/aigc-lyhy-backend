@@ -372,8 +372,48 @@ const qmWorkerEntryConfig: ConfigFactory = () => ({
       enabled: parseBooleanInput(process.env.EMAIL_QUEUE_DEBUG_ENABLED) ?? false,
     },
     magicItemCraft: {
-      enabled: parseBooleanInput(process.env.MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED) ?? true,
-    },
+      // [KEPT:业务保留]
+      enabled: parseBooleanInput(process.env.MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED) ?? true, // [KEPT:业务保留]
+    }, // [KEPT:业务保留]
+  },
+});
+
+// [MERGED] - Capability runtime config from template
+const parseCsvEnv = (key: string): readonly string[] => {
+  return (process.env[key] ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const parsePermissionGrantEnv = (
+  raw: string | undefined,
+): Readonly<Record<string, readonly string[]>> => {
+  const grants: Record<string, readonly string[]> = {};
+  for (const entry of (raw ?? '').split(';')) {
+    const [permission, rolesRaw] = entry.split('=');
+    const normalizedPermission = permission?.trim();
+    if (!normalizedPermission || !rolesRaw) {
+      continue;
+    }
+    const roles = rolesRaw
+      .split('|')
+      .map((role) => role.trim())
+      .filter((role) => role.length > 0);
+    if (roles.length > 0) {
+      grants[normalizedPermission] = roles;
+    }
+  }
+  return grants;
+};
+
+const capabilityRuntimeConfig: ConfigFactory = () => ({
+  // [MERGED]
+  capabilityRuntime: {
+    disabledIds: parseCsvEnv('CAPABILITY_DISABLED_IDS'),
+    killSwitchIds: parseCsvEnv('CAPABILITY_KILL_SWITCH_IDS'),
+    operationDisabledKeys: parseCsvEnv('CAPABILITY_OPERATION_DISABLED_KEYS'),
+    permissionGrants: parsePermissionGrantEnv(process.env.CAPABILITY_PERMISSION_GRANTS),
   },
 });
 
@@ -434,6 +474,7 @@ const paginationConfig = () => ({
 });
 
 const blogStorageConfig: ConfigFactory = () => ({
+  // [KEPT:业务保留]
   blogStorage: {
     uploadBaseDir: process.env.BLOG_UPLOAD_BASE_DIR || join(process.cwd(), 'uploads', 'blog'),
     allowedMimeTypes: process.env.BLOG_ALLOWED_MIME_TYPES
@@ -469,11 +510,12 @@ const blogStorageConfig: ConfigFactory = () => ({
         redisConfig,
         bullmqConfig,
         qmWorkerEntryConfig,
+        capabilityRuntimeConfig, // [MERGED]
         aiWorkerConfig,
         emailDeliveryConfig,
         jwtConfig,
         paginationConfig,
-        blogStorageConfig,
+        blogStorageConfig, // [KEPT:业务保留]
       ],
     }),
   ],

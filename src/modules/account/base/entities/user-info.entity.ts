@@ -72,22 +72,8 @@ export class UserInfoEntity {
     length: 1024,
     nullable: true,
     comment: '私有数据加密字段',
-    transformer: {
-      to: (value: IdentityTypeEnum[] | null): string | null => {
-        if (value === null || value === undefined) return null;
-        return JSON.stringify(value);
-      },
-      from: (value: string | null): IdentityTypeEnum[] | null => {
-        if (value === null || value === undefined) return null;
-        try {
-          return JSON.parse(value) as IdentityTypeEnum[];
-        } catch {
-          return null;
-        }
-      },
-    },
   })
-  metaDigest!: IdentityTypeEnum[] | null;
+  metaDigest!: IdentityTypeEnum[] | null; // 修改：从 string | null 改为 IdentityTypeEnum[] | null
 
   @Column({ name: 'notify_count', type: 'int', default: 0, comment: '通知数' })
   notifyCount!: number;

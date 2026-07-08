@@ -25,9 +25,7 @@ export interface OpenAiCompatibleChatCompletionResponse {
   readonly choices?: ReadonlyArray<{
     readonly message?: {
       readonly content?:
-        | string
-        | ReadonlyArray<{ readonly type?: string; readonly text?: string }>
-        | null;
+        string | ReadonlyArray<{ readonly type?: string; readonly text?: string }> | null;
     };
   }>;
 }

@@ -1,12 +1,14 @@
-export type AsyncTaskBizDomain = 'ai_generation' | 'ai_embedding' | 'email' | 'magic_item_craft';
+export type AsyncTaskBizDomain =
+  'ai_generation' | 'ai_embedding' | 'ai_workflow' | 'email' | 'magic_item_craft'; // [KEPT:业务保留]
 
 type BizKeyPolicy = 'trace_id' | 'job_id';
 
 const BIZ_KEY_POLICY_BY_DOMAIN: Record<AsyncTaskBizDomain, BizKeyPolicy> = {
   ai_generation: 'trace_id',
   ai_embedding: 'trace_id',
+  ai_workflow: 'trace_id',
   email: 'job_id',
-  magic_item_craft: 'trace_id',
+  magic_item_craft: 'job_id', // [KEPT:业务保留]
 };
 
 export interface ResolveAsyncTaskBizKeyInput {

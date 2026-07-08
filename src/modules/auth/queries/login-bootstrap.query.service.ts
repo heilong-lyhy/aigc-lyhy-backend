@@ -1,6 +1,5 @@
 // src/modules/auth/queries/login-bootstrap.query.service.ts
 import { AccountStatus, IdentityTypeEnum } from '@app-types/models/account.types';
-import { normalizeAccessGroup } from '@core/account/policy/role-access.policy';
 import { Injectable } from '@nestjs/common';
 
 export interface LoginUserDataCollection {
@@ -43,7 +42,7 @@ export class LoginBootstrapQueryService {
     userInfo: {
       id: number;
       accountId: number;
-      nickname: string;
+      nickname: string | null;
       avatarUrl: string | null;
       createdAt: Date;
       updatedAt: Date;
@@ -54,9 +53,7 @@ export class LoginBootstrapQueryService {
       userWithAccessGroup: {
         id: params.account.id,
         loginEmail: params.account.loginEmail,
-        accessGroup: normalizeAccessGroup(params.userInfo.accessGroup, {
-          fallbackToRegistrant: true,
-        }),
+        accessGroup: this.normalizeAccessGroup(params.userInfo.accessGroup),
       },
       account: {
         id: params.account.id,
@@ -70,11 +67,19 @@ export class LoginBootstrapQueryService {
       userInfo: {
         id: params.userInfo.id,
         accountId: params.userInfo.accountId,
-        nickname: params.userInfo.nickname,
+        nickname: params.userInfo.nickname ?? '',
         avatarUrl: params.userInfo.avatarUrl,
         createdAt: params.userInfo.createdAt,
         updatedAt: params.userInfo.updatedAt,
       },
     };
+  }
+
+  private normalizeAccessGroup(accessGroup?: IdentityTypeEnum[] | null): IdentityTypeEnum[] {
+    const validRoles = new Set<string>(Object.values(IdentityTypeEnum));
+    const normalized = (accessGroup ?? []).filter((role): role is IdentityTypeEnum =>
+      validRoles.has(String(role)),
+    );
+    return normalized.length > 0 ? Array.from(new Set(normalized)) : [IdentityTypeEnum.REGISTRANT];
   }
 }

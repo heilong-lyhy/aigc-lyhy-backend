@@ -38,11 +38,6 @@ For layer-owned boundary contract naming, see docs/common/boundary-contract.rule
 - 不含 adapter 细节。
   例如 GraphQL 装饰器、HTTP 协议字段。
 
-反向约束：未同时满足上述条件时，禁止提前放置到 `src/types`。
-枚举应先放在所属 bounded context 的 `*.types.ts` 中；
-只有真正出现跨域 import 需求时才上提到 `src/types`，
-并在 PR 描述中说明触发的跨域 consumer。
-
 典型内容：
 
 - 领域 enum。

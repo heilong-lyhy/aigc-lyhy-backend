@@ -13,7 +13,7 @@ import { PinoLogger } from 'nestjs-pino';
  */
 @Injectable()
 export class FormatResponseMiddleware implements NestMiddleware {
-  private readonly bypassPaths = new Set<string>(['/health', '/health/readiness', '/graphql']);
+  private readonly bypassPaths = new Set<string>(['/health', '/health/readiness']);
 
   constructor(private readonly logger: PinoLogger) {
     this.logger.setContext(FormatResponseMiddleware.name);

@@ -3,7 +3,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { PinoLogger } from 'nestjs-pino';
-import { maskEmail } from '@core/common/text/text.helper';
 import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worker.options';
 import type { SendEmailInput, SendEmailResult } from './email-worker.types';
 
@@ -47,7 +46,7 @@ export class EmailDeliveryService {
     });
     this.logger.info(
       {
-        to: maskEmail(input.to),
+        to: this.maskEmail(input.to),
         subject: input.subject,
         providerMessageId,
         templateId: input.templateId,
@@ -104,5 +103,18 @@ export class EmailDeliveryService {
       child.stdin.write(input.message);
       child.stdin.end();
     });
+  }
+
+  /**
+   * 邮箱脱敏，避免日志泄露。
+   */
+  private maskEmail(email: string): string {
+    const parts = email.split('@');
+    if (parts.length !== 2) return '***';
+    const [localPart, domainPart] = parts;
+    if (localPart.length <= 2) {
+      return `${localPart.charAt(0) || '*'}***@${domainPart}`;
+    }
+    return `${localPart.slice(0, 2)}***@${domainPart}`;
   }
 }

@@ -5,19 +5,40 @@ import type {
   GenerateAiContentInput,
   GenerateAiContentResult,
 } from '@core/ai/ai-provider.interface';
+import type { CapabilityHealthResult } from '@app-types/common/capability.types';
 import { Injectable } from '@nestjs/common';
+import {
+  CapabilityHealthCheckProvider,
+  CapabilityProviderBindingProvider,
+} from '@src/infrastructure/capability/capability.decorators';
 import { createHash } from 'node:crypto';
-import { buildProviderJobId } from '../utils/provider-job-id';
 
 @Injectable()
+@CapabilityProviderBindingProvider({
+  capabilityId: 'ai.local-mock',
+  providerKind: 'ai.provider',
+  providerName: 'mock',
+})
+@CapabilityHealthCheckProvider({
+  capabilityId: 'ai.local-mock',
+  name: 'provider-config',
+})
 export class LocalMockAiProvider implements AiProviderClient {
   readonly name = 'mock';
+
+  check(): Promise<CapabilityHealthResult> {
+    return Promise.resolve({
+      status: 'healthy',
+      checkedAt: new Date(),
+      message: 'mock_ai_provider_ready',
+    });
+  }
 
   generate(input: GenerateAiContentInput): Promise<GenerateAiContentResult> {
     const providerStartedAt = new Date();
     const normalizedPrompt = input.prompt.trim();
     const outputText = normalizedPrompt.length > 0 ? normalizedPrompt : '[empty_prompt]';
-    const providerJobId = buildProviderJobId({
+    const providerJobId = this.buildProviderJobId({
       provider: this.name,
       model: input.model,
       content: normalizedPrompt,
@@ -46,7 +67,7 @@ export class LocalMockAiProvider implements AiProviderClient {
   embed(input: EmbedAiContentInput): Promise<EmbedAiContentResult> {
     const providerStartedAt = new Date();
     const normalizedText = input.text.trim();
-    const providerJobId = buildProviderJobId({
+    const providerJobId = this.buildProviderJobId({
       provider: this.name,
       model: input.model,
       content: normalizedText,
@@ -70,6 +91,15 @@ export class LocalMockAiProvider implements AiProviderClient {
       providerStartedAt,
       providerFinishedAt,
     });
+  }
+
+  private buildProviderJobId(input: {
+    readonly provider: string;
+    readonly model: string;
+    readonly content: string;
+  }): string {
+    const digest = createHash('sha256').update(`${input.model}:${input.content}`).digest('hex');
+    return `${input.provider}:${digest.slice(0, 24)}`;
   }
 
   private buildVector(input: {

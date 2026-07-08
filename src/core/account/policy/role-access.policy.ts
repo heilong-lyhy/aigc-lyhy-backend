@@ -8,35 +8,6 @@ export const roleHierarchy: Readonly<Record<IdentityTypeEnum, ReadonlyArray<Iden
   REGISTRANT: [],
 };
 
-const VALID_ROLES = new Set<string>(Object.values(IdentityTypeEnum));
-
-export function normalizeAccessGroup(
-  accessGroup?: ReadonlyArray<string | IdentityTypeEnum> | null,
-  options?: { fallbackToRegistrant?: boolean },
-): IdentityTypeEnum[] {
-  const fallbackToRegistrant = options?.fallbackToRegistrant ?? false;
-  const input = accessGroup ?? [];
-
-  const normalized: IdentityTypeEnum[] = [];
-  const seen = new Set<IdentityTypeEnum>();
-
-  for (const role of input) {
-    const name = String(role).toUpperCase();
-    if (!VALID_ROLES.has(name)) continue;
-    const typed = name as IdentityTypeEnum;
-    if (!seen.has(typed)) {
-      seen.add(typed);
-      normalized.push(typed);
-    }
-  }
-
-  if (normalized.length === 0 && fallbackToRegistrant) {
-    return [IdentityTypeEnum.REGISTRANT];
-  }
-
-  return normalized;
-}
-
 export function expandRoles(roles: ReadonlyArray<string | IdentityTypeEnum>): IdentityTypeEnum[] {
   const normalized = roles
     .map((r) => String(r).toUpperCase())

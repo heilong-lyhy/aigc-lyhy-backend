@@ -94,9 +94,9 @@ const queueMagicItemCraft = async (input: {
 const queryMagicItemCraftTask = async (input: {
   readonly app: INestApplication;
   readonly token?: string;
-  readonly id: number;
+  readonly id: string;
 }): Promise<{
-  readonly id: number;
+  readonly id: string;
   readonly traceId: string;
   readonly jobId: string;
   readonly itemName: string;

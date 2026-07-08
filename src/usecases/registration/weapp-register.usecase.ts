@@ -104,13 +104,10 @@ export class WeappRegisterUsecase {
       });
 
       // 6. 创建第三方绑定关系
-      await this.tpa.bindThirdParty({
+      await this.tpa.bindThirdPartyForRegistration({
         accountId: account.id,
-        input: {
-          provider: ThirdPartyProviderEnum.WEAPP,
-          providerUserId: session.providerUserId,
-          unionId: session.unionId,
-        },
+        provider: ThirdPartyProviderEnum.WEAPP,
+        session,
       });
 
       if (account.status !== AccountStatus.ACTIVE) {
@@ -275,7 +272,7 @@ export class WeappRegisterUsecase {
   }): Promise<UserAccountView> {
     const { accountData, userInfoData } = params;
     return await this.transactionRunner.run(async (transactionContext) => {
-      const savedAccount = await this.accountService.createAndSaveAccount({
+      const account = this.accountService.createAccountEntity({
         transactionContext,
         accountData: {
           ...accountData,
@@ -284,6 +281,7 @@ export class WeappRegisterUsecase {
           updatedAt: new Date(),
         },
       });
+      const savedAccount = await this.accountService.saveAccount({ account, transactionContext });
 
       await this.accountService.updateAccountPasswordHash({
         accountId: savedAccount.id,
@@ -294,7 +292,7 @@ export class WeappRegisterUsecase {
         transactionContext,
       });
 
-      await this.accountService.createAndSaveUserInfo({
+      const userInfo = this.accountService.createUserInfoEntity({
         transactionContext,
         userInfoData: {
           accountId: savedAccount.id,
@@ -303,6 +301,7 @@ export class WeappRegisterUsecase {
           updatedAt: new Date(),
         },
       });
+      await this.accountService.saveUserInfo({ userInfo, transactionContext });
 
       return await this.accountQueryService.getUserAccountViewById({
         accountId: savedAccount.id,

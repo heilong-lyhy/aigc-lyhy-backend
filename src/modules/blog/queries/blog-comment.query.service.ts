@@ -6,7 +6,7 @@ import { BlogCommentStatus } from '@app-types/models/blog.types';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaginationQueryService } from '@modules/common/pagination.query.service';
+import { PaginationService } from '@modules/common/pagination.service';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { BlogCommentView } from '../blog.types';
@@ -41,7 +41,7 @@ export class BlogCommentQueryService {
   constructor(
     @InjectRepository(BlogCommentEntity)
     private readonly commentRepo: Repository<BlogCommentEntity>,
-    private readonly paginationService: PaginationQueryService,
+    private readonly paginationService: PaginationService,
   ) {}
 
   async findCommentById(

@@ -103,12 +103,6 @@ export class LoginWithPasswordUsecase {
         options: { includeIdentity: true },
       });
 
-      // 获取完整 UserInfoView，供适配器层映射为 DTO
-      const userInfoView = await this.accountQueryService.getUserInfoViewForLogin({
-        accountId: basicResult.accountId,
-      });
-      enrichedResult.userInfoView = userInfoView;
-
       // 如果角色决策使用了 fallback 策略，添加警告信息
       if (reason === 'fallback') {
         enrichedResult.warnings = [

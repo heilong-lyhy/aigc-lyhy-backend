@@ -3,8 +3,10 @@
 import { VerificationRecordType } from '@app-types/models/verification-record.types';
 import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
-import type { VerificationRecordView } from '@src/modules/verification-record/verification-record.types';
-import { VerificationReadQueryService } from '@src/modules/verification-record/queries/verification-read.query.service';
+import {
+  VerificationRecordQueryService,
+  VerificationRecordView,
+} from '@src/modules/verification-record/queries/verification-record.query.service';
 
 /**
  * 查找验证记录用例参数
@@ -26,7 +28,7 @@ export interface FindVerificationRecordUsecaseParams {
  */
 @Injectable()
 export class FindVerificationRecordUsecase {
-  constructor(private readonly verificationReadQueryService: VerificationReadQueryService) {}
+  constructor(private readonly verificationRecordQueryService: VerificationRecordQueryService) {}
 
   /**
    * 根据 token 查找可消费的活跃验证记录
@@ -41,7 +43,7 @@ export class FindVerificationRecordUsecase {
       const now = new Date();
       const { token, forAccountId, expectedType, ignoreTargetRestriction } = params;
 
-      return await this.verificationReadQueryService.findActiveConsumableByToken({
+      return await this.verificationRecordQueryService.findActiveConsumableByToken({
         token,
         forAccountId,
         expectedType,
@@ -76,7 +78,7 @@ export class FindVerificationRecordUsecase {
   ): Promise<VerificationRecordView | null> {
     try {
       const now = new Date();
-      return await this.verificationReadQueryService.findActiveConsumableById({
+      return await this.verificationRecordQueryService.findActiveConsumableById({
         recordId,
         forAccountId,
         now,
