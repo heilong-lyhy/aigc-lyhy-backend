@@ -12,7 +12,7 @@ import {
   MagicItemCraftTaskType,
 } from '@app-types/models/magic-item-craft.types';
 
-@Entity('magic_item_craft_tasks')
+@Entity('magic_item_craft_task')
 @Index('idx_trace_id', ['traceId'], { unique: true })
 @Index('idx_status', ['status'])
 @Index('idx_created_at', ['createdAt'])
@@ -27,7 +27,7 @@ export class MagicItemCraftTaskEntity {
   itemName!: string;
 
   @Column({
-    name: 'itemType',
+    name: 'item_type',
     type: 'enum',
     enum: MagicItemCraftTaskType,
   })

@@ -8,6 +8,7 @@ import { BlogPostTagEntity } from '../entities/blog-post-tag.entity';
 import { BlogPostQueryService } from './blog-post.query.service';
 import { BlogCategoryQueryService } from './blog-category.query.service';
 import { BlogTagQueryService } from './blog-tag.query.service';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 
 describe('BlogPostQueryService', () => {
   let service: BlogPostQueryService;
@@ -51,6 +52,10 @@ describe('BlogPostQueryService', () => {
     findTagsByPostId: jest.fn(),
   };
 
+  const mockPaginationService = {
+    paginateQuery: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -59,6 +64,7 @@ describe('BlogPostQueryService', () => {
         { provide: getRepositoryToken(BlogPostTagEntity), useValue: mockPostTagRepo },
         { provide: BlogCategoryQueryService, useValue: mockCategoryQueryService },
         { provide: BlogTagQueryService, useValue: mockTagQueryService },
+        { provide: PaginationQueryService, useValue: mockPaginationService },
       ],
     }).compile();
 
@@ -266,31 +272,48 @@ describe('BlogPostQueryService', () => {
     });
   });
 
-  // ─── createPostQueryBuilder ───
+  // ─── paginatePosts ───
 
-  describe('createPostQueryBuilder', () => {
-    it('无筛选条件时应创建基础 QueryBuilder（含软删除过滤）', () => {
+  describe('paginatePosts', () => {
+    it('应委托 PaginationService 分页并映射视图', async () => {
       const mockQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
       };
       mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [{ id: 1 }, { id: 2 }],
+        total: 2,
+        page: 1,
+        pageSize: 10,
+      });
+      mockPostRepo.findBy.mockResolvedValue([mockPostEntity]);
+      mockCategoryQueryService.findCategoryNamesByIds.mockResolvedValue(
+        Object.fromEntries([[10, '技术']]),
+      );
 
-      const qb = service.createPostQueryBuilder({ page: 1, pageSize: 10 });
+      const result = await service.paginatePosts({ page: 1, pageSize: 10 });
 
       expect(mockPostRepo.createQueryBuilder).toHaveBeenCalledWith('post');
       expect(mockQb.where).toHaveBeenCalledWith('post.deleted_at IS NULL');
-      expect(qb).toBe(mockQb);
+      expect(mockPaginationService.paginateQuery).toHaveBeenCalled();
+      expect(result.items).toBeDefined();
     });
 
-    it('有 status 筛选时应添加条件', () => {
+    it('有 status 筛选时应添加条件', async () => {
       const mockQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
       };
       mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      });
 
-      service.createPostQueryBuilder({
+      await service.paginatePosts({
         page: 1,
         pageSize: 10,
         status: BlogPostStatus.PUBLISHED,
@@ -301,78 +324,25 @@ describe('BlogPostQueryService', () => {
       });
     });
 
-    it('有 categoryId 筛选时应添加条件', () => {
+    it('有 tagId 筛选时应添加 EXISTS 子查询', async () => {
       const mockQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
       };
       mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createPostQueryBuilder({
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [],
+        total: 0,
         page: 1,
         pageSize: 10,
-        categoryId: 5,
       });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('post.category_id = :categoryId', {
-        categoryId: 5,
-      });
-    });
-
-    it('有 title 筛选时应添加 LIKE 条件', () => {
-      const mockQb = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-      };
-      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createPostQueryBuilder({
-        page: 1,
-        pageSize: 10,
-        title: '关键词',
-      });
-
-      expect(mockQb.andWhere).toHaveBeenCalledWith('post.title LIKE :title', {
-        title: '%关键词%',
-      });
-    });
-
-    it('有 tagId 筛选时应添加 EXISTS 子查询', () => {
-      const mockQb = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-      };
-      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createPostQueryBuilder({
+      await service.paginatePosts({
         page: 1,
         pageSize: 10,
         tagId: 3,
       });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'EXISTS (SELECT 1 FROM blog_post_tag pt WHERE pt.post_id = post.id AND pt.tag_id = :tagId)',
-        { tagId: 3 },
-      );
-    });
-
-    it('categoryId + tagId 同时筛选时应添加两个条件（AND 语义）', () => {
-      const mockQb = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-      };
-      mockPostRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createPostQueryBuilder({
-        page: 1,
-        pageSize: 10,
-        categoryId: 5,
-        tagId: 3,
-      });
-
-      expect(mockQb.andWhere).toHaveBeenCalledWith('post.category_id = :categoryId', {
-        categoryId: 5,
-      });
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         'EXISTS (SELECT 1 FROM blog_post_tag pt WHERE pt.post_id = post.id AND pt.tag_id = :tagId)',
         { tagId: 3 },

@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileEntity } from '../entities/blog-file.entity';
 import { BlogFileQueryService } from './blog-file.query.service';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 
 describe('BlogFileQueryService', () => {
   let service: BlogFileQueryService;
@@ -26,11 +27,16 @@ describe('BlogFileQueryService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  const mockPaginationService = {
+    paginateQuery: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogFileQueryService,
         { provide: getRepositoryToken(BlogFileEntity), useValue: mockFileRepo },
+        { provide: PaginationQueryService, useValue: mockPaginationService },
       ],
     }).compile();
 
@@ -82,31 +88,41 @@ describe('BlogFileQueryService', () => {
     });
   });
 
-  // ─── createFileQueryBuilder ───
+  // ─── paginateFiles ───
 
-  describe('createFileQueryBuilder', () => {
-    it('无筛选条件时应创建基础 QueryBuilder', () => {
+  describe('paginateFiles', () => {
+    it('应委托 PaginationService 分页并映射视图', async () => {
       const mockQb = {
         andWhere: jest.fn().mockReturnThis(),
       };
       mockFileRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      const qb = service.createFileQueryBuilder({
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [mockEntity],
+        total: 1,
         page: 1,
         pageSize: 10,
       });
 
+      const result = await service.paginateFiles({ page: 1, pageSize: 10 });
+
       expect(mockFileRepo.createQueryBuilder).toHaveBeenCalledWith('file');
-      expect(qb).toBe(mockQb);
+      expect(mockPaginationService.paginateQuery).toHaveBeenCalled();
+      expect(result.items).toHaveLength(1);
     });
 
-    it('有 fileType 筛选时应添加条件', () => {
+    it('有 fileType 筛选时应添加条件', async () => {
       const mockQb = {
         andWhere: jest.fn().mockReturnThis(),
       };
       mockFileRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      });
 
-      service.createFileQueryBuilder({
+      await service.paginateFiles({
         page: 1,
         pageSize: 10,
         fileType: BlogFileType.IMAGE,

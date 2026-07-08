@@ -1,13 +1,15 @@
 // src/modules/blog/queries/blog-post.query.service.ts
-// 文章读侧 QueryService：读取、输出规范化，不写、不开事务
-// 分页列表查询由 Usecase 调用 PaginationService 编排，QueryService 只提供基础读取与视图映射
+// 文章读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
+// 分页编排下沉到 QueryService，usecase 只拿 PaginatedResult<BlogPostView>
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import { BLOG_ERROR } from '@core/common/errors';
 import { DomainError } from '@core/common/errors/domain-error';
+import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.types';
@@ -27,6 +29,32 @@ export interface BlogPostPaginationParams {
   readonly tagId?: number;
 }
 
+const POST_SORT_COLUMN_MAP: Record<string, string> = {
+  isPinned: 'post.is_pinned',
+  createdAt: 'post.created_at',
+  publishedAt: 'post.published_at',
+  viewCount: 'post.view_count',
+  likeCount: 'post.like_count',
+  title: 'post.title',
+  deletedAt: 'post.deleted_at',
+};
+
+const POST_ALLOWED_SORTS = [
+  'isPinned',
+  'createdAt',
+  'publishedAt',
+  'viewCount',
+  'likeCount',
+  'title',
+];
+const POST_DEFAULT_SORTS = [
+  { field: 'isPinned', direction: 'DESC' as const },
+  { field: 'createdAt', direction: 'DESC' as const },
+];
+
+const DELETED_POST_ALLOWED_SORTS = ['deletedAt', 'createdAt', 'title'];
+const DELETED_POST_DEFAULT_SORTS = [{ field: 'deletedAt', direction: 'DESC' as const }];
+
 @Injectable()
 export class BlogPostQueryService {
   constructor(
@@ -36,6 +64,7 @@ export class BlogPostQueryService {
     private readonly postTagRepo: Repository<BlogPostTagEntity>,
     private readonly categoryQueryService: BlogCategoryQueryService,
     private readonly tagQueryService: BlogTagQueryService,
+    private readonly paginationService: PaginationQueryService,
   ) {}
 
   async findPostById(
@@ -182,10 +211,10 @@ export class BlogPostQueryService {
   }
 
   /**
-   * 创建文章分页查询 QueryBuilder（供 Usecase 调用 PaginationService 编排分页）
+   * 文章分页查询：在 QueryService 内完成分页编排，返回 PaginatedResult<BlogPostView>
    * 已应用软删除过滤和可选的状态/分类/标题筛选
    */
-  createPostQueryBuilder(params: BlogPostPaginationParams) {
+  async paginatePosts(params: BlogPostPaginationParams): Promise<PaginatedResult<BlogPostView>> {
     const qb = this.postRepo.createQueryBuilder('post').where('post.deleted_at IS NULL');
 
     if (params.status !== undefined) {
@@ -204,13 +233,44 @@ export class BlogPostQueryService {
       );
     }
 
-    return qb;
+    // 置顶始终为最高优先级排序，用户指定排序字段时前置 isPinned DESC
+    const userSort = params.sortBy
+      ? [{ field: params.sortBy, direction: params.sortOrder ?? ('DESC' as const) }]
+      : [{ field: 'createdAt', direction: 'DESC' as const }];
+    const sorts: ReadonlyArray<{ field: string; direction: 'ASC' | 'DESC' }> =
+      params.sortBy === 'isPinned'
+        ? userSort
+        : [{ field: 'isPinned', direction: 'DESC' }, ...userSort];
+
+    const result = await this.paginationService.paginateQuery({
+      qb,
+      params: {
+        mode: 'OFFSET',
+        page: params.page,
+        pageSize: params.pageSize,
+        withTotal: true,
+        sorts,
+      },
+      allowedSorts: POST_ALLOWED_SORTS,
+      defaultSorts: POST_DEFAULT_SORTS,
+      resolveColumn: (field: string) => POST_SORT_COLUMN_MAP[field] ?? null,
+    });
+
+    const ids = result.items.map((e) => e.id);
+    const views = ids.length > 0 ? await this.findPostsByIdsForViewMapping(ids) : [];
+
+    return {
+      ...result,
+      items: views,
+    };
   }
 
   /**
-   * 创建已删除文章分页查询 QueryBuilder（管理端回收站，仅返回软删除文章）
+   * 已删除文章分页查询（管理端回收站）：在 QueryService 内完成分页编排
    */
-  createDeletedPostsQueryBuilder(params: BlogPostPaginationParams) {
+  async paginateDeletedPosts(
+    params: BlogPostPaginationParams,
+  ): Promise<PaginatedResult<BlogPostView>> {
     const qb = this.postRepo
       .createQueryBuilder('post')
       .withDeleted()
@@ -223,7 +283,29 @@ export class BlogPostQueryService {
       qb.andWhere('post.title LIKE :title', { title: `%${params.title}%` });
     }
 
-    return qb;
+    const result = await this.paginationService.paginateQuery({
+      qb,
+      params: {
+        mode: 'OFFSET',
+        page: params.page,
+        pageSize: params.pageSize,
+        withTotal: true,
+        sorts: params.sortBy
+          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
+          : [{ field: 'deletedAt', direction: 'DESC' }],
+      },
+      allowedSorts: DELETED_POST_ALLOWED_SORTS,
+      defaultSorts: DELETED_POST_DEFAULT_SORTS,
+      resolveColumn: (field: string) => POST_SORT_COLUMN_MAP[field] ?? null,
+    });
+
+    const ids = result.items.map((e) => e.id);
+    const views = ids.length > 0 ? await this.findDeletedPostsByIdsForViewMapping(ids) : [];
+
+    return {
+      ...result,
+      items: views,
+    };
   }
 
   /**

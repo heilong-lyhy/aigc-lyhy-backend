@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import { BlogCommentEntity } from '../entities/blog-comment.entity';
 import { BlogCommentQueryService } from './blog-comment.query.service';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 
 describe('BlogCommentQueryService', () => {
   let service: BlogCommentQueryService;
@@ -27,7 +28,12 @@ describe('BlogCommentQueryService', () => {
 
   const mockCommentRepo = {
     findOne: jest.fn(),
+    findBy: jest.fn(),
     createQueryBuilder: jest.fn(),
+  };
+
+  const mockPaginationService = {
+    paginateQuery: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -35,6 +41,7 @@ describe('BlogCommentQueryService', () => {
       providers: [
         BlogCommentQueryService,
         { provide: getRepositoryToken(BlogCommentEntity), useValue: mockCommentRepo },
+        { provide: PaginationQueryService, useValue: mockPaginationService },
       ],
     }).compile();
 
@@ -89,46 +96,41 @@ describe('BlogCommentQueryService', () => {
     });
   });
 
-  // ─── createCommentQueryBuilder ───
+  // ─── paginateComments ───
 
-  describe('createCommentQueryBuilder', () => {
-    it('无筛选条件时应创建基础 QueryBuilder', () => {
+  describe('paginateComments', () => {
+    it('应委托 PaginationService 分页并映射视图', async () => {
       const mockQb = {
         andWhere: jest.fn().mockReturnThis(),
       };
       mockCommentRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      const qb = service.createCommentQueryBuilder({
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [mockEntity],
+        total: 1,
         page: 1,
         pageSize: 10,
       });
+
+      const result = await service.paginateComments({ page: 1, pageSize: 10 });
 
       expect(mockCommentRepo.createQueryBuilder).toHaveBeenCalledWith('comment');
-      expect(qb).toBe(mockQb);
+      expect(mockPaginationService.paginateQuery).toHaveBeenCalled();
+      expect(result.items).toHaveLength(1);
     });
 
-    it('有 postId 筛选时应添加 post_id 条件', () => {
+    it('有 status 筛选时应添加 status 条件', async () => {
       const mockQb = {
         andWhere: jest.fn().mockReturnThis(),
       };
       mockCommentRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createCommentQueryBuilder({
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [],
+        total: 0,
         page: 1,
         pageSize: 10,
-        postId: 5,
       });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('comment.post_id = :postId', { postId: 5 });
-    });
-
-    it('有 status 筛选时应添加 status 条件', () => {
-      const mockQb = {
-        andWhere: jest.fn().mockReturnThis(),
-      };
-      mockCommentRepo.createQueryBuilder.mockReturnValue(mockQb);
-
-      service.createCommentQueryBuilder({
+      await service.paginateComments({
         page: 1,
         pageSize: 10,
         status: BlogCommentStatus.PENDING,
@@ -140,17 +142,23 @@ describe('BlogCommentQueryService', () => {
     });
   });
 
-  // ─── createCommentByPostQueryBuilder ───
+  // ─── paginateCommentsByPost ───
 
-  describe('createCommentByPostQueryBuilder', () => {
-    it('应创建仅含已审核通过且未隐藏评论的 QueryBuilder', () => {
+  describe('paginateCommentsByPost', () => {
+    it('应委托 PaginationService 分页并仅含已审核通过且未隐藏的评论', async () => {
       const mockQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
       };
       mockCommentRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockPaginationService.paginateQuery.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      });
 
-      service.createCommentByPostQueryBuilder({
+      await service.paginateCommentsByPost({
         postId: 5,
         page: 1,
         pageSize: 10,

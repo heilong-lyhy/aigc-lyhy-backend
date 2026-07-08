@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-file.query.service.ts
-// 文件读侧 QueryService：读取、输出规范化，不写、不开事务
+// 文件读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BlogFileType } from '@app-types/models/blog.types';
+import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { BlogFileView } from '../blog.types';
@@ -18,11 +20,20 @@ export interface BlogFilePaginationParams {
   readonly fileType?: BlogFileType;
 }
 
+const FILE_SORT_COLUMN_MAP: Record<string, string> = {
+  createdAt: 'file.created_at',
+  updatedAt: 'file.updated_at',
+  fileSize: 'file.file_size',
+};
+
+const FILE_ALLOWED_SORTS = ['createdAt', 'updatedAt', 'fileSize'];
+
 @Injectable()
 export class BlogFileQueryService {
   constructor(
     @InjectRepository(BlogFileEntity)
     private readonly fileRepo: Repository<BlogFileEntity>,
+    private readonly paginationService: PaginationQueryService,
   ) {}
 
   async getFileById(
@@ -36,16 +47,35 @@ export class BlogFileQueryService {
   }
 
   /**
-   * 创建文件分页查询 QueryBuilder（供 Usecase 编排分页）
+   * 文件分页查询：在 QueryService 内完成分页编排
    */
-  createFileQueryBuilder(params: BlogFilePaginationParams) {
+  async paginateFiles(params: BlogFilePaginationParams): Promise<PaginatedResult<BlogFileView>> {
     const qb = this.fileRepo.createQueryBuilder('file');
 
     if (params.fileType !== undefined) {
       qb.andWhere('file.file_type = :fileType', { fileType: params.fileType });
     }
 
-    return qb;
+    const result = await this.paginationService.paginateQuery({
+      qb,
+      params: {
+        mode: 'OFFSET',
+        page: params.page,
+        pageSize: params.pageSize,
+        withTotal: true,
+        sorts: params.sortBy
+          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
+          : [{ field: 'createdAt', direction: 'DESC' }],
+      },
+      allowedSorts: FILE_ALLOWED_SORTS,
+      defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
+      resolveColumn: (field: string) => FILE_SORT_COLUMN_MAP[field] ?? null,
+    });
+
+    return {
+      ...result,
+      items: result.items.map((e) => this.toView(e)),
+    };
   }
 
   /**

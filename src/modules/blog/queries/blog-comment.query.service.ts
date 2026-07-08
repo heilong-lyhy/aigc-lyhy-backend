@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-comment.query.service.ts
-// 评论读侧 QueryService：读取、输出规范化，不写、不开事务
+// 评论读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
 
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
+import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { BlogCommentView } from '../blog.types';
@@ -27,11 +29,19 @@ export interface BlogCommentByPostPaginationParams {
   readonly sortOrder?: 'ASC' | 'DESC';
 }
 
+const COMMENT_SORT_COLUMN_MAP: Record<string, string> = {
+  createdAt: 'comment.created_at',
+  updatedAt: 'comment.updated_at',
+};
+
+const COMMENT_ALLOWED_SORTS = ['createdAt', 'updatedAt'];
+
 @Injectable()
 export class BlogCommentQueryService {
   constructor(
     @InjectRepository(BlogCommentEntity)
     private readonly commentRepo: Repository<BlogCommentEntity>,
+    private readonly paginationService: PaginationQueryService,
   ) {}
 
   async findCommentById(
@@ -45,9 +55,11 @@ export class BlogCommentQueryService {
   }
 
   /**
-   * 创建评论分页查询 QueryBuilder（管理端，供 Usecase 编排分页）
+   * 评论分页查询（管理端）：在 QueryService 内完成分页编排
    */
-  createCommentQueryBuilder(params: BlogCommentPaginationParams) {
+  async paginateComments(
+    params: BlogCommentPaginationParams,
+  ): Promise<PaginatedResult<BlogCommentView>> {
     const qb = this.commentRepo.createQueryBuilder('comment');
 
     if (params.postId !== undefined) {
@@ -58,18 +70,60 @@ export class BlogCommentQueryService {
       qb.andWhere('comment.status = :status', { status: params.status });
     }
 
-    return qb;
+    const result = await this.paginationService.paginateQuery({
+      qb,
+      params: {
+        mode: 'OFFSET',
+        page: params.page,
+        pageSize: params.pageSize,
+        withTotal: true,
+        sorts: params.sortBy
+          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
+          : [{ field: 'createdAt', direction: 'DESC' }],
+      },
+      allowedSorts: COMMENT_ALLOWED_SORTS,
+      defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
+      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
+    });
+
+    return {
+      ...result,
+      items: result.items.map((e) => this.toView(e)),
+    };
   }
 
   /**
-   * 创建指定文章评论分页查询 QueryBuilder（公开，仅已审核通过的评论，供 Usecase 编排分页）
+   * 指定文章评论分页查询（公开，仅已审核通过的评论）：在 QueryService 内完成分页编排
    */
-  createCommentByPostQueryBuilder(params: BlogCommentByPostPaginationParams) {
-    return this.commentRepo
+  async paginateCommentsByPost(
+    params: BlogCommentByPostPaginationParams,
+  ): Promise<PaginatedResult<BlogCommentView>> {
+    const qb = this.commentRepo
       .createQueryBuilder('comment')
       .where('comment.post_id = :postId', { postId: params.postId })
       .andWhere('comment.status = :status', { status: BlogCommentStatus.APPROVED })
       .andWhere('comment.is_hidden = :isHidden', { isHidden: false });
+
+    const result = await this.paginationService.paginateQuery({
+      qb,
+      params: {
+        mode: 'OFFSET',
+        page: params.page,
+        pageSize: params.pageSize,
+        withTotal: true,
+        sorts: params.sortBy
+          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'ASC' }]
+          : [{ field: 'createdAt', direction: 'ASC' }],
+      },
+      allowedSorts: COMMENT_ALLOWED_SORTS,
+      defaultSorts: [{ field: 'createdAt', direction: 'ASC' }],
+      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
+    });
+
+    return {
+      ...result,
+      items: result.items.map((e) => this.toView(e)),
+    };
   }
 
   /**

@@ -1,6 +1,6 @@
 // src/usecases/blog/blog-read.usecase.ts
 // 博客读操作 usecases：封装 QueryService 调用，供 adapter 层通过 usecases 依赖调用
-// 分页逻辑在 usecase 层编排 PaginationService，QueryService 只提供基础读取与视图映射
+// 分页编排已下沉到 QueryService，usecase 只拿 PaginatedResult<...View>
 // 遵守依赖方向：adapters → usecases → modules
 
 import { Injectable } from '@nestjs/common';
@@ -24,7 +24,6 @@ import {
 import { BlogProfileQueryService } from '@modules/blog/queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from '@modules/blog/queries/blog-dashboard.query.service';
 import { BlogFriendLinkQueryService } from '@modules/blog/queries/blog-friend-link.query.service';
-import { PaginationService } from '@modules/common/pagination.service';
 import type {
   BlogPostView,
   BlogPostDetailView,
@@ -40,35 +39,6 @@ import type {
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 
 // ─── 文章读 ───
-
-/** 文章分页排序字段 → 数据库列名映射 */
-const POST_SORT_COLUMN_MAP: Record<string, string> = {
-  isPinned: 'post.is_pinned',
-  createdAt: 'post.created_at',
-  publishedAt: 'post.published_at',
-  viewCount: 'post.view_count',
-  likeCount: 'post.like_count',
-  title: 'post.title',
-};
-
-/** 评论分页排序字段 → 数据库列名映射 */
-const COMMENT_SORT_COLUMN_MAP: Record<string, string> = {
-  createdAt: 'comment.created_at',
-  updatedAt: 'comment.updated_at',
-};
-
-const POST_ALLOWED_SORTS = [
-  'isPinned',
-  'createdAt',
-  'publishedAt',
-  'viewCount',
-  'likeCount',
-  'title',
-];
-const POST_DEFAULT_SORTS = [
-  { field: 'isPinned', direction: 'DESC' as const },
-  { field: 'createdAt', direction: 'DESC' as const },
-];
 
 @Injectable()
 export class GetBlogPostByIdUsecase {
@@ -103,46 +73,10 @@ export class GetBlogPostBySlugUsecase {
 
 @Injectable()
 export class ListBlogPostsUsecase {
-  constructor(
-    private readonly postQueryService: BlogPostQueryService,
-    private readonly paginationService: PaginationService,
-  ) {}
+  constructor(private readonly postQueryService: BlogPostQueryService) {}
 
   async execute(params: BlogPostPaginationParams): Promise<PaginatedResult<BlogPostView>> {
-    const qb = this.postQueryService.createPostQueryBuilder(params);
-
-    // 置顶始终为最高优先级排序，用户指定排序字段时前置 isPinned DESC
-    // 当用户显式按 isPinned 排序时，直接使用用户排序，避免重复字段
-    const userSort = params.sortBy
-      ? [{ field: params.sortBy, direction: params.sortOrder ?? ('DESC' as const) }]
-      : [{ field: 'createdAt', direction: 'DESC' as const }];
-    const sorts: ReadonlyArray<{ field: string; direction: 'ASC' | 'DESC' }> =
-      params.sortBy === 'isPinned'
-        ? userSort
-        : [{ field: 'isPinned', direction: 'DESC' }, ...userSort];
-
-    const result = await this.paginationService.paginateQuery({
-      qb,
-      params: {
-        mode: 'OFFSET',
-        page: params.page,
-        pageSize: params.pageSize,
-        withTotal: true,
-        sorts,
-      },
-      allowedSorts: POST_ALLOWED_SORTS,
-      defaultSorts: POST_DEFAULT_SORTS,
-      resolveColumn: (field: string) => POST_SORT_COLUMN_MAP[field] ?? null,
-    });
-
-    const ids = result.items.map((e) => e.id);
-    const views =
-      ids.length > 0 ? await this.postQueryService.findPostsByIdsForViewMapping(ids) : [];
-
-    return {
-      ...result,
-      items: views,
-    };
+    return this.postQueryService.paginatePosts(params);
   }
 }
 
@@ -195,69 +129,21 @@ export class ListBlogTagsUsecase {
 
 @Injectable()
 export class ListBlogCommentsUsecase {
-  constructor(
-    private readonly commentQueryService: BlogCommentQueryService,
-    private readonly paginationService: PaginationService,
-  ) {}
+  constructor(private readonly commentQueryService: BlogCommentQueryService) {}
 
   async execute(params: BlogCommentPaginationParams): Promise<PaginatedResult<BlogCommentView>> {
-    const qb = this.commentQueryService.createCommentQueryBuilder(params);
-
-    const result = await this.paginationService.paginateQuery({
-      qb,
-      params: {
-        mode: 'OFFSET',
-        page: params.page,
-        pageSize: params.pageSize,
-        withTotal: true,
-        sorts: params.sortBy
-          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
-          : [{ field: 'createdAt', direction: 'DESC' }],
-      },
-      allowedSorts: ['createdAt', 'updatedAt'],
-      defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
-    });
-
-    return {
-      ...result,
-      items: result.items.map((e) => this.commentQueryService.toView(e)),
-    };
+    return this.commentQueryService.paginateComments(params);
   }
 }
 
 @Injectable()
 export class ListBlogCommentsByPostUsecase {
-  constructor(
-    private readonly commentQueryService: BlogCommentQueryService,
-    private readonly paginationService: PaginationService,
-  ) {}
+  constructor(private readonly commentQueryService: BlogCommentQueryService) {}
 
   async execute(
     params: BlogCommentByPostPaginationParams,
   ): Promise<PaginatedResult<BlogCommentView>> {
-    const qb = this.commentQueryService.createCommentByPostQueryBuilder(params);
-
-    const result = await this.paginationService.paginateQuery({
-      qb,
-      params: {
-        mode: 'OFFSET',
-        page: params.page,
-        pageSize: params.pageSize,
-        withTotal: true,
-        sorts: params.sortBy
-          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'ASC' }]
-          : [{ field: 'createdAt', direction: 'ASC' }],
-      },
-      allowedSorts: ['createdAt', 'updatedAt'],
-      defaultSorts: [{ field: 'createdAt', direction: 'ASC' }],
-      resolveColumn: (field: string) => COMMENT_SORT_COLUMN_MAP[field] ?? null,
-    });
-
-    return {
-      ...result,
-      items: result.items.map((e) => this.commentQueryService.toView(e)),
-    };
+    return this.commentQueryService.paginateCommentsByPost(params);
   }
 }
 
@@ -276,41 +162,10 @@ export class HasLikedBlogPostUsecase {
 
 @Injectable()
 export class ListBlogFilesUsecase {
-  constructor(
-    private readonly fileQueryService: BlogFileQueryService,
-    private readonly paginationService: PaginationService,
-  ) {}
+  constructor(private readonly fileQueryService: BlogFileQueryService) {}
 
   async execute(params: BlogFilePaginationParams): Promise<PaginatedResult<BlogFileView>> {
-    const qb = this.fileQueryService.createFileQueryBuilder(params);
-
-    const result = await this.paginationService.paginateQuery({
-      qb,
-      params: {
-        mode: 'OFFSET',
-        page: params.page,
-        pageSize: params.pageSize,
-        withTotal: true,
-        sorts: params.sortBy
-          ? [{ field: params.sortBy, direction: params.sortOrder ?? 'DESC' }]
-          : [{ field: 'createdAt', direction: 'DESC' }],
-      },
-      allowedSorts: ['createdAt', 'updatedAt', 'fileSize'],
-      defaultSorts: [{ field: 'createdAt', direction: 'DESC' }],
-      resolveColumn: (field: string) => {
-        const columnMap: Record<string, string> = {
-          createdAt: 'file.created_at',
-          updatedAt: 'file.updated_at',
-          fileSize: 'file.file_size',
-        };
-        return columnMap[field] ?? null;
-      },
-    });
-
-    return {
-      ...result,
-      items: result.items.map((e) => this.fileQueryService.toView(e)),
-    };
+    return this.fileQueryService.paginateFiles(params);
   }
 }
 

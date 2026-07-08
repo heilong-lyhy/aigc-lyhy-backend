@@ -4,7 +4,6 @@
 
 import { AccountModule } from '@modules/account/account.module';
 import { BlogModule } from '@modules/blog/blog.module';
-import { PaginationModule } from '@modules/common/pagination.module';
 import { Module } from '@nestjs/common';
 import { CreateBlogPostUsecase } from '@usecases/blog/create-blog-post.usecase';
 import { UpdateBlogPostUsecase } from '@usecases/blog/update-blog-post.usecase';
@@ -55,7 +54,7 @@ import {
 } from '@usecases/blog/blog-read.usecase';
 
 @Module({
-  imports: [BlogModule, AccountModule.forRoot(), PaginationModule],
+  imports: [BlogModule, AccountModule.forRoot()],
   providers: [
     // 写 usecases
     CreateBlogPostUsecase,
