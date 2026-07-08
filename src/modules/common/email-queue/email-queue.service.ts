@@ -1,6 +1,6 @@
 // src/modules/common/email-queue/email-queue.service.ts
 import { Injectable } from '@nestjs/common';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
 import { PinoLogger } from 'nestjs-pino';
 import type { QueueEmailInput, QueueEmailResult } from './email-queue.types';

@@ -1,4 +1,4 @@
-// src/usecases/reference/reference-capability.providers.ts
+// src/modules/reference/reference-capability.providers.ts
 import {
   REFERENCE_PROFILE_CAPABILITY_ID,
   REFERENCE_PROFILE_OPERATIONS,

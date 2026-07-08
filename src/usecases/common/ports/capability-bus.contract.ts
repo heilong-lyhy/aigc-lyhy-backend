@@ -9,6 +9,16 @@ import type {
   CapabilityResult,
 } from '@app-types/common/capability.types';
 
+// Re-export handler protocol interfaces from the types layer.
+// These are stable, cross-bounded-context protocol definitions needed by
+// both modules (for handler implementation) and infrastructure (for dispatch/registry).
+// Moving them to types avoids layer direction violations when modules or infrastructure
+// need to reference the handler protocol without depending on usecases.
+export type {
+  CapabilityOperationHandler,
+  CapabilityEventSubscriber,
+} from '@app-types/common/capability.types';
+
 export const CAPABILITY_COMMAND_BUS = Symbol('CAPABILITY_COMMAND_BUS');
 export const CAPABILITY_QUERY_BUS = Symbol('CAPABILITY_QUERY_BUS');
 export const CAPABILITY_QUEUE_TRANSPORT = Symbol('CAPABILITY_QUEUE_TRANSPORT');
@@ -50,16 +60,6 @@ export interface CapabilityPermissionChecker {
   canAccess(input: CapabilityPermissionCheckInput): Promise<boolean>;
 }
 
-export interface CapabilityOperationHandler<TPayload = unknown, TResult = unknown> {
-  readonly capability: CapabilityId;
-  readonly operation: string;
-  readonly operationKind: Exclude<CapabilityOperationKind, 'event'>;
-  handle(
-    envelope: CapabilityCommand<TPayload> | CapabilityQuery<TPayload>,
-    signal?: AbortSignal,
-  ): Promise<CapabilityResult<TResult>>;
-}
-
 export interface CapabilityQueueTransportDescriptor {
   readonly capabilityId: CapabilityId;
   readonly operation: string;
@@ -91,10 +91,4 @@ export interface CapabilityQueueConsumer {
 
 export interface CapabilityEventPublisher {
   publish<TPayload>(event: CapabilityEvent<TPayload>): Promise<CapabilityResult<void>>;
-}
-
-export interface CapabilityEventSubscriber<TPayload = unknown> {
-  readonly capability: CapabilityId;
-  readonly event: string;
-  handle(event: CapabilityEvent<TPayload>): Promise<CapabilityResult<void>>;
 }

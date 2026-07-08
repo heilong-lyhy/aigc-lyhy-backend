@@ -1,5 +1,6 @@
 // src/infrastructure/capability/capability.registry.ts
 import type {
+  CapabilityEventSubscriber,
   CapabilityGraphqlOperationContribution,
   CapabilityHealthCheck,
   CapabilityHealthReport,
@@ -7,6 +8,7 @@ import type {
   CapabilityManifest,
   CapabilityOperationDefinition,
   CapabilityOperationDescriptor,
+  CapabilityOperationHandler,
   CapabilityProcess,
   CapabilitySessionAuthorityClaimContribution,
   CapabilitySessionPrincipalContribution,
@@ -48,11 +50,7 @@ import {
   type CapabilitySessionAuthoritySummaryResolverMetadata,
   type CapabilitySessionIdentityResolverMetadata,
 } from './capability.decorators';
-import type {
-  CapabilityEventSubscriber,
-  CapabilityOperationHandler,
-  CapabilityQueueTransportDescriptor,
-} from '@src/usecases/common/ports/capability-bus.contract';
+import type { CapabilityQueueTransportDescriptor } from '@src/usecases/common/ports/capability-bus.contract';
 
 export const CAPABILITY_PROCESS = Symbol('CAPABILITY_PROCESS');
 

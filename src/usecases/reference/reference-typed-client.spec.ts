@@ -9,7 +9,7 @@ import {
   type CapabilityRequestContextStore,
 } from '@src/usecases/common/ports/capability-request-context-store.contract';
 import { BuildReferenceReportUsecase } from './build-reference-report.usecase';
-import { ReferenceCapabilityModule } from './reference-capability.module';
+import { ReferenceCapabilityModule } from '@src/modules/reference/reference-capability.module';
 
 describe('Reference typed capability client', () => {
   let module: TestingModule;

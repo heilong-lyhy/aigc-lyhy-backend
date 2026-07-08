@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
 import type {
   QueueMagicItemCraftJobInput,

@@ -268,3 +268,19 @@ export type CapabilityEvent<TPayload> = CapabilityEnvelope<TPayload> & {
   readonly eventId: string;
   readonly occurredAt: Date;
 };
+
+export interface CapabilityOperationHandler<TPayload = unknown, TResult = unknown> {
+  readonly capability: CapabilityId;
+  readonly operation: string;
+  readonly operationKind: Exclude<CapabilityOperationKind, 'event'>;
+  handle(
+    envelope: CapabilityCommand<TPayload> | CapabilityQuery<TPayload>,
+    signal?: AbortSignal,
+  ): Promise<CapabilityResult<TResult>>;
+}
+
+export interface CapabilityEventSubscriber<TPayload = unknown> {
+  readonly capability: CapabilityId;
+  readonly event: string;
+  handle(event: CapabilityEvent<TPayload>): Promise<CapabilityResult<void>>;
+}

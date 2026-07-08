@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 // src/modules/common/ai-queue/ai-queue.service.spec.ts
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
   BullMqProducerGateway,
   type EnqueueJobInput,

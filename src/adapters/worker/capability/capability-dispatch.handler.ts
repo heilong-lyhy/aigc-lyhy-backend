@@ -1,6 +1,6 @@
 import type { CapabilityError } from '@app-types/common/capability.types';
 import { Inject, Injectable } from '@nestjs/common';
-import { restoreCapabilityEnvelope } from '@src/infrastructure/bullmq/contracts/capability-queue.runtime';
+import { restoreCapabilityEnvelope } from '@app-types/worker/capability-queue.types';
 import {
   CAPABILITY_QUEUE_CONSUMER,
   type CapabilityQueueConsumer,

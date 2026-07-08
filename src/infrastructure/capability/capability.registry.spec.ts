@@ -2,11 +2,11 @@
 import { Injectable } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
-import type { CapabilityHealthCheck } from '@app-types/common/capability.types';
 import type {
   CapabilityEventSubscriber,
+  CapabilityHealthCheck,
   CapabilityOperationHandler,
-} from '@src/usecases/common/ports/capability-bus.contract';
+} from '@app-types/common/capability.types';
 import {
   SESSION_REFERENCE_CAPABILITY_ID,
   SESSION_REFERENCE_CAPABILITY_PROVIDERS,

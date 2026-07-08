@@ -13,7 +13,7 @@ import type {
   ConsumeAiWorkflowJobProcessInput,
   ConsumeAiWorkflowJobProcessResult,
 } from '@src/usecases/ai-worker/consume-ai-workflow-job.usecase';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import type { Job } from 'bullmq';
 
 export const AI_QUEUE_NAME = BULLMQ_QUEUES.AI;

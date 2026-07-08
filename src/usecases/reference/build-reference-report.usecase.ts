@@ -9,7 +9,7 @@ import {
   REFERENCE_PROFILE_CLIENT,
   type ReferenceProfileClient,
 } from '@src/usecases/common/ports/reference-profile-client.contract';
-import { normalizeReferenceGroupKeysInput } from './reference.input.normalize';
+import { normalizeReferenceGroupKeysInput } from '@src/modules/reference/reference.input.normalize';
 
 @Injectable()
 export class BuildReferenceReportUsecase {

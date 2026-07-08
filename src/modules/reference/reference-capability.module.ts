@@ -1,4 +1,4 @@
-// src/usecases/reference/reference-capability.module.ts
+// src/modules/reference/reference-capability.module.ts
 import { Module } from '@nestjs/common';
 import {
   ReferenceProfileCapabilityDeclaration,

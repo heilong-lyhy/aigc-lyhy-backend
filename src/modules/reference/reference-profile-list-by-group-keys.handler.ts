@@ -1,5 +1,6 @@
 import type {
   CapabilityCommand,
+  CapabilityOperationHandler,
   CapabilityQuery,
   CapabilityResult,
 } from '@app-types/common/capability.types';
@@ -11,7 +12,6 @@ import {
 } from '@app-types/reference/reference-profile.types';
 import { Injectable } from '@nestjs/common';
 import { CapabilityOperationHandlerProvider } from '@src/infrastructure/capability/capability.decorators';
-import type { CapabilityOperationHandler } from '@src/usecases/common/ports/capability-bus.contract';
 import { normalizeReferenceGroupKeysInput } from './reference.input.normalize';
 
 const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [

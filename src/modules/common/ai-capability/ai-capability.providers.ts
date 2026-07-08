@@ -1,6 +1,6 @@
 // src/modules/common/ai-capability/ai-capability.providers.ts
 import { Injectable } from '@nestjs/common';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
   CapabilityManifestProvider,
   CapabilityQueueBindingProvider,

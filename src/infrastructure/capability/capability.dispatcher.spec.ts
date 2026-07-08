@@ -1,5 +1,7 @@
 import type {
   CapabilityCommand,
+  CapabilityEventSubscriber,
+  CapabilityOperationHandler,
   CapabilityProcess,
   CapabilityQuery,
   CapabilityRequestContext,
@@ -18,8 +20,6 @@ import {
   CAPABILITY_QUERY_BUS,
   type CapabilityCommandBus,
   type CapabilityEventPublisher,
-  type CapabilityEventSubscriber,
-  type CapabilityOperationHandler,
   type CapabilityPermissionChecker,
   type CapabilityQueueConsumer,
   type CapabilityQueryBus,

@@ -1,4 +1,4 @@
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 
 export const AI_QUEUE_NAME = BULLMQ_QUEUES.AI;
 export const AI_WORKFLOW_QUEUE_NAME = BULLMQ_QUEUES.AI;

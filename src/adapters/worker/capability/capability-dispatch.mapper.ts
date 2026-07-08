@@ -1,5 +1,5 @@
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
-import type { CapabilityDispatchJobPayload } from '@src/infrastructure/bullmq/contracts/capability-queue.runtime';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
+import type { CapabilityDispatchJobPayload } from '@app-types/worker/capability-queue.types';
 import type { Job } from 'bullmq';
 
 export const CAPABILITY_QUEUE_NAME = BULLMQ_QUEUES.CAPABILITY;
