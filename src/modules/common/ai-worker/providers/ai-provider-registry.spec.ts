@@ -1,7 +1,7 @@
 // src/modules/common/ai-worker/providers/ai-provider-registry.spec.ts
 import type { AiProviderClient } from '@core/ai/ai-provider.interface';
 import { DomainError, THIRDPARTY_ERROR } from '@core/common/errors/domain-error';
-import type { CapabilityRegistry } from '@src/infrastructure/capability/capability.registry';
+import type { ProviderRegistry } from '@src/usecases/common/ports/provider-registry.contract';
 import { AiProviderRegistry } from './ai-provider-registry';
 
 describe('AiProviderRegistry', () => {
@@ -11,11 +11,11 @@ describe('AiProviderRegistry', () => {
       openai: { name: 'openai' },
       qwen: { name: 'qwen' },
     };
-    const capabilityRegistry = {
+    const providerRegistry = {
       getProviderClient: <TClient>(lookup: { readonly providerName: string }): TClient | null =>
         (providers[lookup.providerName] as TClient | undefined) ?? null,
-    } as unknown as CapabilityRegistry;
-    return new AiProviderRegistry({ providerMode: input.mode }, capabilityRegistry);
+    } as unknown as ProviderRegistry;
+    return new AiProviderRegistry({ providerMode: input.mode }, providerRegistry);
   };
 
   it('AI_PROVIDER_MODE 为 mock 时始终返回 mock provider', () => {

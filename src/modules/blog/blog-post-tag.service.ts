@@ -3,10 +3,12 @@
 // 职责：syncPostTags 批量同步文章标签关联；不含 Tag 聚合根写入
 // Tag 聚合根写入由 BlogTagService 承载
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { BlogPostTagEntity } from './entities/blog-post-tag.entity';
 
@@ -65,7 +67,7 @@ export class BlogPostTagService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogPostTagEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostTagEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogPostTagEntity)
       : this.postTagRepo;
   }
 }

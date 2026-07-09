@@ -49,7 +49,7 @@ import {
   type CapabilitySessionAuthorityScopeAuthorizerMetadata,
   type CapabilitySessionAuthoritySummaryResolverMetadata,
   type CapabilitySessionIdentityResolverMetadata,
-} from './capability.decorators';
+} from '@app-types/common/capability-decorators';
 import type { CapabilityQueueTransportDescriptor } from '@src/usecases/common/ports/capability-bus.contract';
 
 export const CAPABILITY_PROCESS = Symbol('CAPABILITY_PROCESS');

@@ -11,7 +11,7 @@ import {
   type ReferenceProfileSummary,
 } from '@app-types/reference/reference-profile.types';
 import { Injectable } from '@nestjs/common';
-import { CapabilityOperationHandlerProvider } from '@src/infrastructure/capability/capability.decorators';
+import { CapabilityOperationHandlerProvider } from '@app-types/common/capability-decorators';
 import { normalizeReferenceGroupKeysInput } from './reference.input.normalize';
 
 const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [

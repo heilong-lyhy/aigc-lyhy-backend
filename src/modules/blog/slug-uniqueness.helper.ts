@@ -3,8 +3,10 @@
 // BlogPost / BlogCategory / BlogTag 均需要 slug 唯一检查，逻辑完全相同，仅错误码不同
 
 import { DomainError } from '@core/common/errors/domain-error';
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Repository } from 'typeorm';
 
 /**
@@ -38,6 +40,6 @@ export function getTransactionalRepo<T extends object>(
   transactionContext?: PersistenceTransactionContext,
 ): Repository<T> {
   return transactionContext
-    ? getTypeOrmEntityManager(transactionContext).getRepository(entityClass)
+    ? getTransactionEntityManager(transactionContext).getRepository(entityClass)
     : defaultRepo;
 }

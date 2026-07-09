@@ -6,7 +6,7 @@ import {
   type CapabilityRuntimeStateReader,
 } from '@src/usecases/common/ports/capability-runtime-state-reader.contract';
 import { CapabilityBootstrapCheck } from './capability-bootstrap-check';
-import { CapabilityManifestProvider } from './capability.decorators';
+import { CapabilityManifestProvider } from '@app-types/common/capability-decorators';
 import { CapabilityModule } from './capability.module';
 
 describe('ConfigCapabilityRuntimeStateReader', () => {

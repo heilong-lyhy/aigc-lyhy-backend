@@ -4,9 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaginationModule } from '@modules/common/pagination.module';
-import { CravatarAvatarGeneratorAdapter } from '@src/infrastructure/blog-storage/cravatar-avatar-generator.adapter';
-import { LocalFileStorageAdapter } from '@src/infrastructure/blog-storage/local-file-storage.adapter';
-import { BlogUploadConfigProvider } from '@src/infrastructure/blog-storage/blog-upload-config.provider';
+import { BlogStorageModule } from '@src/infrastructure/blog-storage/blog-storage.module';
 import { BlogPostEntity } from './entities/blog-post.entity';
 import { BlogCategoryEntity } from './entities/blog-category.entity';
 import { BlogTagEntity } from './entities/blog-tag.entity';
@@ -34,11 +32,6 @@ import { BlogFileQueryService } from './queries/blog-file.query.service';
 import { BlogProfileQueryService } from './queries/blog-profile.query.service';
 import { BlogDashboardQueryService } from './queries/blog-dashboard.query.service';
 import { BlogFriendLinkQueryService } from './queries/blog-friend-link.query.service';
-import { BLOG_AVATAR_GENERATOR_TOKEN } from './contracts/avatar-generator.contract';
-import {
-  BLOG_FILE_STORAGE_TOKEN,
-  BLOG_FILE_UPLOAD_CONFIG_TOKEN,
-} from './contracts/file-storage.contract';
 
 const BLOG_ENTITIES = [
   BlogPostEntity,
@@ -53,11 +46,8 @@ const BLOG_ENTITIES = [
 ];
 
 @Module({
-  imports: [TypeOrmModule.forFeature(BLOG_ENTITIES), PaginationModule],
+  imports: [TypeOrmModule.forFeature(BLOG_ENTITIES), PaginationModule, BlogStorageModule],
   providers: [
-    { provide: BLOG_AVATAR_GENERATOR_TOKEN, useClass: CravatarAvatarGeneratorAdapter },
-    { provide: BLOG_FILE_STORAGE_TOKEN, useClass: LocalFileStorageAdapter },
-    { provide: BLOG_FILE_UPLOAD_CONFIG_TOKEN, useClass: BlogUploadConfigProvider },
     BlogPostService,
     BlogCategoryService,
     BlogPostTagService,

@@ -4,7 +4,7 @@ import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
   CapabilityManifestProvider,
   CapabilityQueueBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import { AI_PROVIDER_KIND, AI_QUEUE_CAPABILITY_ID } from './ai-capability.constants';
 
 @Injectable()

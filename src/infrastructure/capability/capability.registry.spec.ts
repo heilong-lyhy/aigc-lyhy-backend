@@ -22,7 +22,7 @@ import {
   CapabilitySessionAuthorityScopeAuthorizerProvider,
   CapabilitySessionAuthoritySummaryResolverProvider,
   CapabilitySessionIdentityResolverProvider,
-} from './capability.decorators';
+} from '@app-types/common/capability-decorators';
 import { CapabilityModule } from './capability.module';
 import { CapabilityBootstrapError, CapabilityRegistry } from './capability.registry';
 

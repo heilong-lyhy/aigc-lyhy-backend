@@ -14,6 +14,7 @@ import {
 import { CAPABILITY_REQUEST_CONTEXT_STORE } from '@src/usecases/common/ports/capability-request-context-store.contract';
 import { CAPABILITY_RUNTIME_STATE_READER } from '@src/usecases/common/ports/capability-runtime-state-reader.contract';
 import { CAPABILITY_SESSION_CONTEXT_BUILDER } from '@src/usecases/common/ports/capability-session-context-builder.contract';
+import { PROVIDER_REGISTRY } from '@src/usecases/common/ports/provider-registry.contract';
 import { BullMqCapabilityQueueTransport } from './bullmq-capability-queue.transport';
 import { CapabilityBootstrapCheck } from './capability-bootstrap-check';
 import { CapabilityDispatcher } from './capability.dispatcher';
@@ -90,6 +91,10 @@ export class CapabilityModule {
           provide: CAPABILITY_SESSION_CONTEXT_BUILDER,
           useExisting: RegistryCapabilitySessionContextBuilder,
         },
+        {
+          provide: PROVIDER_REGISTRY,
+          useExisting: CapabilityRegistry,
+        },
         PlatformAccountCapabilityDeclaration,
         PlatformAuthCapabilityDeclaration,
       ],
@@ -104,6 +109,7 @@ export class CapabilityModule {
         CAPABILITY_EVENT_PUBLISHER,
         CAPABILITY_REQUEST_CONTEXT_STORE,
         CAPABILITY_SESSION_CONTEXT_BUILDER,
+        PROVIDER_REGISTRY,
       ],
     };
   }

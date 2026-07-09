@@ -1,8 +1,11 @@
 // src/modules/common/ai-queue/ai-queue.service.ts
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
-import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
 import { PinoLogger } from 'nestjs-pino';
+import {
+  QUEUE_PRODUCER,
+  type QueueProducer,
+} from '@src/usecases/common/ports/queue-producer.contract';
 import type {
   QueueAiEmbedInput,
   QueueAiGenerateInput,
@@ -18,7 +21,7 @@ const BULLMQ_QUEUE_NOT_REGISTERED_ERROR_PREFIX = 'BullMQ queue is not registered
 @Injectable()
 export class AiQueueService {
   constructor(
-    private readonly producer: BullMqProducerGateway,
+    @Inject(QUEUE_PRODUCER) private readonly producer: QueueProducer,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(AiQueueService.name);

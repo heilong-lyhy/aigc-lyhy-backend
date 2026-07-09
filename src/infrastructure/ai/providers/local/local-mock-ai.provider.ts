@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 import {
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import { createHash } from 'node:crypto';
 
 @Injectable()

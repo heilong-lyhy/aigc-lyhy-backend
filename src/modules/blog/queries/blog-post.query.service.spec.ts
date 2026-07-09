@@ -176,12 +176,10 @@ describe('BlogPostQueryService', () => {
       });
     });
 
-    it('文章不存在时应返回 0', async () => {
+    it('文章不存在时应抛出 DomainError', async () => {
       mockPostRepo.findOne.mockResolvedValue(null);
 
-      const result = await service.getLikeCount(999);
-
-      expect(result).toBe(0);
+      await expect(service.getLikeCount(999)).rejects.toThrow('文章 ID 999 不存在');
     });
   });
 

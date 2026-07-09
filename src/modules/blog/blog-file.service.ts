@@ -4,11 +4,13 @@
 // 文件类型白名单与大小限制在此服务中校验
 // View 映射委托 BlogFileQueryService，避免 toView 重复
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { UploadBlogFileInput, BlogFileView } from './blog.types';
 import {
@@ -109,7 +111,7 @@ export class BlogFileService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogFileEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogFileEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogFileEntity)
       : this.fileRepo;
   }
 }

@@ -4,7 +4,7 @@ import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
   CapabilityManifestProvider,
   CapabilityQueueBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import {
   EMAIL_DELIVERY_PROVIDER_KIND,
   EMAIL_SENDMAIL_PROVIDER_NAME,

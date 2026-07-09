@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-profile.query.service.ts
 // 博主信息读侧 QueryService：读取、输出规范化，不写、不开事务
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { BlogProfileView } from '../blog.types';
 import { BlogProfileEntity } from '../entities/blog-profile.entity';
@@ -59,7 +61,7 @@ export class BlogProfileQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogProfileEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogProfileEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogProfileEntity)
       : this.profileRepo;
   }
 }

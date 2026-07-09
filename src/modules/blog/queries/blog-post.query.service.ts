@@ -2,7 +2,10 @@
 // 文章读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
 // 分页编排下沉到 QueryService，usecase 只拿 PaginatedResult<BlogPostView>
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import { BLOG_ERROR } from '@core/common/errors';
 import { DomainError } from '@core/common/errors/domain-error';
@@ -10,7 +13,6 @@ import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationService } from '@modules/common/pagination.service';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.types';
 import { BlogPostEntity } from '../entities/blog-post.entity';
@@ -424,7 +426,7 @@ export class BlogPostQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogPostEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogPostEntity)
       : this.postRepo;
   }
 }

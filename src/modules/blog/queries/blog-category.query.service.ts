@@ -2,10 +2,12 @@
 // 分类读侧 QueryService：读取、输出规范化，不写、不开事务
 // 依赖方向单向：BlogPostQueryService → BlogCategoryQueryService，不形成环
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogCategoryTreeView, BlogCategoryView } from '../blog.types';
 import { BlogCategoryEntity } from '../entities/blog-category.entity';
@@ -135,7 +137,7 @@ export class BlogCategoryQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogCategoryEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogCategoryEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogCategoryEntity)
       : this.categoryRepo;
   }
 
@@ -143,7 +145,7 @@ export class BlogCategoryQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogPostEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogPostEntity)
       : this.postRepo;
   }
 }

@@ -6,12 +6,14 @@ import {
   VerificationRecordStatus,
   VerificationRecordType,
 } from '@app-types/models/verification-record.types';
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { TokenFingerprintHelper } from '@modules/common/security/token-fingerprint.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { QueryFailedError, Repository } from 'typeorm';
 import { VerificationRecordEntity } from './verification-record.entity';
 
@@ -381,7 +383,9 @@ export class VerificationRecordService {
   private getRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<VerificationRecordEntity> {
-    const manager = transactionContext ? getTypeOrmEntityManager(transactionContext) : undefined;
+    const manager = transactionContext
+      ? getTransactionEntityManager(transactionContext)
+      : undefined;
     return manager
       ? manager.getRepository(VerificationRecordEntity)
       : this.verificationRecordRepository;

@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import {
   EMAIL_DELIVERY_PROVIDER_KIND,
   EMAIL_SENDMAIL_PROVIDER_NAME,

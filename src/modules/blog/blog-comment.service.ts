@@ -3,11 +3,13 @@
 // 职责：评论的创建、状态更新、批量审核、软删除；不含跨聚合根编排
 // View 映射委托 BlogCommentQueryService，避免 toView 重复
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import { BlogCommentStatus } from '@app-types/models/blog.types';
 import {
@@ -204,7 +206,7 @@ export class BlogCommentService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogCommentEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogCommentEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogCommentEntity)
       : this.commentRepo;
   }
 }

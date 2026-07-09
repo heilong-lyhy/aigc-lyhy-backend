@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { RedisOptions } from 'ioredis';
+import { QUEUE_PRODUCER } from '@src/usecases/common/ports/queue-producer.contract';
 import { BullMqProducerGateway } from './producer.gateway';
 import { BULLMQ_REGISTER_QUEUE_OPTIONS } from './queue-registry';
 
@@ -58,7 +59,10 @@ const buildRedisOptions = (configService: ConfigService): RedisOptions => {
     }),
     BullModule.registerQueue(...BULLMQ_REGISTER_QUEUE_OPTIONS),
   ],
-  providers: [BullMqProducerGateway],
-  exports: [BullModule, BullMqProducerGateway],
+  providers: [
+    BullMqProducerGateway,
+    { provide: QUEUE_PRODUCER, useExisting: BullMqProducerGateway },
+  ],
+  exports: [BullModule, BullMqProducerGateway, QUEUE_PRODUCER],
 })
 export class BullMqModule {}

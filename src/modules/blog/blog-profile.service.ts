@@ -3,11 +3,13 @@
 // 职责：博主信息的创建、更新；不含跨聚合根编排
 // View 映射委托 BlogProfileQueryService，避免 toView 重复
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { UpdateBlogProfileInput, BlogProfileView } from './blog.types';
 import { BlogProfileEntity } from './entities/blog-profile.entity';
@@ -59,7 +61,7 @@ export class BlogProfileService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogProfileEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogProfileEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogProfileEntity)
       : this.profileRepo;
   }
 }

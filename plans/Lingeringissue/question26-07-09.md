@@ -7,7 +7,11 @@
 
 ## 1. infrastructure → usecases boundary contracts 依赖方向未精确建模
 
-- **状态**：[未解决]
+- **状态**：[已解决]
+- **修复**：
+  - 在 ESLint boundaries 元素定义中新增 `usecases-contracts` 元素类型，pattern 匹配 `src/usecases/common/ports/*.contract.ts`。
+  - 在 infrastructure 的 allow 规则中增加 `{ to: { type: 'usecases-contracts' } }`，允许 infrastructure 合法实现 usecase-owned boundary contract。
+  - 为 `usecases-contracts` 配置自身依赖约束：只允许依赖 types、core，禁止依赖其他层。
 - **规范依据**：`docs/common/usecase.rules.md` — usecase-owned boundary contract 可由 infrastructure 实现；`docs/common/eslint-architecture-rules.md` — ESLint boundaries 插件应精确建模层间依赖
 - **现状**：
   - infrastructure 层大量文件从 `@src/usecases/common/ports/*.contract.ts` 导入 DI token 和接口类型（如 `CAPABILITY_QUEUE_CONSUMER`、`TransactionRunner`、`CapabilityRequestContextStore` 等）。
@@ -32,34 +36,67 @@
 
 ## 2. modules 层对 infrastructure 的运行时依赖
 
-- **状态**：[未解决]
+- **状态**：[已解决]
+- **修复**：
+  - 新增 `QueueProducer` boundary contract（`src/usecases/common/ports/queue-producer.contract.ts`），定义 `enqueue`/`hasJob`/`checkQueueAvailable` 接口和 `QUEUE_PRODUCER` DI token。
+  - `BullMqModule` 通过 `useExisting` 将 `BullMqProducerGateway` 绑定到 `QUEUE_PRODUCER` token。
+  - 三个 queue service（email/ai/magic-item-craft）改为注入 `@Inject(QUEUE_PRODUCER) QueueProducer` 而非直接依赖 `BullMqProducerGateway`。
+  - 将 capability decorators（`@CapabilityManifestProvider`、`@CapabilityQueueBindingProvider`、`@CapabilityOperationHandlerProvider` 等）从 `src/infrastructure/capability/capability.decorators.ts` 迁移到 `src/types/common/capability-decorators.ts`，modules 层改为从 `@app-types/common/capability-decorators` 导入，消除了 modules 对 infrastructure capability decorators 的直接依赖。
+  - infrastructure 层的 `capability.decorators.ts` 改为从 types 层 re-export，保持向后兼容。
+  - 新增 `ProviderRegistry` boundary contract（`src/usecases/common/ports/provider-registry.contract.ts`），解耦 `AiProviderRegistry` 对 `CapabilityRegistry` 的直接依赖。
+  - `CapabilityModule` 通过 `useExisting` 将 `CapabilityRegistry` 绑定到 `PROVIDER_REGISTRY` token。
+  - `AiProviderRegistry` 改为注入 `@Inject(PROVIDER_REGISTRY) ProviderRegistry` 而非直接依赖 `CapabilityRegistry`。
+  - 新增 `TypeOrmPaginationModule`（`src/infrastructure/typeorm/pagination/typeorm-pagination.module.ts`），将 `HmacCursorSigner`、`TypeOrmPaginator`、`TypeOrmSort` 的 DI wiring 下沉到 infrastructure 层。`PaginationModule` 改为导入 `TypeOrmPaginationModule`，不再直接导入具体实现类。
+  - 将 `PAGINATION_TOKENS` 从 `src/modules/common/tokens/pagination.tokens.ts` 提升到 `src/core/pagination/pagination.tokens.ts`，modules 层改为 re-export。
+  - 新增 `TypeOrmSearchModule`（`src/infrastructure/typeorm/search/typeorm-search.module.ts`），将 `TypeOrmSearch` 的 DI wiring 下沉到 infrastructure 层。`SearchModule` 改为导入 `TypeOrmSearchModule`，不再直接导入 `TypeOrmSearch`。
+  - 新增 `BlogStorageModule`（`src/infrastructure/blog-storage/blog-storage.module.ts`），将 `CravatarAvatarGeneratorAdapter`、`LocalFileStorageAdapter`、`BlogUploadConfigProvider` 的 DI wiring 下沉到 infrastructure 层。`BlogModule` 改为导入 `BlogStorageModule`，不再直接导入具体实现类。
+- **剩余**：
+  - `.module.ts` 中仍有 infrastructure module 的导入（`BullMqModule`、`FieldEncryptionModule`、`CoreJwtModule`、`AiInfrastructureModule`、`ThirdPartyAuthInfrastructureModule`、`TypeOrmPaginationModule`、`TypeOrmSearchModule`、`BlogStorageModule`），属于 NestJS composition root 模式，ESLint 已允许，无需进一步解耦。
 - **规范依据**：`docs/common/usecase.rules.md` — "modules(service) → infrastructure / core"（允许）；但 `docs/worker/worker-adapter.rules.md` 要求 adapter 不直接依赖 infrastructure；`docs/common/boundary-contract.rules.md` 要求跨层通过 boundary contract 解耦
 - **现状**：
-  - `src/modules/common/email-queue/email-queue.service.ts` 直接导入 `BullMqProducerGateway`（infrastructure 层运行时类）。
-  - `src/modules/common/ai-queue/ai-queue.service.ts` 直接导入 `BullMqProducerGateway`。
-  - `src/modules/common/magic-item-craft-queue/magic-item-craft-queue.service.ts` 直接导入 `BullMqProducerGateway`。
-  - `src/modules/common/ai-capability/ai-capability.providers.ts` 直接导入 `CapabilityManifestProvider`、`CapabilityQueueBindingProvider`（infrastructure capability decorators）。
-  - `src/modules/common/email-capability/email-capability.providers.ts` 同上。
+  - 已修复：modules 层的 service 类（queue service、ai-provider-registry）已通过 boundary contract 解耦对 infrastructure 的直接依赖。
+  - 已修复：capability decorators 已迁移到 types 层，modules 层不再直接导入 infrastructure 的 decorator 文件。
+  - 已修复：`PaginationModule`、`SearchModule`、`BlogModule` 不再直接导入 infrastructure 具体实现类，改为导入 infrastructure module。
+  - 已修复：`PAGINATION_TOKENS` 已提升到 core 层，infrastructure 可直接导入。
+  - 已修复：`getTypeOrmEntityManager` 和 `PersistenceTransactionContext` 已迁移到 types 层（`src/types/common/transaction.types.ts`），16 个 service 文件改为从 `@app-types/common/transaction.types` 导入，不再直接依赖 infrastructure 层。
+  - 已修复：`registerEncryptedField` 已迁移到 types 层（`src/types/common/field-encryption.metadata.ts`），`account-field-encryption.registrar.ts` 改为从 types 层导入。
+  - 剩余：`.module.ts` 中导入 infrastructure module（composition root，ESLint 已允许，无需进一步解耦）。
 - **影响**：
-  - modules 层与 infrastructure 层的具体实现（BullMQ、TypeORM）紧耦合。
-  - 替换队列实现或运行时框架时需要修改 modules 层代码。
-  - 与 boundary contract 模式不一致。
+  - 核心业务 service 层已通过 boundary contract 和 types 层抽象完全解耦，替换队列/AI/事务/加密实现不再需要修改 modules 层 service 代码。
+  - `.module.ts` 中的 DI 组装已通过 infrastructure module 封装，替换 TypeORM/BullMQ 实现只需修改 infrastructure 层 module。
+  - `getTypeOrmEntityManager` 已通过 `PersistenceTransactionContext` branded type 和 WeakMap 映射抽象，modules 层不再直接依赖 TypeORM `EntityManager` 类型。
 - **修复方案**：
-  1. 在 `src/usecases/common/ports/` 或 `src/core/` 中定义 `QueueProducer` boundary contract（接口 + DI token）。
-  2. 在 infrastructure 层提供 `BullMqQueueProducer` 实现。
-  3. 将 modules 中的 queue service 改为依赖 `QueueProducer` contract 而非 `BullMqProducerGateway`。
-  4. 对于 capability decorators，参考 reference 模块的迁移模式，将声明/注册类留在 modules 层但将 decorator 函数通过 boundary contract 或 types 层暴露。
+  1. ~~在 `src/usecases/common/ports/` 或 `src/core/` 中定义 `QueueProducer` boundary contract~~ ✅ 已完成
+  2. ~~在 infrastructure 层提供 `BullMqQueueProducer` 实现~~ ✅ 已完成（通过 `useExisting` 绑定）
+  3. ~~将 modules 中的 queue service 改为依赖 `QueueProducer` contract~~ ✅ 已完成
+  4. ~~对于 capability decorators，将 decorator 函数通过 types 层暴露~~ ✅ 已完成
+  5. ~~创建 `ProviderRegistry` boundary contract，解耦 `AiProviderRegistry` 对 `CapabilityRegistry` 的依赖~~ ✅ 已完成
+  6. ~~对于 `.module.ts` DI 组装层的耦合，将具体实现的 DI 注册移入 infrastructure 层的 module~~ ✅ 已完成（`TypeOrmPaginationModule`、`TypeOrmSearchModule`、`BlogStorageModule`）
+  7. ~~将 `PAGINATION_TOKENS` 提升到 core 层~~ ✅ 已完成
+  8. ~~将 `getTypeOrmEntityManager` 和 `PersistenceTransactionContext` 迁移到 types 层，通过 branded type + WeakMap 抽象事务上下文~~ ✅ 已完成
+  9. ~~将 `registerEncryptedField` 迁移到 types 层~~ ✅ 已完成
 - **涉及文件**：
-  - `src/modules/common/email-queue/email-queue.service.ts`
-  - `src/modules/common/ai-queue/ai-queue.service.ts`
-  - `src/modules/common/magic-item-craft-queue/magic-item-craft-queue.service.ts`
-  - `src/modules/common/ai-capability/ai-capability.providers.ts`
-  - `src/modules/common/email-capability/email-capability.providers.ts`
-  - 新增：`QueueProducer` contract 及其 infrastructure 实现
+  - `src/types/common/capability-decorators.ts` — 新增：capability decorators 迁移目标
+  - `src/infrastructure/capability/capability.decorators.ts` — 改为从 types 层 re-export
+  - `src/infrastructure/capability/capability.registry.ts` — 改为从 types 层导入 decorator metadata
+  - `src/infrastructure/capability/capability.module.ts` — 注册 `PROVIDER_REGISTRY` token
+  - `src/usecases/common/ports/queue-producer.contract.ts` — 新增：QueueProducer boundary contract
+  - `src/usecases/common/ports/provider-registry.contract.ts` — 新增：ProviderRegistry boundary contract
+  - `src/modules/common/ai-worker/providers/ai-provider-registry.ts` — 改为注入 ProviderRegistry
+  - `src/modules/common/ai-capability/ai-capability.providers.ts` — 改为从 types 层导入 decorator
+  - `src/modules/common/email-capability/email-capability.providers.ts` — 改为从 types 层导入 decorator
+  - `src/modules/reference/reference-capability.providers.ts` — 改为从 types 层导入 decorator
+  - `src/infrastructure/typeorm/pagination/typeorm-pagination.module.ts` — 新增：TypeORM 分页 DI wiring module
+  - `src/infrastructure/typeorm/search/typeorm-search.module.ts` — 新增：TypeORM 搜索 DI wiring module
+  - `src/infrastructure/blog-storage/blog-storage.module.ts` — 新增：Blog 存储 DI wiring module
+  - `src/core/pagination/pagination.tokens.ts` — 新增：PAGINATION_TOKENS 提升到 core 层
+  - `src/modules/common/pagination.module.ts` — 改为导入 TypeOrmPaginationModule
+  - `src/modules/common/search.module.ts` — 改为导入 TypeOrmSearchModule
+  - `src/modules/blog/blog.module.ts` — 改为导入 BlogStorageModule
 - **风险**：
-  - 涉及多个 bounded context 的队列服务重构，回归风险较高。
-  - 需要确保 `QueueProducer` contract 足够通用以覆盖所有队列场景（普通入队、延迟入队、优先级入队等）。
-  - Capability decorator 的解耦需要更深入的设计，可能需要将 decorator 注册机制改为 DI-based。
+  - ✅ 已缓解：队列服务重构已完成，`QueueProducer` contract 已覆盖所有队列场景。
+  - ✅ 已缓解：Capability decorator 已迁移到 types 层，modules 不再直接依赖 infrastructure decorator。
+  - 剩余：`.module.ts` DI 组装的进一步解耦需要更全面的设计评估，风险可控。
 
 ---
 

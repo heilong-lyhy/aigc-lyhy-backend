@@ -5,7 +5,7 @@ import {
   CapabilitySessionAuthorityScopeAuthorizerProvider,
   CapabilitySessionAuthoritySummaryResolverProvider,
   CapabilitySessionIdentityResolverProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import type {
   CapabilitySessionAuthorityScopeAuthorizeInput,
   CapabilitySessionAuthorityScopeAuthorizer,

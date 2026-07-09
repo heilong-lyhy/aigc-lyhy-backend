@@ -1,6 +1,6 @@
 // src/modules/third-party-auth/third-party-auth.capability.ts
 import { Injectable } from '@nestjs/common';
-import { CapabilityManifestProvider } from '@src/infrastructure/capability/capability.decorators';
+import { CapabilityManifestProvider } from '@app-types/common/capability-decorators';
 
 @Injectable()
 @CapabilityManifestProvider({

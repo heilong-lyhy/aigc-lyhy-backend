@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
-import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
+import {
+  QUEUE_PRODUCER,
+  type QueueProducer,
+} from '@src/usecases/common/ports/queue-producer.contract';
 import type {
   QueueMagicItemCraftJobInput,
   QueueMagicItemCraftJobResult,
@@ -8,7 +11,7 @@ import type {
 
 @Injectable()
 export class MagicItemCraftQueueService {
-  constructor(private readonly producer: BullMqProducerGateway) {}
+  constructor(@Inject(QUEUE_PRODUCER) private readonly producer: QueueProducer) {}
 
   async enqueueCraftJob(input: QueueMagicItemCraftJobInput): Promise<QueueMagicItemCraftJobResult> {
     const job = await this.producer.enqueue({

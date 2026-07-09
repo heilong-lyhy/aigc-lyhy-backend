@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-dashboard.query.service.ts
 // 仪表盘统计 QueryService：纯读操作，聚合多表统计，不写、不开事务
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { BlogPostStatus, BlogCommentStatus } from '@app-types/models/blog.types';
 import type { BlogDashboardView } from '../blog.types';
@@ -104,7 +106,7 @@ export class BlogDashboardQueryService {
     entityClass: new (...args: unknown[]) => T,
   ): Repository<T> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(entityClass)
+      ? getTransactionEntityManager(transactionContext).getRepository(entityClass)
       : defaultRepo;
   }
 }

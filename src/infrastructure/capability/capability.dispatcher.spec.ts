@@ -34,7 +34,7 @@ import {
   CapabilityManifestProvider,
   CapabilityOperationHandlerProvider,
   CapabilityQueueBindingProvider,
-} from './capability.decorators';
+} from '@app-types/common/capability-decorators';
 import { CapabilityModule } from './capability.module';
 
 describe('CapabilityDispatcher', () => {

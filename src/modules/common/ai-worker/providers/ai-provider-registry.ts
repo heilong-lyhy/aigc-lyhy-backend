@@ -2,7 +2,10 @@
 import { DomainError, THIRDPARTY_ERROR } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import type { AiProviderClient } from '@core/ai/ai-provider.interface';
-import { CapabilityRegistry } from '@src/infrastructure/capability/capability.registry';
+import {
+  PROVIDER_REGISTRY,
+  type ProviderRegistry,
+} from '@src/usecases/common/ports/provider-registry.contract';
 import { AI_PROVIDER_KIND } from '../../ai-capability/ai-capability.constants';
 import { AI_PROVIDER_REGISTRY_OPTIONS, type AiProviderRegistryOptions } from '../ai-worker.options';
 
@@ -11,7 +14,8 @@ export class AiProviderRegistry {
   constructor(
     @Inject(AI_PROVIDER_REGISTRY_OPTIONS)
     private readonly options: AiProviderRegistryOptions,
-    private readonly capabilityRegistry: CapabilityRegistry,
+    @Inject(PROVIDER_REGISTRY)
+    private readonly providerRegistry: ProviderRegistry,
   ) {}
 
   getGenerateProvider(name?: string): AiProviderClient {
@@ -42,7 +46,7 @@ export class AiProviderRegistry {
   }
 
   private resolveProviderByName(providerName: string): AiProviderClient {
-    const provider = this.capabilityRegistry.getProviderClient<AiProviderClient>({
+    const provider = this.providerRegistry.getProviderClient<AiProviderClient>({
       providerKind: AI_PROVIDER_KIND,
       providerName,
     });

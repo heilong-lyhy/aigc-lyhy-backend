@@ -1458,6 +1458,11 @@ export default defineConfig(
           mode: 'folder',
         },
         {
+          type: 'usecases-contracts',
+          pattern: 'src/usecases/common/ports/*.contract.ts',
+          mode: 'file',
+        },
+        {
           type: 'usecases',
           pattern: 'src/usecases/*/*.ts',
           mode: 'file',
@@ -1770,6 +1775,7 @@ export default defineConfig(
               from: { type: 'infrastructure' },
               allow: [
                 { to: { type: 'infrastructure' } },
+                { to: { type: 'usecases-contracts' } },
                 { to: { type: 'modules-contracts' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
@@ -1777,6 +1783,10 @@ export default defineConfig(
             },
             {
               from: { type: 'core' },
+              allow: [{ to: { type: 'core' } }, { to: { type: 'types' } }],
+            },
+            {
+              from: { type: 'usecases-contracts' },
               allow: [{ to: { type: 'core' } }, { to: { type: 'types' } }],
             },
             {
@@ -1884,6 +1894,40 @@ export default defineConfig(
             'class-validator',
             'graphql',
             'typeorm',
+            ...RESTRICTED_SRC_TYPES_IMPORT_PATTERNS,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/types/common/capability-decorators.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            'class-transformer',
+            'class-validator',
+            'graphql',
+            'typeorm',
+            ...RESTRICTED_SRC_TYPES_IMPORT_PATTERNS,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/types/common/transaction.types.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '@nestjs/*',
+            'class-transformer',
+            'class-validator',
+            'graphql',
             ...RESTRICTED_SRC_TYPES_IMPORT_PATTERNS,
           ],
         },

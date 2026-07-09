@@ -1,14 +1,15 @@
 // src/modules/common/search.module.ts
-// 顶层可复用 Search 模块：绑定 TypeORM 搜索实现并导出服务
+// 顶层可复用 Search 模块：导入 TypeOrmSearchModule 绑定实现并导出服务
 
 import { Module } from '@nestjs/common';
-// 移除对具体驱动类型的输入约束，保持端口抽象一致
-
 import type { ISearchEngine } from '@core/search/search.contract';
-import { TypeOrmSearch } from '@src/infrastructure/typeorm/search/typeorm-search';
+import {
+  TypeOrmSearchModule,
+  SEARCH_ENGINE_TOKEN,
+} from '@src/infrastructure/typeorm/search/typeorm-search.module';
 
 export const SEARCH_TOKENS = {
-  ENGINE: Symbol('SEARCH_ENGINE'),
+  ENGINE: SEARCH_ENGINE_TOKEN,
 } as const;
 
 /**
@@ -35,8 +36,8 @@ export class SearchService {
 }
 
 @Module({
+  imports: [TypeOrmSearchModule],
   providers: [
-    { provide: SEARCH_TOKENS.ENGINE, useClass: TypeOrmSearch },
     {
       provide: SearchService,
       useFactory: (engine: ISearchEngine) => new SearchService(engine),

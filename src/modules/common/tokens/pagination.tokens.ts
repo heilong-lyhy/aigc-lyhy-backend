@@ -1,10 +1,8 @@
 // src/modules/common/tokens/pagination.tokens.ts
-// 分页相关的 DI token 定义
+// Re-export from core layer for backward compatibility
 
-export const PAGINATION_TOKENS = {
-  PAGINATOR: Symbol('PAGINATOR'),
-  CURSOR_SIGNER: Symbol('CURSOR_SIGNER'),
-} as const;
-
-export type PaginatorToken = typeof PAGINATION_TOKENS.PAGINATOR;
-export type CursorSignerToken = typeof PAGINATION_TOKENS.CURSOR_SIGNER;
+export {
+  PAGINATION_TOKENS,
+  type PaginatorToken,
+  type CursorSignerToken,
+} from '@core/pagination/pagination.tokens';

@@ -18,7 +18,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import { PinoLogger } from 'nestjs-pino';
 import { WEAPP_PROVIDER_OPTIONS, type WeAppProviderOptions } from '../weapp-provider.options';
 

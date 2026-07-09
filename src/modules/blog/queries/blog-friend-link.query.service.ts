@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-friend-link.query.service.ts
 // 友情链接读侧 QueryService：读取、输出规范化，不写、不开事务
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type { BlogFriendLinkView } from '../blog.types';
 import { BlogFriendLinkEntity } from '../entities/blog-friend-link.entity';
@@ -69,7 +71,7 @@ export class BlogFriendLinkQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogFriendLinkEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogFriendLinkEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogFriendLinkEntity)
       : this.friendLinkRepo;
   }
 }

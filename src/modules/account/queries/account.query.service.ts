@@ -1,5 +1,8 @@
 // src/modules/account/queries/account.query.service.ts
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import {
   IdentityTypeEnum,
   ThirdPartyProviderEnum,
@@ -15,7 +18,6 @@ import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error'
 import { normalizeEmail } from '@core/common/normalize/normalize.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import type {
   AccountCredentialSnapshot,
@@ -360,7 +362,7 @@ export class AccountQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AccountEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(AccountEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(AccountEntity)
       : this.accountRepository;
   }
 
@@ -368,7 +370,7 @@ export class AccountQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<UserInfoEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(UserInfoEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(UserInfoEntity)
       : this.userInfoRepository;
   }
 

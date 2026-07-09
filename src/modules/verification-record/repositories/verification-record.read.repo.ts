@@ -1,7 +1,10 @@
 // src/modules/verification-record/repositories/verification-record.read.repo.ts
 
 import { AudienceTypeEnum } from '@app-types/models/account.types';
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import {
   VerificationRecordStatus,
   VerificationRecordType,
@@ -10,7 +13,6 @@ import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/doma
 import { normalizeEmail, normalizePhone } from '@core/common/normalize/normalize.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { VerificationRecordEntity } from '../verification-record.entity';
 
@@ -313,7 +315,9 @@ export class VerificationRecordReadRepository {
   private getRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<VerificationRecordEntity> {
-    const manager = transactionContext ? getTypeOrmEntityManager(transactionContext) : undefined;
+    const manager = transactionContext
+      ? getTransactionEntityManager(transactionContext)
+      : undefined;
     return manager ? manager.getRepository(VerificationRecordEntity) : this.repository;
   }
 }

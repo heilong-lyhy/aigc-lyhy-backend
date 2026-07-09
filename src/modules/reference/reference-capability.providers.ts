@@ -5,7 +5,7 @@ import {
 } from '@app-types/reference/reference-profile.types';
 import { REFERENCE_REPORT_CAPABILITY_ID } from '@app-types/reference/reference-report.types';
 import { Injectable } from '@nestjs/common';
-import { CapabilityManifestProvider } from '@src/infrastructure/capability/capability.decorators';
+import { CapabilityManifestProvider } from '@app-types/common/capability-decorators';
 
 @Injectable()
 @CapabilityManifestProvider({

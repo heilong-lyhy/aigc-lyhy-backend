@@ -1,8 +1,10 @@
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { DomainError, THIRDPARTY_ERROR } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { QueryFailedError, Repository, type EntityManager } from 'typeorm';
 import { AiProviderCallRecordEntity } from './ai-provider-call-record.entity';
 import type {
@@ -99,7 +101,7 @@ export class AiProviderCallRecordService {
     readonly transactionContext?: PersistenceTransactionContext;
   }): Promise<AiProviderCallRecordView> {
     const manager = input.transactionContext
-      ? getTypeOrmEntityManager(input.transactionContext)
+      ? getTransactionEntityManager(input.transactionContext)
       : undefined;
     let attempt = 0;
     while (attempt < AiProviderCallRecordService.CREATE_RECORD_MAX_RETRY) {
@@ -138,7 +140,7 @@ export class AiProviderCallRecordService {
     readonly transactionContext?: PersistenceTransactionContext;
   }): Promise<AiProviderCallRecordView | null> {
     const manager = input.transactionContext
-      ? getTypeOrmEntityManager(input.transactionContext)
+      ? getTransactionEntityManager(input.transactionContext)
       : undefined;
     const repository = this.resolveRepository(manager);
     const record = await repository.findOne({ where: { id: input.where.id } });

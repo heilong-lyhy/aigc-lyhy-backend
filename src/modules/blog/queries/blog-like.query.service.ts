@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-like.query.service.ts
 // 点赞读侧 QueryService：读取、输出规范化，不写、不开事务
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 import { BlogLikeEntity } from '../entities/blog-like.entity';
 
@@ -34,7 +36,7 @@ export class BlogLikeQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogLikeEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogLikeEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogLikeEntity)
       : this.likeRepo;
   }
 }

@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@src/infrastructure/capability/capability.decorators';
+} from '@app-types/common/capability-decorators';
 import axios from 'axios';
 import { createHash } from 'node:crypto';
 

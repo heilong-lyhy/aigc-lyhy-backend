@@ -1,6 +1,9 @@
 // src/modules/account/base/services/account.service.ts
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import {
   AccountStatus,
   AudienceTypeEnum,
@@ -12,7 +15,6 @@ import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/doma
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 
 // ✅ base 层实体（始终存在）
@@ -322,7 +324,7 @@ export class AccountService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AccountEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(AccountEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(AccountEntity)
       : this.accountRepository;
   }
 
@@ -330,7 +332,7 @@ export class AccountService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<UserInfoEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(UserInfoEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(UserInfoEntity)
       : this.userInfoRepository;
   }
 }

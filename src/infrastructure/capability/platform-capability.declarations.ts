@@ -1,6 +1,6 @@
 // src/infrastructure/capability/platform-capability.declarations.ts
 import { Injectable } from '@nestjs/common';
-import { CapabilityManifestProvider } from './capability.decorators';
+import { CapabilityManifestProvider } from '@app-types/common/capability-decorators';
 
 @Injectable()
 @CapabilityManifestProvider({

@@ -1,10 +1,12 @@
 // src/modules/blog/queries/blog-tag.query.service.ts
 // 标签读侧 QueryService：读取、输出规范化，不写、不开事务
 
-import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import {
+  getTransactionEntityManager,
+  type PersistenceTransactionContext,
+} from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { In, Repository } from 'typeorm';
 import type { BlogTagView } from '../blog.types';
 import { BlogPostTagEntity } from '../entities/blog-post-tag.entity';
@@ -120,7 +122,7 @@ export class BlogTagQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogTagEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogTagEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogTagEntity)
       : this.tagRepo;
   }
 
@@ -128,7 +130,7 @@ export class BlogTagQueryService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<BlogPostTagEntity> {
     return transactionContext
-      ? getTypeOrmEntityManager(transactionContext).getRepository(BlogPostTagEntity)
+      ? getTransactionEntityManager(transactionContext).getRepository(BlogPostTagEntity)
       : this.postTagRepo;
   }
 }
