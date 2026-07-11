@@ -1,9 +1,6 @@
 // src/modules/ai-workflow-context/ai-workflow-context.service.ts
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { AI_WORKFLOW_CONTEXT_ERROR, DomainError } from '@core/common/errors/domain-error';
 import {
   normalizeOptionalText,
@@ -11,6 +8,7 @@ import {
 } from '@core/common/input-normalize/input-normalize.policy';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import {
   In,
   IsNull,
@@ -711,9 +709,7 @@ export class AiWorkflowContextService {
   private resolveRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AiWorkflowContextEntity> {
-    const manager = transactionContext
-      ? getTransactionEntityManager(transactionContext)
-      : undefined;
+    const manager = transactionContext ? getTypeOrmEntityManager(transactionContext) : undefined;
     return manager
       ? manager.getRepository(AiWorkflowContextEntity)
       : this.aiWorkflowContextRepository;

@@ -1,20 +1,17 @@
-// src/modules/reference/reference-capability.module.ts
 import { Module } from '@nestjs/common';
-import {
-  ReferenceProfileCapabilityDeclaration,
-  ReferenceReportCapabilityDeclaration,
-} from './reference-capability.providers';
+import { ReferenceProfileCapabilityAnchor } from './reference-profile.capability';
+import { ReferenceReportCapabilityAnchor } from './reference-report.capability';
 import { ReferenceProfileListByGroupKeysHandler } from './reference-profile-list-by-group-keys.handler';
 
 @Module({
   providers: [
-    ReferenceProfileCapabilityDeclaration,
-    ReferenceReportCapabilityDeclaration,
+    ReferenceProfileCapabilityAnchor,
+    ReferenceReportCapabilityAnchor,
     ReferenceProfileListByGroupKeysHandler,
   ],
   exports: [
-    ReferenceProfileCapabilityDeclaration,
-    ReferenceReportCapabilityDeclaration,
+    ReferenceProfileCapabilityAnchor,
+    ReferenceReportCapabilityAnchor,
     ReferenceProfileListByGroupKeysHandler,
   ],
 })

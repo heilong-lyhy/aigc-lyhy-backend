@@ -8,12 +8,26 @@ import type {
 import type { CapabilityHealthResult } from '@app-types/common/capability.types';
 import { Injectable } from '@nestjs/common';
 import {
+  CapabilityAnchorProvider,
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@app-types/common/capability-decorators';
+  CapabilityRuntimeContributionProvider,
+} from '@src/infrastructure/capability/capability.decorators';
 import { createHash } from 'node:crypto';
 
 @Injectable()
+@CapabilityAnchorProvider({
+  capabilityId: 'ai.local-mock',
+  mode: 'switchable',
+  decisionRef: 'docs/capabilities/current.md',
+})
+@CapabilityRuntimeContributionProvider({
+  capabilityId: 'ai.local-mock',
+  runtime: { healthCheck: true },
+  contributions: {
+    providers: [{ providerKind: 'ai.provider', providerName: 'mock' }],
+  },
+})
 @CapabilityProviderBindingProvider({
   capabilityId: 'ai.local-mock',
   providerKind: 'ai.provider',

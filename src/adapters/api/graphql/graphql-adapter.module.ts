@@ -5,18 +5,16 @@ import { AiQueueUsecasesModule } from '@src/usecases/ai-queue/ai-queue-usecases.
 import { AuthUsecasesModule } from '@src/usecases/auth/auth-usecases.module';
 import { AsyncTaskRecordUsecasesModule } from '@src/usecases/async-task-record/async-task-record-usecases.module';
 import { EmailQueueUsecasesModule } from '@src/usecases/email-queue/email-queue-usecases.module';
-import { MagicItemCraftUsecasesModule } from '@src/usecases/magic-item-craft/magic-item-craft-usecases.module'; // [KEPT:业务保留]
 import { RegistrationUsecasesModule } from '@src/usecases/registration/registration-usecases.module';
 import { ThirdPartyAccountsUsecasesModule } from '@src/usecases/third-party-accounts/third-party-accounts-usecases.module';
 import { VerificationRecordUsecasesModule } from '@src/usecases/verification-record/verification-record-usecases.module';
 import { VerificationUsecasesModule } from '@src/usecases/verification/verification-usecases.module';
 
+import { BlogGraphQLAdapterModule } from './blog/blog-graphql-adapter.module';
+
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
-
-// Blog GraphQL Adapter Module // [KEPT:业务保留]
-import { BlogGraphQLAdapterModule } from './blog/blog-graphql-adapter.module'; // [KEPT:业务保留]
 
 // Resolvers
 import { AccountResolver } from './account/account.resolver';
@@ -24,17 +22,15 @@ import { AiResolver } from './ai/ai.resolver';
 import { UserInfoResolver } from './account/user-info.resolver';
 import { AuthResolver } from './auth/auth.resolver';
 import { EmailResolver } from './email/email.resolver';
-import { MagicItemCraftResolver } from './magic-item-craft/magic-item-craft.resolver'; // [KEPT:业务保留]
 import { RegistrationResolver } from './registration/registration.resolver';
 import { ThirdPartyAuthResolver } from './third-party-auth/third-party-auth.resolver';
 import { VerificationRecordResolver } from './verification-record/verification-record.resolver';
 
 // Guards
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard'; // [KEPT:业务保留]
 import { RolesGuard } from './guards/roles.guard';
 import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
-import { CapabilityRuntimeGuard } from './guards/capability-runtime.guard'; // [MERGED]
+import { CapabilityRuntimeGuard } from './guards/capability-runtime.guard';
 import {
   QM_WORKER_ENTRY_OPTIONS,
   type QmWorkerEntryOptions,
@@ -54,13 +50,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AsyncTaskRecordUsecasesModule,
     AuthUsecasesModule,
     EmailQueueUsecasesModule,
-    MagicItemCraftUsecasesModule, // [KEPT:业务保留]
     RegistrationUsecasesModule,
     ThirdPartyAccountsUsecasesModule,
     VerificationRecordUsecasesModule,
     VerificationUsecasesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    BlogGraphQLAdapterModule, // [KEPT:业务保留]
+    BlogGraphQLAdapterModule,
   ],
   providers: [
     {
@@ -102,15 +97,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthResolver,
     ThirdPartyAuthResolver,
     EmailResolver,
-    MagicItemCraftResolver, // [KEPT:业务保留]
     RegistrationResolver,
     VerificationRecordResolver,
     UserInfoResolver,
     // Guards
-    CapabilityRuntimeGuard, // [MERGED]
+    CapabilityRuntimeGuard,
     QmWorkerEntryGuard,
     JwtAuthGuard,
-    OptionalJwtAuthGuard, // [KEPT:业务保留]
     RolesGuard,
     JwtStrategy,
   ],
@@ -121,14 +114,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthResolver,
     ThirdPartyAuthResolver,
     EmailResolver,
-    MagicItemCraftResolver, // [KEPT:业务保留]
     RegistrationResolver,
     VerificationRecordResolver,
     UserInfoResolver,
-    CapabilityRuntimeGuard, // [MERGED]
+    CapabilityRuntimeGuard,
     QmWorkerEntryGuard,
     JwtAuthGuard,
-    OptionalJwtAuthGuard, // [KEPT:业务保留]
     RolesGuard,
     JwtStrategy,
   ],

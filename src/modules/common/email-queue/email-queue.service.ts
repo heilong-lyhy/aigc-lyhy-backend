@@ -1,17 +1,14 @@
 // src/modules/common/email-queue/email-queue.service.ts
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
+import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
 import { PinoLogger } from 'nestjs-pino';
-import {
-  QUEUE_PRODUCER,
-  type QueueProducer,
-} from '@src/usecases/common/ports/queue-producer.contract';
 import type { QueueEmailInput, QueueEmailResult } from './email-queue.types';
 
 @Injectable()
 export class EmailQueueService {
   constructor(
-    @Inject(QUEUE_PRODUCER) private readonly producer: QueueProducer,
+    private readonly producer: BullMqProducerGateway,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(EmailQueueService.name);

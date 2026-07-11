@@ -2,18 +2,20 @@
 import { Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
-  CapabilityManifestProvider,
+  CapabilityAnchorProvider,
   CapabilityQueueBindingProvider,
-} from '@app-types/common/capability-decorators';
-import { AI_PROVIDER_KIND, AI_QUEUE_CAPABILITY_ID } from './ai-capability.constants';
+  CapabilityRuntimeContributionProvider,
+} from '@src/infrastructure/capability/capability.decorators';
+import { AI_QUEUE_CAPABILITY_ID } from './ai-capability.constants';
 
 @Injectable()
-@CapabilityManifestProvider({
-  id: AI_QUEUE_CAPABILITY_ID,
-  kind: 'technical',
-  displayName: 'AI Queue',
-  version: '0.1.0',
-  processes: ['api', 'worker'],
+@CapabilityAnchorProvider({
+  capabilityId: AI_QUEUE_CAPABILITY_ID,
+  mode: 'switchable',
+  decisionRef: 'docs/capabilities/current.md',
+})
+@CapabilityRuntimeContributionProvider({
+  capabilityId: AI_QUEUE_CAPABILITY_ID,
   contributions: {
     queues: [
       {
@@ -40,7 +42,7 @@ import { AI_PROVIDER_KIND, AI_QUEUE_CAPABILITY_ID } from './ai-capability.consta
     ],
   },
 })
-export class AiQueueCapabilityDeclaration {}
+export class AiQueueCapabilityAnchor {}
 
 @Injectable()
 @CapabilityQueueBindingProvider({
@@ -74,45 +76,3 @@ export class AiQueueEmbedBindingDeclaration {}
   dedupKeyMapping: 'jobId',
 })
 export class AiQueueWorkflowBindingDeclaration {}
-
-@Injectable()
-@CapabilityManifestProvider({
-  id: 'ai.local-mock',
-  kind: 'technical',
-  displayName: 'AI Local Mock Provider',
-  version: '0.1.0',
-  processes: ['worker'],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [{ providerKind: AI_PROVIDER_KIND, providerName: 'mock' }],
-  },
-})
-export class AiLocalMockCapabilityDeclaration {}
-
-@Injectable()
-@CapabilityManifestProvider({
-  id: 'ai.openai',
-  kind: 'technical',
-  displayName: 'OpenAI Provider',
-  version: '0.1.0',
-  processes: ['worker'],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [{ providerKind: AI_PROVIDER_KIND, providerName: 'openai' }],
-  },
-})
-export class AiOpenAiCapabilityDeclaration {}
-
-@Injectable()
-@CapabilityManifestProvider({
-  id: 'ai.qwen',
-  kind: 'technical',
-  displayName: 'Qwen Provider',
-  version: '0.1.0',
-  processes: ['worker'],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [{ providerKind: AI_PROVIDER_KIND, providerName: 'qwen' }],
-  },
-})
-export class AiQwenCapabilityDeclaration {}

@@ -1,7 +1,7 @@
 // src/infrastructure/bullmq/contracts/job-contract.registry.ts
 import { BULLMQ_JOBS, BULLMQ_QUEUES, type BullMqQueueName } from '../bullmq.constants';
 import { AI_JOB_CONTRACT } from './ai-queue.runtime';
-import { CAPABILITY_JOB_CONTRACT } from './capability-queue.runtime'; // [MERGED]
+import { CAPABILITY_JOB_CONTRACT } from './capability-queue.runtime';
 import { EMAIL_JOB_CONTRACT } from './email-queue.runtime';
 import { MAGIC_ITEM_CRAFT_JOB_CONTRACT } from './magic-item-craft.runtime'; // [KEPT:业务保留]
 
@@ -10,7 +10,7 @@ type PayloadValidator<T> = (payload: unknown) => payload is T;
 type QueueJobContractMap = {
   readonly [BULLMQ_QUEUES.EMAIL]: typeof EMAIL_JOB_CONTRACT;
   readonly [BULLMQ_QUEUES.AI]: typeof AI_JOB_CONTRACT;
-  readonly [BULLMQ_QUEUES.CAPABILITY]: typeof CAPABILITY_JOB_CONTRACT; // [MERGED]
+  readonly [BULLMQ_QUEUES.CAPABILITY]: typeof CAPABILITY_JOB_CONTRACT;
   readonly [BULLMQ_QUEUES.MAGIC_ITEM_CRAFT]: typeof MAGIC_ITEM_CRAFT_JOB_CONTRACT; // [KEPT:业务保留]
 };
 
@@ -40,10 +40,9 @@ export const BULLMQ_JOB_PAYLOAD_VALIDATORS = {
   [BULLMQ_QUEUES.AI]: {
     [BULLMQ_JOBS.AI.GENERATE]: AI_JOB_CONTRACT[BULLMQ_JOBS.AI.GENERATE].payloadValidator,
     [BULLMQ_JOBS.AI.EMBED]: AI_JOB_CONTRACT[BULLMQ_JOBS.AI.EMBED].payloadValidator,
-    [BULLMQ_JOBS.AI.WORKFLOW]: AI_JOB_CONTRACT[BULLMQ_JOBS.AI.WORKFLOW].payloadValidator, // [MERGED]
+    [BULLMQ_JOBS.AI.WORKFLOW]: AI_JOB_CONTRACT[BULLMQ_JOBS.AI.WORKFLOW].payloadValidator,
   },
   [BULLMQ_QUEUES.CAPABILITY]: {
-    // [MERGED]
     [BULLMQ_JOBS.CAPABILITY.DISPATCH]:
       CAPABILITY_JOB_CONTRACT[BULLMQ_JOBS.CAPABILITY.DISPATCH].payloadValidator,
   },

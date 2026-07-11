@@ -3,17 +3,56 @@ import { Module } from '@nestjs/common';
 import { ConfigFactory, ConfigModule, registerAs } from '@nestjs/config';
 import { parseBooleanInput } from '@core/common/normalize/normalize.helper';
 import { IncomingMessage, ServerResponse } from 'http';
-import { join } from 'path';
+import { join } from 'path'; // [KEPT:业务保留] - needed for blogStorageConfig
 import databaseConfig from './database.config';
-import {
-  getOptionalEnv,
-  getRequiredEnv,
-  getRequiredIntEnv,
-  getIntEnvWithDefault,
-  parseStrictInteger,
-} from './env.helpers';
 
 const isProductionEnv = (): boolean => process.env.NODE_ENV === 'production';
+
+const getOptionalEnv = (key: string): string | undefined => {
+  const value = process.env[key];
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+};
+
+const getRequiredEnv = (key: string): string => {
+  const value = getOptionalEnv(key);
+  if (!value) {
+    throw new Error(`${key} is required`);
+  }
+  return value;
+};
+
+const parseStrictInteger = (raw: string): number => {
+  const normalized = raw.trim();
+  if (!/^-?\d+$/.test(normalized)) {
+    return Number.NaN;
+  }
+  return Number(normalized);
+};
+
+const getRequiredIntEnv = (key: string): number => {
+  const value = getRequiredEnv(key);
+  const parsed = parseStrictInteger(value);
+  if (!Number.isInteger(parsed)) {
+    throw new Error(`${key} must be a valid integer`);
+  }
+  return parsed;
+};
+
+const getIntEnvWithDefault = (key: string, defaultValue: number): number => {
+  const value = getOptionalEnv(key);
+  if (!value) {
+    return defaultValue;
+  }
+  const parsed = parseStrictInteger(value);
+  if (!Number.isInteger(parsed)) {
+    throw new Error(`${key} must be a valid integer`);
+  }
+  return parsed;
+};
 
 const getBooleanEnvWithDefault = (key: string, defaultValue: boolean): boolean => {
   const raw = process.env[key];
@@ -220,7 +259,7 @@ const graphqlConfig = () => {
 const serverConfig: ConfigFactory = () => ({
   server: {
     host: process.env.APP_HOST || '127.0.0.1',
-    port: getIntEnvWithDefault('APP_PORT', 3000),
+    port: getIntEnvWithDefault('APP_PORT', 16200),
     cors: {
       enabled: getBooleanEnvWithDefault('APP_CORS_ENABLED', true),
       origins: process.env.APP_CORS_ORIGINS || '',
@@ -373,12 +412,11 @@ const qmWorkerEntryConfig: ConfigFactory = () => ({
     },
     magicItemCraft: {
       // [KEPT:业务保留]
-      enabled: parseBooleanInput(process.env.MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED) ?? true, // [KEPT:业务保留]
-    }, // [KEPT:业务保留]
+      enabled: parseBooleanInput(process.env.MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED) ?? true,
+    },
   },
 });
 
-// [MERGED] - Capability runtime config from template
 const parseCsvEnv = (key: string): readonly string[] => {
   return (process.env[key] ?? '')
     .split(',')
@@ -408,7 +446,6 @@ const parsePermissionGrantEnv = (
 };
 
 const capabilityRuntimeConfig: ConfigFactory = () => ({
-  // [MERGED]
   capabilityRuntime: {
     disabledIds: parseCsvEnv('CAPABILITY_DISABLED_IDS'),
     killSwitchIds: parseCsvEnv('CAPABILITY_KILL_SWITCH_IDS'),
@@ -510,7 +547,7 @@ const blogStorageConfig: ConfigFactory = () => ({
         redisConfig,
         bullmqConfig,
         qmWorkerEntryConfig,
-        capabilityRuntimeConfig, // [MERGED]
+        capabilityRuntimeConfig,
         aiWorkerConfig,
         emailDeliveryConfig,
         jwtConfig,

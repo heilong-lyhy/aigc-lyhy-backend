@@ -2,23 +2,20 @@
 import { Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
 import {
-  CapabilityManifestProvider,
+  CapabilityAnchorProvider,
   CapabilityQueueBindingProvider,
-} from '@app-types/common/capability-decorators';
-import {
-  EMAIL_DELIVERY_PROVIDER_KIND,
-  EMAIL_SENDMAIL_PROVIDER_NAME,
-  NOTIFICATION_EMAIL_CAPABILITY_ID,
-  NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,
-} from './email-capability.constants';
+  CapabilityRuntimeContributionProvider,
+} from '@src/infrastructure/capability/capability.decorators';
+import { NOTIFICATION_EMAIL_CAPABILITY_ID } from './email-capability.constants';
 
 @Injectable()
-@CapabilityManifestProvider({
-  id: NOTIFICATION_EMAIL_CAPABILITY_ID,
-  kind: 'technical',
-  displayName: 'Notification Email',
-  version: '0.1.0',
-  processes: ['api', 'worker'],
+@CapabilityAnchorProvider({
+  capabilityId: NOTIFICATION_EMAIL_CAPABILITY_ID,
+  mode: 'switchable',
+  decisionRef: 'docs/capabilities/current.md',
+})
+@CapabilityRuntimeContributionProvider({
+  capabilityId: NOTIFICATION_EMAIL_CAPABILITY_ID,
   contributions: {
     queues: [
       {
@@ -31,7 +28,7 @@ import {
     ],
   },
 })
-export class NotificationEmailCapabilityDeclaration {}
+export class NotificationEmailCapabilityAnchor {}
 
 @Injectable()
 @CapabilityQueueBindingProvider({
@@ -43,23 +40,3 @@ export class NotificationEmailCapabilityDeclaration {}
   dedupKeyMapping: 'jobId',
 })
 export class NotificationEmailQueueSendBindingDeclaration {}
-
-@Injectable()
-@CapabilityManifestProvider({
-  id: NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,
-  kind: 'technical',
-  displayName: 'Notification Email Sendmail Provider',
-  version: '0.1.0',
-  processes: ['worker'],
-  dependsOn: [{ capabilityId: NOTIFICATION_EMAIL_CAPABILITY_ID, mode: 'required' }],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [
-      {
-        providerKind: EMAIL_DELIVERY_PROVIDER_KIND,
-        providerName: EMAIL_SENDMAIL_PROVIDER_NAME,
-      },
-    ],
-  },
-})
-export class NotificationEmailSendmailCapabilityDeclaration {}

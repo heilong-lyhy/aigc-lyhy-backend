@@ -1,21 +1,12 @@
 // src/modules/common/email-capability/email-capability.module.ts
 import { Module } from '@nestjs/common';
 import {
-  NotificationEmailCapabilityDeclaration,
+  NotificationEmailCapabilityAnchor,
   NotificationEmailQueueSendBindingDeclaration,
-  NotificationEmailSendmailCapabilityDeclaration,
 } from './email-capability.providers';
 
 @Module({
-  providers: [
-    NotificationEmailCapabilityDeclaration,
-    NotificationEmailQueueSendBindingDeclaration,
-    NotificationEmailSendmailCapabilityDeclaration,
-  ],
-  exports: [
-    NotificationEmailCapabilityDeclaration,
-    NotificationEmailQueueSendBindingDeclaration,
-    NotificationEmailSendmailCapabilityDeclaration,
-  ],
+  providers: [NotificationEmailCapabilityAnchor, NotificationEmailQueueSendBindingDeclaration],
+  exports: [NotificationEmailCapabilityAnchor, NotificationEmailQueueSendBindingDeclaration],
 })
 export class EmailCapabilityModule {}

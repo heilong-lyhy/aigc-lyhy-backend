@@ -1,9 +1,6 @@
 // src/modules/account/base/services/account.service.ts
 
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import {
   AccountStatus,
   AudienceTypeEnum,
@@ -15,6 +12,7 @@ import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/doma
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 
 // ✅ base 层实体（始终存在）
@@ -147,6 +145,36 @@ export class AccountService {
     await repository.update(params.accountId, {
       loginPassword: params.passwordHash,
       updatedAt: new Date(),
+    });
+  }
+
+  // [KEPT:业务保留] 博客管理员修改密码使用
+  async changePassword(params: {
+    accountId: number;
+    currentPassword: string;
+    newPassword: string;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<void> {
+    const account = await this.lockByIdForUpdate(params.accountId, params.transactionContext!);
+    if (!account.loginPassword) {
+      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '账户未设置密码');
+    }
+    const isCurrentPasswordValid = AccountService.verifyPassword(
+      params.currentPassword,
+      account.loginPassword,
+      account.createdAt,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '当前密码不正确');
+    }
+    const newPasswordHash = AccountService.hashPasswordWithTimestamp(
+      params.newPassword,
+      account.createdAt,
+    );
+    await this.updateAccountPasswordHash({
+      accountId: params.accountId,
+      passwordHash: newPasswordHash,
+      transactionContext: params.transactionContext,
     });
   }
 
@@ -284,47 +312,11 @@ export class AccountService {
     return normalizedPassword;
   }
 
-  // [KEPT:业务保留] 博客管理员修改密码用例所需的方法
-  async changePassword(params: {
-    accountId: number;
-    currentPassword: string;
-    newPassword: string;
-    transactionContext?: PersistenceTransactionContext;
-  }): Promise<void> {
-    const { accountId, currentPassword, newPassword, transactionContext } = params;
-    const repository = this.getAccountRepository(transactionContext);
-
-    const account = await repository.findOne({ where: { id: accountId } });
-    if (!account) {
-      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_NOT_FOUND, '账户不存在');
-    }
-
-    // 验证旧密码
-    const isCurrentPasswordValid = AccountService.verifyPassword(
-      currentPassword,
-      account.loginPassword,
-      account.createdAt,
-    );
-    if (!isCurrentPasswordValid) {
-      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_MISMATCH, '当前密码不正确');
-    }
-
-    // 哈希新密码并更新
-    const newHashedPassword = AccountService.hashPasswordWithTimestamp(
-      newPassword,
-      account.createdAt,
-    );
-    await repository.update(accountId, {
-      loginPassword: newHashedPassword,
-      updatedAt: new Date(),
-    });
-  }
-
   private getAccountRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AccountEntity> {
     return transactionContext
-      ? getTransactionEntityManager(transactionContext).getRepository(AccountEntity)
+      ? getTypeOrmEntityManager(transactionContext).getRepository(AccountEntity)
       : this.accountRepository;
   }
 
@@ -332,7 +324,7 @@ export class AccountService {
     transactionContext?: PersistenceTransactionContext,
   ): Repository<UserInfoEntity> {
     return transactionContext
-      ? getTransactionEntityManager(transactionContext).getRepository(UserInfoEntity)
+      ? getTypeOrmEntityManager(transactionContext).getRepository(UserInfoEntity)
       : this.userInfoRepository;
   }
 }

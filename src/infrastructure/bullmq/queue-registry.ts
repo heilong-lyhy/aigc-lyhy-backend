@@ -63,7 +63,6 @@ export const BULLMQ_QUEUE_REGISTRY: Readonly<Record<BullMqQueueName, BullMqQueue
     },
   },
   [BULLMQ_QUEUES.CAPABILITY]: {
-    // [MERGED]
     queueName: BULLMQ_QUEUES.CAPABILITY,
     defaultJobOptions: {
       attempts: 3,

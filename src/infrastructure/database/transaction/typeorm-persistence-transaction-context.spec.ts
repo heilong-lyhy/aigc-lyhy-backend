@@ -29,7 +29,7 @@ describe('TypeORM persistence transaction context', () => {
     const transactionContext = Object.freeze({}) as PersistenceTransactionContext;
 
     expect(() => getTypeOrmEntityManager(transactionContext)).toThrow(
-      'Invalid persistence transaction context',
+      'Invalid TypeORM persistence transaction context',
     );
   });
 });

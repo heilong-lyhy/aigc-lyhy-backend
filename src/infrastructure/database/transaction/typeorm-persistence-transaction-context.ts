@@ -1,7 +1,22 @@
-// src/infrastructure/database/transaction/typeorm-persistence-transaction-context.ts
-// Re-export from types layer for backward compatibility
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import type { EntityManager } from 'typeorm';
 
-export {
-  createPersistenceTransactionContext as createTypeOrmPersistenceTransactionContext,
-  getTransactionEntityManager as getTypeOrmEntityManager,
-} from '@app-types/common/transaction.types';
+const typeOrmEntityManagers = new WeakMap<PersistenceTransactionContext, EntityManager>();
+
+export function createTypeOrmPersistenceTransactionContext(
+  manager: EntityManager,
+): PersistenceTransactionContext {
+  const transactionContext = Object.freeze({}) as PersistenceTransactionContext;
+  typeOrmEntityManagers.set(transactionContext, manager);
+  return transactionContext;
+}
+
+export function getTypeOrmEntityManager(
+  transactionContext: PersistenceTransactionContext,
+): EntityManager {
+  const manager = typeOrmEntityManagers.get(transactionContext);
+  if (!manager) {
+    throw new Error('Invalid TypeORM persistence transaction context');
+  }
+  return manager;
+}

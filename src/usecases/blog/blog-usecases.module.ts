@@ -2,7 +2,7 @@
 // 博客领域 Usecases 模块：注册所有 blog usecases，导入 BlogModule
 // change-blog-admin-password 跨域依赖 AccountModule
 
-import { AccountModule } from '@modules/account/account.module';
+import { AccountInstallerModule } from '@modules/account/account-installer.module';
 import { BlogModule } from '@modules/blog/blog.module';
 import { Module } from '@nestjs/common';
 import { CreateBlogPostUsecase } from '@usecases/blog/create-blog-post.usecase';
@@ -54,7 +54,7 @@ import {
 } from '@usecases/blog/blog-read.usecase';
 
 @Module({
-  imports: [BlogModule, AccountModule.forRoot()],
+  imports: [BlogModule, AccountInstallerModule],
   providers: [
     // 写 usecases
     CreateBlogPostUsecase,

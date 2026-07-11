@@ -1,10 +1,8 @@
 // src/modules/async-task-record/async-task-record.service.ts
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { QueryFailedError, Repository } from 'typeorm';
 import { AsyncTaskRecordEntity } from './async-task-record.entity';
 import type {
@@ -404,9 +402,7 @@ export class AsyncTaskRecordService {
   private getRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AsyncTaskRecordEntity> {
-    const manager = transactionContext
-      ? getTransactionEntityManager(transactionContext)
-      : undefined;
+    const manager = transactionContext ? getTypeOrmEntityManager(transactionContext) : undefined;
     return manager ? manager.getRepository(AsyncTaskRecordEntity) : this.asyncTaskRecordRepository;
   }
 

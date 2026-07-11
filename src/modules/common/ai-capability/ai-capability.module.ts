@@ -1,33 +1,24 @@
 // src/modules/common/ai-capability/ai-capability.module.ts
 import { Module } from '@nestjs/common';
 import {
-  AiLocalMockCapabilityDeclaration,
-  AiOpenAiCapabilityDeclaration,
-  AiQueueCapabilityDeclaration,
+  AiQueueCapabilityAnchor,
   AiQueueEmbedBindingDeclaration,
   AiQueueGenerateBindingDeclaration,
   AiQueueWorkflowBindingDeclaration,
-  AiQwenCapabilityDeclaration,
 } from './ai-capability.providers';
 
 @Module({
   providers: [
-    AiQueueCapabilityDeclaration,
+    AiQueueCapabilityAnchor,
     AiQueueGenerateBindingDeclaration,
     AiQueueEmbedBindingDeclaration,
     AiQueueWorkflowBindingDeclaration,
-    AiLocalMockCapabilityDeclaration,
-    AiOpenAiCapabilityDeclaration,
-    AiQwenCapabilityDeclaration,
   ],
   exports: [
-    AiQueueCapabilityDeclaration,
+    AiQueueCapabilityAnchor,
     AiQueueGenerateBindingDeclaration,
     AiQueueEmbedBindingDeclaration,
     AiQueueWorkflowBindingDeclaration,
-    AiLocalMockCapabilityDeclaration,
-    AiOpenAiCapabilityDeclaration,
-    AiQwenCapabilityDeclaration,
   ],
 })
 export class AiCapabilityModule {}

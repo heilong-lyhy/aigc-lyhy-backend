@@ -1,6 +1,6 @@
 // src/bootstraps/api/api.module.ts
 import { GraphQLAdapterModule } from '@src/adapters/api/graphql/graphql-adapter.module';
-import { CapabilityModule } from '@src/infrastructure/capability/capability.module'; // [MERGED]
+import { CapabilityModule } from '@src/infrastructure/capability/capability.module';
 import { AppConfigModule } from '@src/infrastructure/config/config.module';
 import { DatabaseModule } from '@src/infrastructure/database/database.module';
 import { TypeOrmTransactionModule } from '@src/infrastructure/database/transaction/typeorm-transaction.module';
@@ -10,35 +10,35 @@ import { AppGraphQLModule } from '@src/infrastructure/graphql/graphql.module';
 import { LoggerModule } from '@src/infrastructure/logger/logger.module';
 import { MiddlewareModule } from '@src/infrastructure/middleware/middleware.module';
 import { AppThrottlerModule } from '@src/infrastructure/throttler/throttler.module'; // [KEPT:业务保留]
-import { AccountModule } from '@src/modules/account/account.module';
+import { AccountInstallerModule } from '@src/modules/account/account-installer.module';
 import { AuthModule } from '@src/modules/auth/auth.module';
 import { PasswordModule } from '@src/modules/common/password/password.module';
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ApiController } from './api.controller';
 import { ApiService } from './api.service';
-import { CapabilityGraphqlSurfaceCheck } from './capability-graphql-surface.check'; // [MERGED]
+import { CapabilityGraphqlSurfaceCheck } from './capability-graphql-surface.check';
 
 @Module({
   imports: [
     AppConfigModule,
-    CapabilityModule.forRoot({ process: 'api' }), // [MERGED]
+    CapabilityModule.forRoot({ process: 'api' }),
     LoggerModule,
     MiddlewareModule,
-    AppThrottlerModule, // [KEPT:业务保留]
     DatabaseModule,
     TypeOrmTransactionModule,
     AppGraphQLModule,
     GraphQLAdapterModule,
     FieldEncryptionModule,
+    AppThrottlerModule, // [KEPT:业务保留]
     PasswordModule,
-    AccountModule,
+    AccountInstallerModule,
     AuthModule,
   ],
   controllers: [ApiController],
   providers: [
     ApiService,
-    CapabilityGraphqlSurfaceCheck, // [MERGED]
+    CapabilityGraphqlSurfaceCheck,
     {
       provide: APP_FILTER,
       useClass: GqlAllExceptionsFilter,

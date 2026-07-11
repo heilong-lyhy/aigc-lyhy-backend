@@ -9,9 +9,11 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  CapabilityAnchorProvider,
   CapabilityHealthCheckProvider,
   CapabilityProviderBindingProvider,
-} from '@app-types/common/capability-decorators';
+  CapabilityRuntimeContributionProvider,
+} from '@src/infrastructure/capability/capability.decorators';
 import axios from 'axios';
 import { createHash } from 'node:crypto';
 
@@ -31,6 +33,18 @@ interface OpenAiChatCompletionResponse {
 }
 
 @Injectable()
+@CapabilityAnchorProvider({
+  capabilityId: 'ai.openai',
+  mode: 'switchable',
+  decisionRef: 'docs/capabilities/current.md',
+})
+@CapabilityRuntimeContributionProvider({
+  capabilityId: 'ai.openai',
+  runtime: { healthCheck: true },
+  contributions: {
+    providers: [{ providerKind: 'ai.provider', providerName: 'openai' }],
+  },
+})
 @CapabilityProviderBindingProvider({
   capabilityId: 'ai.openai',
   providerKind: 'ai.provider',

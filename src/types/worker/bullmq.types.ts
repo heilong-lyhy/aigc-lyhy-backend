@@ -9,7 +9,7 @@ export const BULLMQ_QUEUES = {
   EMAIL: 'email',
   AI: 'ai',
   CAPABILITY: 'capability',
-  MAGIC_ITEM_CRAFT: 'magic_item_craft',
+  MAGIC_ITEM_CRAFT: 'magic-item-craft',
 } as const;
 
 export type BullMqQueueName = (typeof BULLMQ_QUEUES)[keyof typeof BULLMQ_QUEUES];

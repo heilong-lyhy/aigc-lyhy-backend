@@ -1,5 +1,5 @@
 export type AsyncTaskBizDomain =
-  'ai_generation' | 'ai_embedding' | 'ai_workflow' | 'email' | 'magic_item_craft'; // [KEPT:业务保留]
+  'ai_generation' | 'ai_embedding' | 'ai_workflow' | 'email' | 'magic_item_craft'; // [KEPT:业务保留] 添加 magic_item_craft
 
 type BizKeyPolicy = 'trace_id' | 'job_id';
 

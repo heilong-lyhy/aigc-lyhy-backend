@@ -1,17 +1,13 @@
 // src/modules/third-party-auth/third-party-auth.capability.ts
 import { Injectable } from '@nestjs/common';
-import { CapabilityManifestProvider } from '@app-types/common/capability-decorators';
+import { CapabilityAnchorProvider } from '@src/infrastructure/capability/capability.decorators';
+
+export const THIRD_PARTY_AUTH_BINDING_CAPABILITY_ID = 'third-party-auth.binding' as const;
 
 @Injectable()
-@CapabilityManifestProvider({
-  id: 'third-party-auth.weapp',
-  kind: 'technical',
-  displayName: 'WeApp Third-party Auth',
-  version: '0.1.0',
-  processes: ['api'],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [{ providerKind: 'third-party-auth.provider', providerName: 'weapp' }],
-  },
+@CapabilityAnchorProvider({
+  capabilityId: THIRD_PARTY_AUTH_BINDING_CAPABILITY_ID,
+  mode: 'always-on',
+  decisionRef: 'docs/capabilities/current.md',
 })
-export class ThirdPartyAuthWeappCapabilityDeclaration {}
+export class ThirdPartyAuthBindingCapabilityAnchor {}

@@ -1,13 +1,32 @@
 /// <reference types="jest" />
 // src/modules/common/ai-queue/ai-queue.service.spec.ts
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
+import {
+  BullMqProducerGateway,
+  type EnqueueJobInput,
+  type EnqueueJobResult,
+} from '@src/infrastructure/bullmq/producer.gateway';
 import type { PinoLogger } from 'nestjs-pino';
 import { AiQueueService } from './ai-queue.service';
 
+type AiJobName = (typeof BULLMQ_JOBS.AI)[keyof typeof BULLMQ_JOBS.AI];
+type AiProducerEnqueueInput = EnqueueJobInput<typeof BULLMQ_QUEUES.AI, AiJobName>;
+type AiProducerEnqueueResult = EnqueueJobResult<typeof BULLMQ_QUEUES.AI, AiJobName>;
+
 interface ProducerMock {
-  readonly enqueue: jest.Mock;
-  readonly hasJob: jest.Mock;
-  readonly checkQueueAvailable: jest.Mock;
+  readonly enqueue: jest.Mock<Promise<AiProducerEnqueueResult>, [AiProducerEnqueueInput]>;
+  readonly hasJob: jest.Mock<
+    Promise<{
+      readonly queueName: typeof BULLMQ_QUEUES.AI;
+      readonly jobId: string;
+      readonly exists: boolean;
+    }>,
+    [{ readonly queueName: typeof BULLMQ_QUEUES.AI; readonly jobId: string }]
+  >;
+  readonly checkQueueAvailable: jest.Mock<
+    Promise<{ readonly queueName: typeof BULLMQ_QUEUES.AI; readonly available: true }>,
+    [{ readonly queueName: typeof BULLMQ_QUEUES.AI }]
+  >;
 }
 
 describe('AiQueueService', () => {
@@ -33,7 +52,10 @@ describe('AiQueueService', () => {
       setContext: jest.fn(),
       info: jest.fn(),
     };
-    const service = new AiQueueService(producer, logger as unknown as PinoLogger);
+    const service = new AiQueueService(
+      producer as unknown as BullMqProducerGateway,
+      logger as unknown as PinoLogger,
+    );
     return { logger, producer, service };
   };
 

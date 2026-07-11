@@ -8,7 +8,7 @@ import { Roles } from './roles.decorator';
 
 export const QM_WORKER_ENTRY_POLICY_KEY = 'qmWorkerEntryPolicy';
 
-export type QmWorkerEntryPreset = 'AI_STRICT' | 'EMAIL_RELAXED' | 'MAGIC_ITEM_CRAFT_RELAXED'; // [KEPT:业务保留]
+export type QmWorkerEntryPreset = 'AI_STRICT' | 'EMAIL_RELAXED' | 'MAGIC_ITEM_CRAFT_RELAXED'; // [KEPT:业务保留] 添加 MAGIC_ITEM_CRAFT_RELAXED
 
 export interface QmWorkerEntryPolicy {
   readonly enabledFlag: QmWorkerEntryFlag;
@@ -27,7 +27,7 @@ const QM_WORKER_ENTRY_POLICIES: Record<QmWorkerEntryPreset, QmWorkerEntryPolicy>
   MAGIC_ITEM_CRAFT_RELAXED: {
     // [KEPT:业务保留]
     enabledFlag: 'magicItemCraftEnabled',
-    disabledMessage: '道具制作队列入口未启用，请设置 MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED=true',
+    disabledMessage: '魔法道具制作队列入口未启用，请设置 MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED=true',
   },
 };
 
