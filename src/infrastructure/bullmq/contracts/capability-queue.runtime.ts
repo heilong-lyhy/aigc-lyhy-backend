@@ -1,10 +1,7 @@
 import type {
   CapabilityActorContext,
-  CapabilityCommand,
-  CapabilityEvent,
   CapabilityId,
   CapabilityOperationKind,
-  CapabilityQuery,
   CapabilityRequestContext,
 } from '@app-types/common/capability.types';
 import { BULLMQ_JOBS } from '../bullmq.constants';
@@ -91,35 +88,4 @@ function isCapabilityOperationKind(value: unknown): value is CapabilityOperation
 
 function isObjectRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export function restoreCapabilityEnvelope(
-  payload: CapabilityDispatchJobPayload,
-): CapabilityCommand<unknown> | CapabilityQuery<unknown> | CapabilityEvent<unknown> {
-  const base = {
-    capability: payload.envelope.capability,
-    operation: payload.envelope.operation,
-    operationKind: payload.envelope.operationKind,
-    ...(payload.envelope.operationVersion === undefined
-      ? {}
-      : { operationVersion: payload.envelope.operationVersion }),
-    context: payload.envelope.context,
-    ...(payload.envelope.idempotencyKey === undefined
-      ? {}
-      : { idempotencyKey: payload.envelope.idempotencyKey }),
-    ...(payload.envelope.dedupKey === undefined ? {} : { dedupKey: payload.envelope.dedupKey }),
-    payload: payload.envelope.payload,
-    createdAt: new Date(payload.envelope.createdAt),
-  };
-  if (payload.envelope.operationKind === 'event') {
-    return {
-      ...base,
-      operationKind: 'event',
-      eventId: payload.envelope.eventId ?? payload.envelope.context.requestId,
-      occurredAt: new Date(payload.envelope.occurredAt ?? payload.envelope.createdAt),
-    };
-  }
-  return payload.envelope.operationKind === 'command'
-    ? { ...base, operationKind: 'command' }
-    : { ...base, operationKind: 'query' };
 }
