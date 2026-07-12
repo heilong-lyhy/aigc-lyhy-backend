@@ -7,9 +7,9 @@
 
 export const BULLMQ_QUEUES = {
   EMAIL: 'email',
-  AI: 'ai',
+  AI: 'ai-execution',
+  AI_WORKFLOW: 'ai-workflow',
   CAPABILITY: 'capability',
-  MAGIC_ITEM_CRAFT: 'magic-item-craft',
 } as const;
 
 export type BullMqQueueName = (typeof BULLMQ_QUEUES)[keyof typeof BULLMQ_QUEUES];
@@ -26,14 +26,9 @@ export const BULLMQ_JOBS = {
   CAPABILITY: {
     DISPATCH: 'dispatch',
   },
-  MAGIC_ITEM_CRAFT: {
-    CRAFT: 'craft',
-  },
 } as const;
 
 export type BullMqEmailJobName = (typeof BULLMQ_JOBS.EMAIL)[keyof typeof BULLMQ_JOBS.EMAIL];
 export type BullMqAiJobName = (typeof BULLMQ_JOBS.AI)[keyof typeof BULLMQ_JOBS.AI];
 export type BullMqCapabilityJobName =
   (typeof BULLMQ_JOBS.CAPABILITY)[keyof typeof BULLMQ_JOBS.CAPABILITY];
-export type BullMqMagicItemCraftJobName =
-  (typeof BULLMQ_JOBS.MAGIC_ITEM_CRAFT)[keyof typeof BULLMQ_JOBS.MAGIC_ITEM_CRAFT];

@@ -1,9 +1,8 @@
 // src/bootstraps/worker/worker.module.ts
 import { Module } from '@nestjs/common';
 import { AiWorkerAdapterModule } from '@src/adapters/worker/ai/ai-worker-adapter.module';
-import { CapabilityWorkerAdapterModule } from '@src/adapters/worker/capability/capability-worker-adapter.module';
+import { AiWorkflowWorkerAdapterModule } from '@src/adapters/worker/ai-workflow/ai-workflow-worker-adapter.module';
 import { EmailWorkerAdapterModule } from '@src/adapters/worker/email/email-worker-adapter.module';
-import { MagicItemCraftWorkerAdapterModule } from '@src/adapters/worker/magic-item-craft/magic-item-craft-worker-adapter.module'; // [KEPT:业务保留]
 import { BullMqModule } from '@src/infrastructure/bullmq/bullmq.module';
 import { CapabilityModule } from '@src/infrastructure/capability/capability.module';
 import { BullMqWorkerRuntime } from '@src/infrastructure/bullmq/worker.runtime';
@@ -23,9 +22,8 @@ import { RedisModule } from '@src/infrastructure/redis/redis.module';
     RedisModule,
     BullMqModule,
     AiWorkerAdapterModule,
+    AiWorkflowWorkerAdapterModule,
     EmailWorkerAdapterModule,
-    CapabilityWorkerAdapterModule,
-    MagicItemCraftWorkerAdapterModule, // [KEPT:业务保留]
   ],
   providers: [BullMqWorkerRuntime],
 })

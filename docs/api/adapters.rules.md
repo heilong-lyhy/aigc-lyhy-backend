@@ -40,6 +40,14 @@ Global error contract: Every GraphQL interface must also follow docs/api/graphql
 ## 依赖方向
 
 - 允许 adapters → usecases。
+- 允许 adapters 仅以 `import type` 引用其所调用 Usecase 相邻的 `*.types.ts`，用于该调用的输入、结果或流程契约。
+  不得从 `*.usecase.ts` 实现文件借类型，也不得把该例外扩张成 adapter 对 usecase helper 或内部实现的依赖。
+- 允许 adapters → core 的纯 policy、value object、DomainError、常量、normalize helper 与类型契约。
+  该依赖只用于协议校验、错误映射和输入输出适配，不允许把业务编排或 I/O 下沉到 adapter。
+  对输入而言，Adapter 只能执行与协议一致的纯解析/校验；场景 business policy 的选择和执行
+  仍归 Usecase，不得以“纯 policy”为由前移。
+- 允许 adapters 对 `src/types` / `@app-types/*` 做正常依赖，包括 GraphQL DTO 装饰器、
+  `class-validator` 和 schema registry 所需的 enum 运行时值。
 - 允许 adapters 仅以 `import type` 复用同域
   `src/modules/<bounded-context>/<bounded-context>.types.ts` 的稳定 View / contract。
   该例外只用于类型注解，不得引入运行时值、service、QueryService、Entity 或局部
@@ -64,7 +72,8 @@ Global error contract: Every GraphQL interface must also follow docs/api/graphql
 
 ## DTO 语义规范
 
-- DTO：输出对象或领域对外视图。
+- DTO：adapter-owned 的协议输入输出 shape，不是领域 View、ReadModel、Record snapshot 或
+  Usecase Result 的真源。Adapter 可把这些下层稳定结果薄映射为 DTO。
   例如 UserInfoDTO、AccountResponse。
 - Input：写入或筛选输入。
   例如 CreateAccountInput、UpdateAccountInput。
@@ -72,6 +81,8 @@ Global error contract: Every GraphQL interface must also follow docs/api/graphql
   例如 AccountArgs、AccountsArgs。
 - List：列表与分页响应。
   例如 AccountsListResponse、UsersListResponse。
+- Result：可指 GraphQL / HTTP 的 adapter transport Result，也可指 usecase-owned 流程 Result；
+  归属由所在层和是否携带协议细节决定，不能仅凭后缀判断。
 
 ## GraphQL Schema 组织
 
@@ -79,7 +90,10 @@ Global error contract: Every GraphQL interface must also follow docs/api/graphql
 - 重复调用只警告，不重复注册。
 - 枚举与标量集中注册。
 - 避免分散在 DTO 或 Resolver 文件中。
-- GraphQL enums 仅定义，注册统一走 enum.registry.ts。
+- 领域 enum 的 GraphQL 暴露使用 canonical source，不在 adapter DTO 中维护同义副本。
+  若 DTO 装饰器、`@IsEnum` 或 `enum.registry.ts` 需要运行时 enum 值，该值应来自
+  `@app-types/*` 或 adapter 本层的 GraphQL 专用 enum，不能来自 module 根 `*.types.ts`。
+- GraphQL 专用 enum 可以定义在 adapter 层；注册仍统一走 `enum.registry.ts`。
 
 ## 全局 GraphQL 错误契约
 

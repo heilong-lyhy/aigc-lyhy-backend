@@ -8,5 +8,6 @@ export const AI_PROVIDER_CALL_OBSERVATION_CAPABILITY_ID = 'ai.provider-call-obse
   capabilityId: AI_PROVIDER_CALL_OBSERVATION_CAPABILITY_ID,
   mode: 'always-on',
   decisionRef: 'docs/capabilities/current.md',
+  requires: [],
 })
 export class AiProviderCallObservationCapabilityAnchor {}

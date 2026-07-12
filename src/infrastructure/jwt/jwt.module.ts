@@ -21,8 +21,7 @@ type JwtExpiresIn = NonNullable<JwtModuleOptions['signOptions']>['expiresIn'];
           expiresIn: config.get<string>('jwt.expiresIn') as JwtExpiresIn,
           algorithm: config.get<string>('jwt.algorithm') as Algorithm,
           issuer: config.get<string>('jwt.issuer'),
-          // audience 不在此处设置；由 TokenHelper 在签发时根据入参显式指定单值，
-          // 避免 JwtStrategy 验证时数组匹配失败
+          audience: config.get<string>('jwt.audience'),
         },
       }),
     }),

@@ -1,10 +1,54 @@
-// src/types/common/capability.types.ts
-
-export type CapabilityProcess = 'api' | 'worker';
-
 export type CapabilityId = string;
 
 export type CapabilityMode = 'always-on' | 'switchable';
+
+export type CapabilityProcess = 'api' | 'worker';
+
+export type CapabilityConfiguredState = 'enabled' | 'disabled';
+
+export type CapabilityEffectiveState = 'not_installed' | 'disabled' | 'blocked' | 'enabled';
+
+export type CapabilityHealthStatus = 'unknown' | 'healthy' | 'degraded' | 'unhealthy';
+
+export interface CapabilityAnchor {
+  readonly capabilityId: CapabilityId;
+  readonly mode: CapabilityMode;
+  readonly decisionRef: string;
+  readonly requires: readonly CapabilityId[];
+}
+
+export interface CapabilityRuntimeDependency {
+  readonly capabilityId: CapabilityId;
+  readonly requirement: CapabilityRuntimeDependencyRequirement;
+}
+
+export type CapabilityRuntimeDependencyRequirement = 'required' | 'optional';
+
+export interface CapabilityQueueResource {
+  readonly queueName: string;
+  readonly jobName: string;
+}
+
+export interface CapabilityRuntimeContribution {
+  readonly capabilityId: CapabilityId;
+  readonly runtimeDependencies: readonly CapabilityRuntimeDependency[];
+  readonly queueResources: readonly CapabilityQueueResource[];
+}
+
+export interface CapabilityRootBlocker {
+  readonly capabilityId: CapabilityId;
+  readonly effectiveState: 'not_installed' | 'disabled';
+}
+
+export interface CapabilityStateSnapshot {
+  readonly capabilityId: CapabilityId;
+  readonly configuredState: CapabilityConfiguredState | null;
+  readonly effectiveState: CapabilityEffectiveState;
+  readonly health: CapabilityHealthStatus;
+  readonly rootBlockers: readonly CapabilityRootBlocker[];
+}
+
+// ===== Backward-compatible business capability types (CQRS-based) =====
 
 export type CapabilityOperationKind = 'command' | 'query' | 'event';
 
@@ -13,8 +57,6 @@ export type CapabilityTransportName = 'in-process' | 'queue';
 export type CapabilityProviderKind = string;
 
 export type CapabilityEnableState = 'enabled' | 'disabled';
-
-export type CapabilityHealthStatus = 'healthy' | 'degraded' | 'unhealthy';
 
 export type CapabilityActorSource = 'anonymous' | 'account' | 'system' | 'worker';
 
@@ -53,17 +95,6 @@ export type CapabilityResult<TResult> =
       readonly error: CapabilityError;
     };
 
-export interface CapabilityRuntimeDependency {
-  readonly capabilityId: CapabilityId;
-  readonly mode: 'required' | 'optional';
-}
-
-export interface CapabilityAnchor {
-  readonly capabilityId: CapabilityId;
-  readonly mode: CapabilityMode;
-  readonly decisionRef: string;
-}
-
 export interface CapabilityProviderContribution {
   readonly providerKind: CapabilityProviderKind;
   readonly providerName: string;
@@ -77,20 +108,14 @@ export interface CapabilityQueueContribution {
   readonly dedupKeyMapping?: 'jobId' | 'bullmq-dedup-option' | 'none';
 }
 
-export interface CapabilityApiContribution {
-  readonly graphqlOperations?: readonly CapabilityGraphqlOperationContribution[];
-}
-
 export interface CapabilityGraphqlOperationContribution {
   readonly operationName: string;
   readonly operationKind: 'query' | 'mutation' | 'subscription';
   readonly requiredPermissions?: readonly string[];
 }
 
-export interface CapabilityOperations {
-  readonly commands?: readonly CapabilityCommandDefinition[];
-  readonly queries?: readonly CapabilityQueryDefinition[];
-  readonly events?: readonly CapabilityEventDefinition[];
+export interface CapabilityApiContribution {
+  readonly graphqlOperations?: readonly CapabilityGraphqlOperationContribution[];
 }
 
 export interface CapabilityOperationDefinition {
@@ -122,6 +147,12 @@ export interface CapabilityEventDefinition extends CapabilityOperationDefinition
   readonly eventType: 'fact' | 'signal';
 }
 
+export interface CapabilityOperations {
+  readonly commands?: readonly CapabilityCommandDefinition[];
+  readonly queries?: readonly CapabilityQueryDefinition[];
+  readonly events?: readonly CapabilityEventDefinition[];
+}
+
 export interface CapabilityOperationDescriptor {
   readonly capabilityId: CapabilityId;
   readonly operation: string;
@@ -131,11 +162,6 @@ export interface CapabilityOperationDescriptor {
   readonly operationVersion?: string;
   readonly requiredPermissions?: readonly string[];
   readonly timeoutMs?: number;
-}
-
-export interface CapabilitySessionContribution {
-  readonly principals?: readonly CapabilitySessionPrincipalContribution[];
-  readonly authorityClaims?: readonly CapabilitySessionAuthorityClaimContribution[];
 }
 
 export interface CapabilitySessionPrincipalContribution {
@@ -156,6 +182,11 @@ export interface CapabilitySessionAuthorityClaimContribution {
   readonly sessionProjectionKey?: string;
 }
 
+export interface CapabilitySessionContribution {
+  readonly principals?: readonly CapabilitySessionPrincipalContribution[];
+  readonly authorityClaims?: readonly CapabilitySessionAuthorityClaimContribution[];
+}
+
 export interface CapabilityRuntimePolicy {
   readonly defaultState?: CapabilityEnableState;
   readonly healthCheck?: boolean;
@@ -166,14 +197,6 @@ export interface CapabilityContributions {
   readonly providers?: readonly CapabilityProviderContribution[];
   readonly queues?: readonly CapabilityQueueContribution[];
   readonly session?: CapabilitySessionContribution;
-}
-
-export interface CapabilityRuntimeContribution {
-  readonly capabilityId: CapabilityId;
-  readonly runtimeDependencies?: readonly CapabilityRuntimeDependency[];
-  readonly operations?: CapabilityOperations;
-  readonly runtime?: CapabilityRuntimePolicy;
-  readonly contributions?: CapabilityContributions;
 }
 
 export interface CapabilityHealthResult {
@@ -188,8 +211,10 @@ export interface CapabilityHealthReport extends CapabilityHealthResult {
   readonly name: string;
 }
 
-// types 层保留 CapabilityOperationHandler 供 modules 层实现；
-// usecases 层的 capability-bus.contract.ts 有带 signal? 参数的扩展版本供 infrastructure 使用。
+export interface CapabilityHealthCheck {
+  check(): Promise<CapabilityHealthResult>;
+}
+
 export interface CapabilityOperationHandler<TPayload = unknown, TResult = unknown> {
   readonly capability: CapabilityId;
   readonly operation: string;
@@ -197,10 +222,6 @@ export interface CapabilityOperationHandler<TPayload = unknown, TResult = unknow
   handle(
     envelope: CapabilityCommand<TPayload> | CapabilityQuery<TPayload>,
   ): Promise<CapabilityResult<TResult>>;
-}
-
-export interface CapabilityHealthCheck {
-  check(): Promise<CapabilityHealthResult>;
 }
 
 export interface CapabilityActorContext {

@@ -7,5 +7,6 @@ import { REFERENCE_REPORT_CAPABILITY_ID } from '@app-types/reference/reference-r
   capabilityId: REFERENCE_REPORT_CAPABILITY_ID,
   mode: 'always-on',
   decisionRef: 'docs/capabilities/current.md',
+  requires: [],
 })
 export class ReferenceReportCapabilityAnchor {}

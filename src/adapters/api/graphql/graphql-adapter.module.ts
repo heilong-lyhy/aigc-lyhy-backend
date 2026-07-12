@@ -10,11 +10,12 @@ import { ThirdPartyAccountsUsecasesModule } from '@src/usecases/third-party-acco
 import { VerificationRecordUsecasesModule } from '@src/usecases/verification-record/verification-record-usecases.module';
 import { VerificationUsecasesModule } from '@src/usecases/verification/verification-usecases.module';
 
-import { BlogGraphQLAdapterModule } from './blog/blog-graphql-adapter.module';
-
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+
+// [KEPT:业务保留] 博客 GraphQL 适配器模块
+import { BlogGraphQLAdapterModule } from './blog/blog-graphql-adapter.module';
 
 // Resolvers
 import { AccountResolver } from './account/account.resolver';
@@ -30,7 +31,6 @@ import { VerificationRecordResolver } from './verification-record/verification-r
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
-import { CapabilityRuntimeGuard } from './guards/capability-runtime.guard';
 import {
   QM_WORKER_ENTRY_OPTIONS,
   type QmWorkerEntryOptions,
@@ -55,6 +55,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VerificationRecordUsecasesModule,
     VerificationUsecasesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    // [KEPT:业务保留]
     BlogGraphQLAdapterModule,
   ],
   providers: [
@@ -86,9 +87,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         aiEnabled: configService.get<boolean | undefined>('qmWorkerEntry.ai.enabled') === true,
         emailEnabled:
           configService.get<boolean | undefined>('qmWorkerEntry.email.enabled') === true,
-        // [KEPT:业务保留]
-        magicItemCraftEnabled:
-          configService.get<boolean | undefined>('qmWorkerEntry.magicItemCraft.enabled') === true,
       }),
     },
     // Resolvers
@@ -101,7 +99,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VerificationRecordResolver,
     UserInfoResolver,
     // Guards
-    CapabilityRuntimeGuard,
     QmWorkerEntryGuard,
     JwtAuthGuard,
     RolesGuard,
@@ -117,7 +114,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     RegistrationResolver,
     VerificationRecordResolver,
     UserInfoResolver,
-    CapabilityRuntimeGuard,
     QmWorkerEntryGuard,
     JwtAuthGuard,
     RolesGuard,

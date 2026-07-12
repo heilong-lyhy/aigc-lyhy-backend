@@ -8,7 +8,7 @@ import 'reflect-metadata';
 import 'tsconfig-paths/register';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import { DataSource } from 'typeorm';
+import { DataSource, type DataSourceOptions } from 'typeorm';
 import { BlogPostStatus, BlogCommentStatus } from '@app-types/models/blog.types';
 import { BlogCategoryEntity } from '@src/modules/blog/entities/blog-category.entity';
 import { BlogTagEntity } from '@src/modules/blog/entities/blog-tag.entity';
@@ -37,7 +37,7 @@ async function seed() {
       BlogProfileEntity,
     ],
     synchronize: false,
-  } as Record<string, unknown>);
+  } as unknown as DataSourceOptions);
 
   await dataSource.initialize();
   console.log('数据库连接成功');
@@ -104,7 +104,9 @@ async function seed() {
     });
     await categoryRepo.save(lifeCategory);
 
-    console.log(`分类已创建: ${[techCategory, frontendCategory, backendCategory, lifeCategory].map((c) => c.name).join(', ')}`);
+    console.log(
+      `分类已创建: ${[techCategory, frontendCategory, backendCategory, lifeCategory].map((c) => c.name).join(', ')}`,
+    );
 
     // ─── 3. 创建标签 ───
     const tagRepo = dataSource.getRepository(BlogTagEntity);
@@ -129,8 +131,10 @@ async function seed() {
         title: 'NestJS 分层架构实践',
         slug: 'nestjs-layered-architecture',
         excerpt: '探讨 NestJS 项目中分层架构的最佳实践',
-        content: '# NestJS 分层架构实践\n\n本文探讨了在 NestJS 项目中如何实现清晰的分层架构...\n\n## 核心原则\n\n- adapters → usecases → modules\n- 依赖方向单向\n- 事务边界在 usecase',
-        renderedContent: '<h1>NestJS 分层架构实践</h1><p>本文探讨了在 NestJS 项目中如何实现清晰的分层架构...</p>',
+        content:
+          '# NestJS 分层架构实践\n\n本文探讨了在 NestJS 项目中如何实现清晰的分层架构...\n\n## 核心原则\n\n- adapters → usecases → modules\n- 依赖方向单向\n- 事务边界在 usecase',
+        renderedContent:
+          '<h1>NestJS 分层架构实践</h1><p>本文探讨了在 NestJS 项目中如何实现清晰的分层架构...</p>',
         status: BlogPostStatus.PUBLISHED,
         categoryId: backendCategory.id,
         viewCount: 128,
@@ -143,7 +147,8 @@ async function seed() {
         title: 'React 18 新特性解析',
         slug: 'react-18-new-features',
         excerpt: '深入了解 React 18 带来的并发特性与自动批处理',
-        content: '# React 18 新特性解析\n\nReact 18 引入了多项重要更新...\n\n## Concurrent Features\n\n- useTransition\n- useDeferredValue\n- Suspense 增强',
+        content:
+          '# React 18 新特性解析\n\nReact 18 引入了多项重要更新...\n\n## Concurrent Features\n\n- useTransition\n- useDeferredValue\n- Suspense 增强',
         renderedContent: '<h1>React 18 新特性解析</h1><p>React 18 引入了多项重要更新...</p>',
         status: BlogPostStatus.PUBLISHED,
         categoryId: frontendCategory.id,
@@ -157,7 +162,8 @@ async function seed() {
         title: 'GraphQL 与 REST 的选择',
         slug: 'graphql-vs-rest',
         excerpt: '对比 GraphQL 和 REST 的适用场景',
-        content: '# GraphQL 与 REST 的选择\n\n在实际项目中如何选择 API 风格...\n\n## GraphQL 优势\n\n- 按需获取\n- 强类型 Schema\n- 实时订阅',
+        content:
+          '# GraphQL 与 REST 的选择\n\n在实际项目中如何选择 API 风格...\n\n## GraphQL 优势\n\n- 按需获取\n- 强类型 Schema\n- 实时订阅',
         renderedContent: '<h1>GraphQL 与 REST 的选择</h1><p>在实际项目中如何选择 API 风格...</p>',
         status: BlogPostStatus.PUBLISHED,
         categoryId: techCategory.id,
@@ -303,7 +309,10 @@ async function seed() {
     await commentRepo.save(comments);
 
     // 设置回复关系（第3条评论回复第2条）
-    await commentRepo.update(comments[2].id, { parentId: comments[1].id, replyToId: comments[1].id });
+    await commentRepo.update(comments[2].id, {
+      parentId: comments[1].id,
+      replyToId: comments[1].id,
+    });
     console.log(`评论已创建: ${comments.length} 条`);
 
     // ─── 7. 创建点赞记录 ───

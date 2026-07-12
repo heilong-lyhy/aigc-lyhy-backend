@@ -12,6 +12,7 @@ import { DomainError } from '@core/common/errors/domain-error';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+// eslint-disable-next-line local-architecture/no-queryservice-to-mixed-service-imports -- PaginationService 是只读分页助手（委托 IPaginator 端口），非混合读写服务
 import { PaginationService } from '@modules/common/pagination.service';
 import { In, Repository } from 'typeorm';
 import type { BlogPostDetailView, BlogPostView, BlogTagView } from '../blog.types';

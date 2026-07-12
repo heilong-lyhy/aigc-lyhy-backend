@@ -73,9 +73,6 @@ export function initGraphQLSchema(): {
       'OrderDirection',
       'PaginationMode',
       'SortDirection',
-      'BlogPostStatus',
-      'BlogCommentStatus',
-      'BlogFileType',
     ];
 
     // 生成 Schema 指纹

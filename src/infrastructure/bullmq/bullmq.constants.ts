@@ -7,14 +7,13 @@ export type {
   BullMqEmailJobName,
   BullMqAiJobName,
   BullMqCapabilityJobName,
-  BullMqMagicItemCraftJobName,
 } from '@app-types/worker/bullmq.types';
 
 import { BULLMQ_QUEUES, BULLMQ_JOBS, type BullMqQueueName } from '@app-types/worker/bullmq.types';
 
 export const BULLMQ_QUEUE_JOBS: Readonly<Record<BullMqQueueName, ReadonlyArray<string>>> = {
   [BULLMQ_QUEUES.EMAIL]: Object.values(BULLMQ_JOBS.EMAIL),
-  [BULLMQ_QUEUES.AI]: Object.values(BULLMQ_JOBS.AI),
+  [BULLMQ_QUEUES.AI]: [BULLMQ_JOBS.AI.GENERATE, BULLMQ_JOBS.AI.EMBED],
+  [BULLMQ_QUEUES.AI_WORKFLOW]: [BULLMQ_JOBS.AI.WORKFLOW],
   [BULLMQ_QUEUES.CAPABILITY]: Object.values(BULLMQ_JOBS.CAPABILITY),
-  [BULLMQ_QUEUES.MAGIC_ITEM_CRAFT]: Object.values(BULLMQ_JOBS.MAGIC_ITEM_CRAFT),
 };

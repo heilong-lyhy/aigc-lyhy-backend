@@ -9,15 +9,13 @@ import { GqlAllExceptionsFilter } from '@src/infrastructure/graphql/filters/grap
 import { AppGraphQLModule } from '@src/infrastructure/graphql/graphql.module';
 import { LoggerModule } from '@src/infrastructure/logger/logger.module';
 import { MiddlewareModule } from '@src/infrastructure/middleware/middleware.module';
-import { AppThrottlerModule } from '@src/infrastructure/throttler/throttler.module'; // [KEPT:业务保留]
-import { AccountInstallerModule } from '@src/modules/account/account-installer.module';
+import { AccountModule } from '@src/modules/account/account.module';
 import { AuthModule } from '@src/modules/auth/auth.module';
 import { PasswordModule } from '@src/modules/common/password/password.module';
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ApiController } from './api.controller';
 import { ApiService } from './api.service';
-import { CapabilityGraphqlSurfaceCheck } from './capability-graphql-surface.check';
 
 @Module({
   imports: [
@@ -30,15 +28,13 @@ import { CapabilityGraphqlSurfaceCheck } from './capability-graphql-surface.chec
     AppGraphQLModule,
     GraphQLAdapterModule,
     FieldEncryptionModule,
-    AppThrottlerModule, // [KEPT:业务保留]
     PasswordModule,
-    AccountInstallerModule,
+    AccountModule,
     AuthModule,
   ],
   controllers: [ApiController],
   providers: [
     ApiService,
-    CapabilityGraphqlSurfaceCheck,
     {
       provide: APP_FILTER,
       useClass: GqlAllExceptionsFilter,

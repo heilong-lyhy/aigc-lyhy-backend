@@ -1,17 +1,33 @@
 // src/modules/common/email-worker/email-delivery.service.ts
 import { Inject, Injectable } from '@nestjs/common';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
+import { CapabilityRuntimeContributionProvider } from '@src/infrastructure/capability/capability.decorators';
+import { RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID } from '@src/modules/common/email-capability/email-capability.constants';
+import {
+  CAPABILITY_STATE_READER,
+  type CapabilityStateReader,
+} from '@src/modules/common/capability-state-reader.contract';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { PinoLogger } from 'nestjs-pino';
 import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worker.options';
 import type { SendEmailInput, SendEmailResult } from './email-worker.types';
 
+// `runtime.async-task` is owned by the async-task-record business module; `common/*` cannot
+// import from business modules, so this ID is kept as a literal here. See docs/dependency-rules.
 @Injectable()
+@CapabilityRuntimeContributionProvider({
+  capabilityId: RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID,
+  runtimeDependencies: [{ capabilityId: 'runtime.async-task', requirement: 'optional' }],
+  queueResources: [{ queueName: BULLMQ_QUEUES.EMAIL, jobName: BULLMQ_JOBS.EMAIL.SEND }],
+})
 export class EmailDeliveryService {
   constructor(
     private readonly logger: PinoLogger,
     @Inject(EMAIL_DELIVERY_OPTIONS)
     private readonly options: EmailDeliveryOptions,
+    @Inject(CAPABILITY_STATE_READER)
+    private readonly capabilityStateReader: CapabilityStateReader,
   ) {
     this.logger.setContext(EmailDeliveryService.name);
   }
@@ -20,6 +36,7 @@ export class EmailDeliveryService {
    * 发送邮件，使用本机 sendmail 交给 Postfix 转发。
    */
   async send(input: SendEmailInput): Promise<SendEmailResult> {
+    this.capabilityStateReader.requireEnabled(RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID);
     const providerMessageId = `sendmail-${randomUUID()}`;
     const body = input.html ?? input.text ?? '';
     const contentType = input.html ? 'text/html; charset="UTF-8"' : 'text/plain; charset="UTF-8"';

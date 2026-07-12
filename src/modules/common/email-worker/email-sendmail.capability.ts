@@ -13,6 +13,7 @@ import {
 import {
   EMAIL_DELIVERY_PROVIDER_KIND,
   EMAIL_SENDMAIL_PROVIDER_NAME,
+  NOTIFICATION_EMAIL_CAPABILITY_ID,
   NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,
 } from '../email-capability/email-capability.constants';
 import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worker.options';
@@ -22,19 +23,14 @@ import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worke
   capabilityId: NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,
   mode: 'switchable',
   decisionRef: 'docs/capabilities/current.md',
+  requires: [NOTIFICATION_EMAIL_CAPABILITY_ID],
 })
 @CapabilityRuntimeContributionProvider({
   capabilityId: NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,
-  runtimeDependencies: [{ capabilityId: 'notification.email', mode: 'required' }],
-  runtime: { healthCheck: true },
-  contributions: {
-    providers: [
-      {
-        providerKind: EMAIL_DELIVERY_PROVIDER_KIND,
-        providerName: EMAIL_SENDMAIL_PROVIDER_NAME,
-      },
-    ],
-  },
+  runtimeDependencies: [
+    { capabilityId: NOTIFICATION_EMAIL_CAPABILITY_ID, requirement: 'required' },
+  ],
+  queueResources: [],
 })
 @CapabilityProviderBindingProvider({
   capabilityId: NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID,

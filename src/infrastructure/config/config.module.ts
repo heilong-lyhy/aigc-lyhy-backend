@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { ConfigFactory, ConfigModule, registerAs } from '@nestjs/config';
 import { parseBooleanInput } from '@core/common/normalize/normalize.helper';
 import { IncomingMessage, ServerResponse } from 'http';
-import { join } from 'path'; // [KEPT:业务保留] - needed for blogStorageConfig
 import databaseConfig from './database.config';
 
 const isProductionEnv = (): boolean => process.env.NODE_ENV === 'production';
@@ -259,7 +258,7 @@ const graphqlConfig = () => {
 const serverConfig: ConfigFactory = () => ({
   server: {
     host: process.env.APP_HOST || '127.0.0.1',
-    port: getIntEnvWithDefault('APP_PORT', 16200),
+    port: getIntEnvWithDefault('APP_PORT', 3000),
     cors: {
       enabled: getBooleanEnvWithDefault('APP_CORS_ENABLED', true),
       origins: process.env.APP_CORS_ORIGINS || '',
@@ -410,10 +409,6 @@ const qmWorkerEntryConfig: ConfigFactory = () => ({
     email: {
       enabled: parseBooleanInput(process.env.EMAIL_QUEUE_DEBUG_ENABLED) ?? false,
     },
-    magicItemCraft: {
-      // [KEPT:业务保留]
-      enabled: parseBooleanInput(process.env.MAGIC_ITEM_CRAFT_QUEUE_DEBUG_ENABLED) ?? true,
-    },
   },
 });
 
@@ -424,33 +419,9 @@ const parseCsvEnv = (key: string): readonly string[] => {
     .filter((item) => item.length > 0);
 };
 
-const parsePermissionGrantEnv = (
-  raw: string | undefined,
-): Readonly<Record<string, readonly string[]>> => {
-  const grants: Record<string, readonly string[]> = {};
-  for (const entry of (raw ?? '').split(';')) {
-    const [permission, rolesRaw] = entry.split('=');
-    const normalizedPermission = permission?.trim();
-    if (!normalizedPermission || !rolesRaw) {
-      continue;
-    }
-    const roles = rolesRaw
-      .split('|')
-      .map((role) => role.trim())
-      .filter((role) => role.length > 0);
-    if (roles.length > 0) {
-      grants[normalizedPermission] = roles;
-    }
-  }
-  return grants;
-};
-
 const capabilityRuntimeConfig: ConfigFactory = () => ({
   capabilityRuntime: {
     disabledIds: parseCsvEnv('CAPABILITY_DISABLED_IDS'),
-    killSwitchIds: parseCsvEnv('CAPABILITY_KILL_SWITCH_IDS'),
-    operationDisabledKeys: parseCsvEnv('CAPABILITY_OPERATION_DISABLED_KEYS'),
-    permissionGrants: parsePermissionGrantEnv(process.env.CAPABILITY_PERMISSION_GRANTS),
   },
 });
 
@@ -510,28 +481,6 @@ const paginationConfig = () => ({
   },
 });
 
-const blogStorageConfig: ConfigFactory = () => ({
-  // [KEPT:业务保留]
-  blogStorage: {
-    uploadBaseDir: process.env.BLOG_UPLOAD_BASE_DIR || join(process.cwd(), 'uploads', 'blog'),
-    allowedMimeTypes: process.env.BLOG_ALLOWED_MIME_TYPES
-      ? process.env.BLOG_ALLOWED_MIME_TYPES.split(',').map((s) => s.trim())
-      : [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'image/svg+xml',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'text/plain',
-          'text/markdown',
-        ],
-    maxFileSize: getIntEnvWithDefault('BLOG_MAX_FILE_SIZE', 10 * 1024 * 1024),
-  },
-});
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -552,7 +501,6 @@ const blogStorageConfig: ConfigFactory = () => ({
         emailDeliveryConfig,
         jwtConfig,
         paginationConfig,
-        blogStorageConfig, // [KEPT:业务保留]
       ],
     }),
   ],

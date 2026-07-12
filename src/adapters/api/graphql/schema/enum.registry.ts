@@ -21,11 +21,8 @@ import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { registerEnumType } from '@nestjs/graphql';
 import { GqlPaginationMode, GqlSortDirection } from '@src/adapters/api/graphql/pagination.enums';
 import { OrderDirection } from '@app-types/common/sort.types';
-import {
-  BlogPostStatus,
-  BlogCommentStatus,
-  BlogFileType,
-} from '@app-types/models/blog.types';
+// [KEPT:业务保留] 博客相关枚举
+import { BlogCommentStatus, BlogFileType, BlogPostStatus } from '@app-types/models/blog.types';
 
 export function registerEnums(): void {
   registerEnumType(AccountStatus, { name: 'AccountStatus' });
@@ -45,6 +42,7 @@ export function registerEnums(): void {
   registerEnumType(OrderDirection, { name: 'OrderDirection' });
   registerEnumType(GqlPaginationMode, { name: 'PaginationMode' });
   registerEnumType(GqlSortDirection, { name: 'SortDirection' });
+  // [KEPT:业务保留] 博客相关枚举
   registerEnumType(BlogPostStatus, { name: 'BlogPostStatus' });
   registerEnumType(BlogCommentStatus, { name: 'BlogCommentStatus' });
   registerEnumType(BlogFileType, { name: 'BlogFileType' });

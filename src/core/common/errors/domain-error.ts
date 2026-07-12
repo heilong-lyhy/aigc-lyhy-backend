@@ -131,6 +131,11 @@ export const ASYNC_TASK_RECORD_ERROR = {
 } as const;
 Object.freeze(ASYNC_TASK_RECORD_ERROR);
 
+export const CAPABILITY_ERROR = {
+  UNAVAILABLE: 'CAPABILITY_UNAVAILABLE',
+} as const;
+Object.freeze(CAPABILITY_ERROR);
+
 export const AI_WORKFLOW_CONTEXT_ERROR = {
   INVALID_PARAMS: 'AI_WORKFLOW_CONTEXT_INVALID_PARAMS',
   NOT_FOUND: 'AI_WORKFLOW_CONTEXT_NOT_FOUND',
@@ -163,23 +168,6 @@ export const INPUT_NORMALIZE_ERROR = {
 } as const;
 Object.freeze(INPUT_NORMALIZE_ERROR);
 
-// 类型定义
-export type AuthErrorCode = (typeof AUTH_ERROR)[keyof typeof AUTH_ERROR];
-export type AccountErrorCode = (typeof ACCOUNT_ERROR)[keyof typeof ACCOUNT_ERROR];
-export type ThirdPartyErrorCode = (typeof THIRDPARTY_ERROR)[keyof typeof THIRDPARTY_ERROR];
-export type JwtErrorCode = (typeof JWT_ERROR)[keyof typeof JWT_ERROR];
-export type PermissionErrorCode = (typeof PERMISSION_ERROR)[keyof typeof PERMISSION_ERROR];
-export type VerificationRecordErrorCode =
-  (typeof VERIFICATION_RECORD_ERROR)[keyof typeof VERIFICATION_RECORD_ERROR];
-export type AsyncTaskRecordErrorCode =
-  (typeof ASYNC_TASK_RECORD_ERROR)[keyof typeof ASYNC_TASK_RECORD_ERROR];
-export type AiWorkflowContextErrorCode =
-  (typeof AI_WORKFLOW_CONTEXT_ERROR)[keyof typeof AI_WORKFLOW_CONTEXT_ERROR];
-export type TimeErrorCode = (typeof TIME_ERROR)[keyof typeof TIME_ERROR];
-export type InputNormalizeErrorCode =
-  (typeof INPUT_NORMALIZE_ERROR)[keyof typeof INPUT_NORMALIZE_ERROR];
-
-// 分页相关错误码
 // [KEPT:业务保留] 博客相关错误码
 export const BLOG_ERROR = {
   CATEGORY_NOT_FOUND: 'BLOG_CATEGORY_NOT_FOUND',
@@ -216,18 +204,25 @@ export const BLOG_ERROR = {
 } as const;
 Object.freeze(BLOG_ERROR);
 
-// [KEPT:业务保留] 魔法物品制作相关错误码
-export const MAGIC_ITEM_CRAFT_ERROR = {
-  INVALID_PARAMS: 'MAGIC_ITEM_CRAFT_INVALID_PARAMS',
-  TASK_NOT_FOUND: 'MAGIC_ITEM_CRAFT_TASK_NOT_FOUND',
-  QUEUE_FAILED: 'MAGIC_ITEM_CRAFT_QUEUE_FAILED',
-  ENQUEUE_FAILED: 'MAGIC_ITEM_CRAFT_ENQUEUE_FAILED',
-  CONSUME_FAILED: 'MAGIC_ITEM_CRAFT_CONSUME_FAILED',
-  INVALID_MATERIAL_LEVEL: 'MAGIC_ITEM_CRAFT_INVALID_MATERIAL_LEVEL',
-  INVALID_ITEM_TYPE: 'MAGIC_ITEM_CRAFT_INVALID_ITEM_TYPE',
-} as const;
-Object.freeze(MAGIC_ITEM_CRAFT_ERROR);
+// 类型定义
+export type AuthErrorCode = (typeof AUTH_ERROR)[keyof typeof AUTH_ERROR];
+export type AccountErrorCode = (typeof ACCOUNT_ERROR)[keyof typeof ACCOUNT_ERROR];
+export type ThirdPartyErrorCode = (typeof THIRDPARTY_ERROR)[keyof typeof THIRDPARTY_ERROR];
+export type JwtErrorCode = (typeof JWT_ERROR)[keyof typeof JWT_ERROR];
+export type PermissionErrorCode = (typeof PERMISSION_ERROR)[keyof typeof PERMISSION_ERROR];
+export type VerificationRecordErrorCode =
+  (typeof VERIFICATION_RECORD_ERROR)[keyof typeof VERIFICATION_RECORD_ERROR];
+export type AsyncTaskRecordErrorCode =
+  (typeof ASYNC_TASK_RECORD_ERROR)[keyof typeof ASYNC_TASK_RECORD_ERROR];
+export type CapabilityErrorCode = (typeof CAPABILITY_ERROR)[keyof typeof CAPABILITY_ERROR];
+export type AiWorkflowContextErrorCode =
+  (typeof AI_WORKFLOW_CONTEXT_ERROR)[keyof typeof AI_WORKFLOW_CONTEXT_ERROR];
+export type TimeErrorCode = (typeof TIME_ERROR)[keyof typeof TIME_ERROR];
+export type InputNormalizeErrorCode =
+  (typeof INPUT_NORMALIZE_ERROR)[keyof typeof INPUT_NORMALIZE_ERROR];
+export type BlogErrorCode = (typeof BLOG_ERROR)[keyof typeof BLOG_ERROR];
 
+// 分页相关错误码
 export const PAGINATION_ERROR = {
   INVALID_PAGE_SIZE: 'PAGINATION_INVALID_PAGE_SIZE',
   INVALID_CURSOR: 'PAGINATION_INVALID_CURSOR',
@@ -245,9 +240,11 @@ export type DomainErrorCode =
   | PermissionErrorCode
   | VerificationRecordErrorCode
   | AsyncTaskRecordErrorCode
+  | CapabilityErrorCode
   | AiWorkflowContextErrorCode
   | TimeErrorCode
   | InputNormalizeErrorCode
+  | BlogErrorCode
   | PaginationErrorCode;
 
 // 类型守卫：统一判断是否为领域错误（兼容多包/反序列化场景）

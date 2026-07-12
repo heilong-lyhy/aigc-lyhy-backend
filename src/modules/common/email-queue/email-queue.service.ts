@@ -1,20 +1,36 @@
 // src/modules/common/email-queue/email-queue.service.ts
-import { Injectable } from '@nestjs/common';
-import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@app-types/worker/bullmq.types';
+import { Inject, Injectable } from '@nestjs/common';
+import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
 import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
+import { CapabilityRuntimeContributionProvider } from '@src/infrastructure/capability/capability.decorators';
+import { RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID } from '@src/modules/common/email-capability/email-capability.constants';
+import {
+  CAPABILITY_STATE_READER,
+  type CapabilityStateReader,
+} from '@src/modules/common/capability-state-reader.contract';
 import { PinoLogger } from 'nestjs-pino';
 import type { QueueEmailInput, QueueEmailResult } from './email-queue.types';
 
+// `runtime.async-task` is owned by the async-task-record business module; `common/*` cannot
+// import from business modules, so this ID is kept as a literal here. See docs/dependency-rules.
 @Injectable()
+@CapabilityRuntimeContributionProvider({
+  capabilityId: RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID,
+  runtimeDependencies: [{ capabilityId: 'runtime.async-task', requirement: 'optional' }],
+  queueResources: [{ queueName: BULLMQ_QUEUES.EMAIL, jobName: BULLMQ_JOBS.EMAIL.SEND }],
+})
 export class EmailQueueService {
   constructor(
     private readonly producer: BullMqProducerGateway,
     private readonly logger: PinoLogger,
+    @Inject(CAPABILITY_STATE_READER)
+    private readonly capabilityStateReader: CapabilityStateReader,
   ) {
     this.logger.setContext(EmailQueueService.name);
   }
 
   async enqueueSend(input: QueueEmailInput): Promise<QueueEmailResult> {
+    this.capabilityStateReader.requireEnabled(RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID);
     const job = await this.producer.enqueue({
       queueName: BULLMQ_QUEUES.EMAIL,
       jobName: BULLMQ_JOBS.EMAIL.SEND,

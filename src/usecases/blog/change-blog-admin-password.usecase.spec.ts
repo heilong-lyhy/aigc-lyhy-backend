@@ -1,6 +1,6 @@
 // src/usecases/blog/change-blog-admin-password.usecase.spec.ts
 
-import { ACCOUNT_ERROR, DomainError } from '@core/common/errors/domain-error';
+import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { AccountService } from '@modules/account/base/services/account.service';
 import { ChangeBlogAdminPasswordUsecase } from './change-blog-admin-password.usecase';
 
@@ -53,7 +53,7 @@ describe('ChangeBlogAdminPasswordUsecase', () => {
 
   it('旧密码不正确时应抛出 DomainError', async () => {
     accountService.changePassword.mockRejectedValue(
-      new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_MISMATCH, '当前密码不正确'),
+      new DomainError(AUTH_ERROR.INVALID_PASSWORD, '当前密码不正确'),
     );
 
     await expect(
@@ -63,7 +63,7 @@ describe('ChangeBlogAdminPasswordUsecase', () => {
 
   it('新密码不符合策略时应抛出 DomainError', async () => {
     accountService.changePassword.mockRejectedValue(
-      new DomainError(ACCOUNT_ERROR.ACCOUNT_PASSWORD_POLICY_VIOLATION, '密码不符合安全要求'),
+      new DomainError(AUTH_ERROR.INVALID_PASSWORD, '密码不符合安全要求'),
     );
 
     await expect(usecase.execute({ ...validInput, newPassword: '123' })).rejects.toThrow(

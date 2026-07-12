@@ -7,5 +7,6 @@ import { REFERENCE_PROFILE_CAPABILITY_ID } from '@app-types/reference/reference-
   capabilityId: REFERENCE_PROFILE_CAPABILITY_ID,
   mode: 'always-on',
   decisionRef: 'docs/capabilities/current.md',
+  requires: [],
 })
 export class ReferenceProfileCapabilityAnchor {}

@@ -62,6 +62,19 @@ export const BULLMQ_QUEUE_REGISTRY: Readonly<Record<BullMqQueueName, BullMqQueue
       shutdownGraceMs: 12000,
     },
   },
+  [BULLMQ_QUEUES.AI_WORKFLOW]: {
+    queueName: BULLMQ_QUEUES.AI_WORKFLOW,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1500 },
+      removeOnComplete: 200,
+      removeOnFail: 1000,
+    },
+    runtime: {
+      concurrency: 4,
+      shutdownGraceMs: 12000,
+    },
+  },
   [BULLMQ_QUEUES.CAPABILITY]: {
     queueName: BULLMQ_QUEUES.CAPABILITY,
     defaultJobOptions: {
@@ -73,24 +86,6 @@ export const BULLMQ_QUEUE_REGISTRY: Readonly<Record<BullMqQueueName, BullMqQueue
     runtime: {
       concurrency: 4,
       shutdownGraceMs: 12000,
-    },
-  },
-  [BULLMQ_QUEUES.MAGIC_ITEM_CRAFT]: {
-    // [KEPT:业务保留]
-    queueName: BULLMQ_QUEUES.MAGIC_ITEM_CRAFT,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-    },
-    runtime: {
-      concurrency: 2,
-      limiter: {
-        max: 10,
-        duration: 1000,
-      },
-      shutdownGraceMs: 10000,
     },
   },
 };

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CapabilityAnchorProvider } from '@src/infrastructure/capability/capability.decorators';
+import { AI_EXECUTION_CAPABILITY_ID } from '@src/modules/common/ai-capability/ai-capability.constants';
 
 export const AI_WORKFLOW_CAPABILITY_ID = 'ai.workflow' as const;
 
 @Injectable()
 @CapabilityAnchorProvider({
   capabilityId: AI_WORKFLOW_CAPABILITY_ID,
-  mode: 'always-on',
+  mode: 'switchable',
   decisionRef: 'docs/capabilities/current.md',
+  requires: [AI_EXECUTION_CAPABILITY_ID],
 })
 export class AiWorkflowCapabilityAnchor {}
