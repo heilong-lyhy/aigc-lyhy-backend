@@ -5,7 +5,7 @@ import {
   ThirdPartyLoginProviderEnum,
   ThirdPartyProviderEnum,
 } from '@app-types/models/account.types';
-import { LoginResultModel, UserInfoView } from '@app-types/models/auth.types';
+import { UserInfoView } from '@app-types/models/auth.types';
 import { GeographicInfo } from '@app-types/models/user-info.types';
 import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
 import { UseGuards } from '@nestjs/common';
@@ -22,9 +22,7 @@ import { ThirdPartyAuthDTO } from '@src/adapters/api/graphql/third-party-auth/dt
 import { ThirdPartyLoginInput } from '@src/adapters/api/graphql/third-party-auth/dto/third-party-login.input';
 import { UnbindThirdPartyInput } from '@src/adapters/api/graphql/third-party-auth/dto/unbind-third-party.input';
 import { WeappPhoneResultDTO } from '@src/adapters/api/graphql/third-party-auth/dto/weapp-phone-result.dto';
-import { FetchUserInfoUsecase } from '@usecases/account/fetch-user-info.usecase';
-import type { CompleteUserData } from '@usecases/account/fetch-user-info.types';
-import { LoginWithThirdPartyUsecase } from '@usecases/auth/login-with-third-party.usecase';
+import { LoginWithUserInfoUsecase } from '@usecases/auth/login-with-user-info.usecase';
 import type { ThirdPartyLoginParams } from '@usecases/auth/login-with-third-party.types';
 import { BindThirdPartyAccountUsecase } from '@usecases/third-party-accounts/bind-third-party-account.usecase';
 import { GenerateWeappQrcodeUsecase } from '@usecases/third-party-accounts/generate-weapp-qrcode.usecase';
@@ -41,10 +39,9 @@ import { UnbindThirdPartyAccountUsecase } from '@usecases/third-party-accounts/u
 @Resolver()
 export class ThirdPartyAuthResolver {
   constructor(
-    private readonly loginWithThirdPartyUsecase: LoginWithThirdPartyUsecase,
+    private readonly loginWithUserInfoUsecase: LoginWithUserInfoUsecase,
     private readonly getWeappPhoneUsecase: GetWeappPhoneUsecase, // 注入新的 usecase
     private readonly generateWeappQrcodeUsecase: GenerateWeappQrcodeUsecase,
-    private readonly fetchUserInfoUsecase: FetchUserInfoUsecase,
     private readonly bindThirdPartyAccountUsecase: BindThirdPartyAccountUsecase,
     private readonly unbindThirdPartyAccountUsecase: UnbindThirdPartyAccountUsecase,
     private readonly getThirdPartyAuthsUsecase: GetThirdPartyAuthsUsecase,
@@ -64,18 +61,15 @@ export class ThirdPartyAuthResolver {
       ip: input.ip,
     };
 
-    const result: LoginResultModel = await this.loginWithThirdPartyUsecase.execute(params);
+    // 单一 Usecase 编排 login + fetchUserInfo
+    const { loginResult, userInfoView } = await this.loginWithUserInfoUsecase.loginWithThirdParty(params);
 
-    // 获取用户信息（与密码登录保持一致，包含安全验证）
-    const userInfo = await this.getUserInfoForGraphQL(result.accountId);
-
-    // 用例结果 -> GraphQL DTO 的薄映射（补齐 userInfo）
     return {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      accountId: result.accountId,
-      role: result.role,
-      userInfo,
+      accessToken: loginResult.accessToken,
+      refreshToken: loginResult.refreshToken,
+      accountId: loginResult.accountId,
+      role: loginResult.role,
+      userInfo: this.mapUserInfoViewToSecureDTO(userInfoView),
     };
   }
 
@@ -213,17 +207,6 @@ export class ThirdPartyAuthResolver {
       imageBase64: result.imageBase64,
       imageBufferBase64: result.imageBuffer ? result.imageBuffer.toString('base64') : undefined,
     };
-  }
-
-  /**
-   * 获取用于 GraphQL 响应的用户信息
-   * 使用现有的安全验证流程，确保 accessGroup 和 metaDigest 已完成比对
-   */
-  private async getUserInfoForGraphQL(accountId: number): Promise<UserInfoDTO> {
-    const completeUserData: CompleteUserData = await this.fetchUserInfoUsecase.executeForLoginFlow({
-      accountId,
-    });
-    return this.mapUserInfoViewToSecureDTO(completeUserData.userInfoView);
   }
 
   /**

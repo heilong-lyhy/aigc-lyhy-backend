@@ -22,6 +22,17 @@ export interface AccountCredentialSnapshot {
   readonly createdAt: Date;
 }
 
+/** 创建账户后返回的最小快照，避免向上游暴露 ORM Entity */
+export interface AccountCreateResult {
+  readonly id: number;
+  readonly createdAt: Date;
+}
+
+/** 创建用户信息后返回的最小快照，避免向上游暴露 ORM Entity */
+export interface UserInfoCreateResult {
+  readonly accountId: number;
+}
+
 export interface AccountSecurityUserInfoSnapshot {
   readonly accessGroup: IdentityTypeEnum[] | null;
   readonly metaDigest: IdentityTypeEnum[] | null;

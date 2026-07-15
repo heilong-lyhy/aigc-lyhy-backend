@@ -14,6 +14,7 @@ import { VerificationRecordEntity } from '../verification-record.entity';
 import type {
   VerificationRecordDetailView,
   VerificationRecordPublicPayload,
+  VerificationRecordSnapshot,
   VerificationRecordView,
 } from '../verification-record.types';
 
@@ -327,7 +328,7 @@ export class VerificationReadQueryService {
    * @param record 验证记录实体
    * @returns 清洁的记录视图
    */
-  toCleanView(record: VerificationRecordEntity): VerificationRecordView {
+  toCleanView(record: VerificationRecordEntity | VerificationRecordSnapshot): VerificationRecordView {
     return {
       id: record.id,
       type: record.type,
@@ -345,7 +346,7 @@ export class VerificationReadQueryService {
     };
   }
 
-  toDetailView(record: VerificationRecordEntity): VerificationRecordDetailView {
+  toDetailView(record: VerificationRecordEntity | VerificationRecordSnapshot): VerificationRecordDetailView {
     return {
       id: record.id,
       type: record.type,

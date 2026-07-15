@@ -1,7 +1,6 @@
 // src/adapters/api/graphql/verification-record/verification-record.resolver.ts
 
 import { JwtPayload } from '@app-types/jwt.types';
-import { IdentityTypeEnum } from '@app-types/models/account.types';
 import {
   CreatableVerificationRecordType,
   VerificationRecordType,
@@ -63,19 +62,8 @@ export class VerificationRecordResolver {
         expiresAt: input.expiresAt,
         notBefore: input.notBefore,
         issuedByAccountId: user.sub,
+        userAccessGroup: user.accessGroup,
       });
-
-      // 服务端权限判断：只有 ADMIN 和 STAFF 角色在服务端生成 token 时才能获取明文 token
-      // 统一转换为小写进行比较，与 RolesGuard 保持一致
-      const normalizedUserRoles =
-        user.accessGroup?.map((role) =>
-          typeof role === 'string' ? role.toLowerCase() : String(role).toLowerCase(),
-        ) || [];
-
-      const canReturnToken =
-        (normalizedUserRoles.includes(IdentityTypeEnum.ADMIN.toLowerCase()) ||
-          normalizedUserRoles.includes(IdentityTypeEnum.STAFF.toLowerCase())) &&
-        result.generatedByServer === true;
 
       return {
         success: true,
@@ -95,10 +83,14 @@ export class VerificationRecordResolver {
           createdAt: result.record.createdAt,
           updatedAt: result.record.updatedAt,
         },
-        token: input.returnToken && canReturnToken ? result.token : null,
+        token: input.returnToken && result.canReturnToken ? result.token : null,
         message: null,
       };
     } catch (error) {
+      // DomainError 应冒泡到全局 GraphQL Filter
+      if (error instanceof DomainError) {
+        throw error;
+      }
       return {
         success: false,
         data: null,
@@ -181,7 +173,10 @@ export class VerificationRecordResolver {
         message: '验证记录消费成功',
       };
     } catch (error) {
-      // console.error('ConsumeVerificationFlowUsecase 执行失败:', error);
+      // DomainError 应冒泡到全局 GraphQL Filter
+      if (error instanceof DomainError) {
+        throw error;
+      }
       return {
         success: false,
         data: null,
@@ -225,6 +220,10 @@ export class VerificationRecordResolver {
         message: null,
       };
     } catch (error) {
+      // DomainError 应冒泡到全局 GraphQL Filter
+      if (error instanceof DomainError) {
+        throw error;
+      }
       return {
         success: false,
         data: null,

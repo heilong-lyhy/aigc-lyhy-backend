@@ -23,6 +23,27 @@ export interface VerificationRecordDetailView {
 }
 
 /**
+ * 验证记录快照 — 从 Service 向上游返回的稳定数据结构
+ * 包含 toCleanView/toDetailView 所需的全部字段，避免向上游暴露 ORM Entity
+ */
+export interface VerificationRecordSnapshot {
+  readonly id: number;
+  readonly type: VerificationRecordType;
+  readonly status: VerificationRecordStatus;
+  readonly expiresAt: Date;
+  readonly notBefore: Date | null;
+  readonly targetAccountId: number | null;
+  readonly subjectType: SubjectType | null;
+  readonly subjectId: number | null;
+  readonly payload: Record<string, unknown> | null;
+  readonly issuedByAccountId: number | null;
+  readonly consumedByAccountId: number | null;
+  readonly consumedAt: Date | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+/**
  * 验证记录公开载荷数据
  * 只包含对上层有用且非敏感的字段
  */

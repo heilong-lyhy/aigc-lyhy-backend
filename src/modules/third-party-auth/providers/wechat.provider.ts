@@ -2,7 +2,7 @@
 import { AudienceTypeEnum, ThirdPartyProviderEnum } from '@app-types/models/account.types';
 import { ThirdPartySession } from '@app-types/models/third-party-auth.types';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { ThirdPartyProvider } from '../interfaces/third-party-provider.interface';
+import { ThirdPartyProvider } from '../contracts/third-party-provider.contract';
 
 /**
  * 微信网页/公众号认证提供者

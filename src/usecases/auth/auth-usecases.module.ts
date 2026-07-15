@@ -9,6 +9,7 @@ import { ExecuteLoginFlowUsecase } from '@src/usecases/auth/execute-login-flow.u
 import { LoginByAccountIdUsecase } from '@src/usecases/auth/login-by-account-id.usecase';
 import { LoginWithPasswordUsecase } from '@src/usecases/auth/login-with-password.usecase';
 import { LoginWithThirdPartyUsecase } from '@src/usecases/auth/login-with-third-party.usecase';
+import { LoginWithUserInfoUsecase } from '@src/usecases/auth/login-with-user-info.usecase';
 import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-access-token-session.usecase';
 
 @Module({
@@ -18,6 +19,7 @@ import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-a
     ExecuteLoginFlowUsecase,
     LoginByAccountIdUsecase,
     LoginWithThirdPartyUsecase,
+    LoginWithUserInfoUsecase,
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,
     ValidateAccessTokenSessionUsecase,
@@ -27,6 +29,7 @@ import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-a
     ExecuteLoginFlowUsecase,
     LoginByAccountIdUsecase,
     LoginWithThirdPartyUsecase,
+    LoginWithUserInfoUsecase,
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,
     ValidateAccessTokenSessionUsecase,

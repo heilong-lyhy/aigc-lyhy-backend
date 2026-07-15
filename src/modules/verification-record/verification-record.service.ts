@@ -14,9 +14,30 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getTypeOrmEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { QueryFailedError, Repository } from 'typeorm';
 import { VerificationRecordEntity } from './verification-record.entity';
+import type { VerificationRecordSnapshot } from './verification-record.types';
 
 export type VerificationRecordConsumeTargetConstraint =
   { mode: 'IGNORE' } | { mode: 'NULL_ONLY' } | { mode: 'MATCH_OR_NULL'; accountId: number };
+
+/** 将 Entity 转为稳定 snapshot，避免向上游暴露 ORM Entity */
+function toSnapshot(entity: VerificationRecordEntity): VerificationRecordSnapshot {
+  return {
+    id: entity.id,
+    type: entity.type,
+    status: entity.status,
+    expiresAt: entity.expiresAt,
+    notBefore: entity.notBefore,
+    targetAccountId: entity.targetAccountId,
+    subjectType: entity.subjectType,
+    subjectId: entity.subjectId,
+    payload: entity.payload,
+    issuedByAccountId: entity.issuedByAccountId,
+    consumedByAccountId: entity.consumedByAccountId,
+    consumedAt: entity.consumedAt,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+  };
+}
 
 export type VerificationRecordValidationSnapshot = {
   id: number;
@@ -113,12 +134,12 @@ export class VerificationRecordService {
    *
    * @param params 创建参数
    * @param transactionContext 可选的事务上下文
-   * @returns 创建的验证记录实体
+   * @returns 创建的验证记录快照
    */
   async createRecord(
     params: CreateVerificationRecordParams,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<VerificationRecordEntity> {
+  ): Promise<VerificationRecordSnapshot> {
     const repository = this.getRepository(transactionContext);
 
     try {
@@ -142,7 +163,8 @@ export class VerificationRecordService {
       });
 
       // 保存到数据库
-      return await repository.save(record);
+      const saved = await repository.save(record);
+      return toSnapshot(saved);
     } catch (error) {
       // 处理唯一约束冲突（token 指纹重复）
       if (this.isUniqueConstraintViolation(error)) {
@@ -173,14 +195,14 @@ export class VerificationRecordService {
    * @param status 新状态
    * @param consumedByAccountId 消费者账号 ID（仅在消费时需要）
    * @param transactionContext 可选的事务上下文
-   * @returns 更新后的验证记录实体
+   * @returns 更新后的验证记录快照
    */
   async updateRecordStatus(
     recordId: number,
     status: VerificationRecordStatus,
     consumedByAccountId?: number,
     transactionContext?: PersistenceTransactionContext,
-  ): Promise<VerificationRecordEntity> {
+  ): Promise<VerificationRecordSnapshot> {
     const repository = this.getRepository(transactionContext);
 
     try {
@@ -198,7 +220,8 @@ export class VerificationRecordService {
         record.consumedAt = new Date();
       }
 
-      return await repository.save(record);
+      const saved = await repository.save(record);
+      return toSnapshot(saved);
     } catch (error) {
       if (error instanceof DomainError) {
         throw error;
@@ -226,7 +249,7 @@ export class VerificationRecordService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<{
     affected: number;
-    updatedRecord: VerificationRecordEntity | null;
+    updatedRecord: VerificationRecordSnapshot | null;
     validationRecord: VerificationRecordValidationSnapshot | null;
   }> {
     const { where, context, transactionContext } = params;
@@ -301,7 +324,7 @@ export class VerificationRecordService {
     const updatedRecord = await repository.findOne({ where });
     return {
       affected: updateResult.affected ?? 0,
-      updatedRecord: updatedRecord ?? null,
+      updatedRecord: updatedRecord ? toSnapshot(updatedRecord) : null,
       validationRecord: null,
     };
   }
@@ -311,8 +334,8 @@ export class VerificationRecordService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<{
     affected: number;
-    updatedRecord: VerificationRecordEntity | null;
-    currentRecord: VerificationRecordEntity | null;
+    updatedRecord: VerificationRecordSnapshot | null;
+    currentRecord: VerificationRecordSnapshot | null;
   }> {
     const { recordId, transactionContext } = params;
     const repository = this.getRepository(transactionContext);
@@ -330,14 +353,14 @@ export class VerificationRecordService {
       return {
         affected: 0,
         updatedRecord: null,
-        currentRecord,
+        currentRecord: currentRecord ? toSnapshot(currentRecord) : null,
       };
     }
 
     const updatedRecord = await repository.findOne({ where: { id: recordId } });
     return {
       affected: result.affected ?? 0,
-      updatedRecord: updatedRecord ?? null,
+      updatedRecord: updatedRecord ? toSnapshot(updatedRecord) : null,
       currentRecord: null,
     };
   }
@@ -349,10 +372,10 @@ export class VerificationRecordService {
    * ⚠️ 此方法仅提供基础的有效性检查
    * 不包含权限校验，权限校验应在 Usecase 中处理
    *
-   * @param record 验证记录实体
+   * @param record 验证记录快照或实体
    * @returns 是否有效
    */
-  isRecordValid(record: VerificationRecordEntity): boolean {
+  isRecordValid(record: VerificationRecordSnapshot | VerificationRecordEntity): boolean {
     const now = new Date();
 
     // 检查状态

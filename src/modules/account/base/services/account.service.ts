@@ -18,6 +18,7 @@ import { Repository } from 'typeorm';
 // ✅ base 层实体（始终存在）
 import { AccountEntity } from '../entities/account.entity';
 import { UserInfoEntity } from '../entities/user-info.entity';
+import type { AccountCreateResult, UserInfoCreateResult } from '../../account.types';
 export interface AccountCreateData {
   loginName?: string | null;
   loginEmail?: string | null;
@@ -220,6 +221,30 @@ export class AccountService {
     const { userInfo, transactionContext } = params;
     const repository = this.getUserInfoRepository(transactionContext);
     return await repository.save(userInfo);
+  }
+
+  // =========================================================
+  // 组合方法：返回 snapshot 而非 Entity，避免 Entity 泄漏到 Usecase
+  // =========================================================
+
+  /** 创建并保存账户，返回最小快照（id + createdAt），不暴露 Entity */
+  async createAndSaveAccount(params: {
+    accountData: AccountCreateData;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<AccountCreateResult> {
+    const account = this.createAccountEntity(params);
+    const saved = await this.saveAccount({ account, transactionContext: params.transactionContext });
+    return { id: saved.id, createdAt: saved.createdAt };
+  }
+
+  /** 创建并保存用户信息，返回最小快照（accountId），不暴露 Entity */
+  async createAndSaveUserInfo(params: {
+    userInfoData: UserInfoCreateData;
+    transactionContext?: PersistenceTransactionContext;
+  }): Promise<UserInfoCreateResult> {
+    const userInfo = this.createUserInfoEntity(params);
+    const saved = await this.saveUserInfo({ userInfo, transactionContext: params.transactionContext });
+    return { accountId: saved.accountId };
   }
 
   async updateUserInfoFields(params: {

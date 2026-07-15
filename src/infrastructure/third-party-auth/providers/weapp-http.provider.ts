@@ -34,12 +34,18 @@ export class WeAppHttpProvider implements WeAppProviderContract {
   /** 安全缓冲秒数，避免临界过期 */
   private readonly tokenSafetySeconds = 300;
 
+  private readonly apiBaseUrl: string;
+  private readonly requestTimeout: number;
+
   constructor(
     private readonly httpService: HttpService,
     @Inject(WEAPP_PROVIDER_OPTIONS)
     private readonly options: WeAppProviderOptions,
     private readonly logger: PinoLogger,
-  ) {}
+  ) {
+    this.apiBaseUrl = options.apiBaseUrl ?? 'https://api.weixin.qq.com';
+    this.requestTimeout = options.requestTimeout ?? 10000;
+  }
 
   /**
    * 根据客户端类型选择微信应用配置
@@ -78,7 +84,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
       throw new DomainError(THIRDPARTY_ERROR.PROVIDER_CONFIG_MISSING, '微信应用配置缺失');
     }
 
-    const url = 'https://api.weixin.qq.com/sns/jscode2session';
+    const url = `${this.apiBaseUrl}/sns/jscode2session`;
     const params = {
       appid: appId,
       secret: appSecret,
@@ -89,7 +95,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
     try {
       const resp = await this.httpService.axiosRef.get<WeAppCode2SessionResponse>(url, {
         params,
-        timeout: 10000,
+        timeout: this.requestTimeout,
       });
       const data = resp.data;
 
@@ -141,7 +147,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
       throw new DomainError(THIRDPARTY_ERROR.PROVIDER_CONFIG_MISSING, '微信应用配置缺失');
     }
 
-    const url = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${accessToken}`;
+    const url = `${this.apiBaseUrl}/wxa/business/getuserphonenumber?access_token=${accessToken}`;
     const requestBody = {
       code: phoneCode,
     };
@@ -151,7 +157,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
         url,
         requestBody,
         {
-          timeout: 10000,
+          timeout: this.requestTimeout,
           headers: {
             // eslint-disable-next-line @typescript-eslint/naming-convention
             'Content-Type': 'application/json',
@@ -199,7 +205,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
    * @throws HttpException 当微信返回错误或网络异常时抛出
    */
   async createWxaCodeUnlimit(params: CreateWeAppCodeUnlimitParams): Promise<WeAppQrcodeImage> {
-    const url = `https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=${params.accessToken}`;
+    const url = `${this.apiBaseUrl}/wxa/getwxacodeunlimit?access_token=${params.accessToken}`;
     const body: Record<string, unknown> = {
       scene: params.scene,
       ...(params.page ? { page: params.page } : {}),
@@ -211,7 +217,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
 
     try {
       const resp = await this.httpService.axiosRef.post(url, body, {
-        timeout: 10000,
+        timeout: this.requestTimeout,
         responseType: 'arraybuffer',
         headers: {
           // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -289,7 +295,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
       return cached.token;
     }
 
-    const url = 'https://api.weixin.qq.com/cgi-bin/token';
+    const url = `${this.apiBaseUrl}/cgi-bin/token`;
     const params = {
       grant_type: 'client_credential',
       appid: appId,
@@ -299,7 +305,7 @@ export class WeAppHttpProvider implements WeAppProviderContract {
     try {
       const resp = await this.httpService.axiosRef.get<WeAppGetAccessTokenResponse>(url, {
         params,
-        timeout: 10000,
+        timeout: this.requestTimeout,
       });
       const data = resp.data;
 

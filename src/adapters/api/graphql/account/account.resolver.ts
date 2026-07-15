@@ -2,6 +2,7 @@
 import { mapJwtToUsecaseSession } from '@app-types/auth/session.types';
 import { JwtPayload } from '@app-types/jwt.types';
 import { VerificationRecordType } from '@app-types/models/verification-record.types';
+import { DomainError } from '@core/common/errors/domain-error';
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AccountArgs } from '@src/adapters/api/graphql/account/dto/account.args';
@@ -77,6 +78,10 @@ export class AccountResolver {
         accountId: result.accountId,
       };
     } catch (error) {
+      // DomainError 应冒泡到全局 GraphQL Filter，不在 Adapter 层吞掉
+      if (error instanceof DomainError) {
+        throw error;
+      }
       return {
         success: false,
         message: `密码重置失败：${error instanceof Error ? error.message : '未知错误'}`,

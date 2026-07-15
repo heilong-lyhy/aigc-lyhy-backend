@@ -4,6 +4,7 @@ import { VerificationRecordType } from '@app-types/models/verification-record.ty
 import { Injectable } from '@nestjs/common';
 import type {
   VerificationRecordDetailView,
+  VerificationRecordSnapshot,
   VerificationRecordView,
 } from '../verification-record.types';
 import { VerificationRecordEntity } from '../verification-record.entity';
@@ -11,6 +12,7 @@ import { VerificationReadQueryService } from './verification-read.query.service'
 
 export type {
   VerificationRecordDetailView,
+  VerificationRecordSnapshot,
   VerificationRecordView,
 } from '../verification-record.types';
 
@@ -54,11 +56,11 @@ export class VerificationRecordQueryService {
     return await this.verificationReadQueryService.getTargetAccountIdByRecordId(params);
   }
 
-  toCleanView(record: VerificationRecordEntity): VerificationRecordView {
+  toCleanView(record: VerificationRecordSnapshot): VerificationRecordView {
     return this.verificationReadQueryService.toCleanView(record);
   }
 
-  toDetailView(record: VerificationRecordEntity): VerificationRecordDetailView {
+  toDetailView(record: VerificationRecordSnapshot): VerificationRecordDetailView {
     return this.verificationReadQueryService.toDetailView(record);
   }
 }

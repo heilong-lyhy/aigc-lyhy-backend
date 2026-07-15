@@ -72,6 +72,9 @@ function getGqlPath(host: ArgumentsHost): string[] | undefined {
  * - extensions.code：GraphQL 错误大类（默认由 HTTP 状态码映射；也可在异常响应体里传 code 覆盖）
  * - extensions.errorCode：业务细分错误码（来自异常响应体）
  * - extensions.errorMessage：业务错误描述（来自异常响应体）
+ *
+ * 生产环境保留大类错误码（UNAUTHENTICATED/FORBIDDEN/BAD_USER_INPUT 等），
+ * 仅隐藏业务细节（errorCode/errorMessage），确保前端能根据 code 做精确处理。
  */
 function buildGraphQLErrorFromHttpException(
   exception: HttpException,
@@ -90,7 +93,7 @@ function buildGraphQLErrorFromHttpException(
   return new GraphQLError(finalMessage, {
     path: getGqlPath(host),
     extensions: {
-      code: isProdEnv ? 'INTERNAL_SERVER_ERROR' : (code ?? mapHttpToGqlCode(status)),
+      code: code ?? mapHttpToGqlCode(status),
       httpStatus: status,
       ...(isProdEnv ? {} : errorCode ? { errorCode } : {}),
       ...(isProdEnv ? {} : errorMessage ? { errorMessage } : {}),

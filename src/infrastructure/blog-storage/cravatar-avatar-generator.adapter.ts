@@ -8,9 +8,11 @@ import { createHash } from 'crypto';
 
 @Injectable()
 export class CravatarAvatarGeneratorAdapter implements AvatarGenerator {
+  private readonly baseUrl = process.env.CRAVATAR_BASE_URL ?? 'https://cravatar.cn/avatar';
+
   generateAvatar(email: string): Promise<string | null> {
     if (!email) return Promise.resolve(null);
     const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
-    return Promise.resolve(`https://cravatar.cn/avatar/${hash}?d=identicon`);
+    return Promise.resolve(`${this.baseUrl}/${hash}?d=identicon`);
   }
 }

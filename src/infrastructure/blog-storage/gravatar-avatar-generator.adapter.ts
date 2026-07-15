@@ -7,9 +7,11 @@ import { createHash } from 'crypto';
 
 @Injectable()
 export class GravatarAvatarGeneratorAdapter implements AvatarGenerator {
+  private readonly baseUrl = process.env.GRAVATAR_BASE_URL ?? 'https://www.gravatar.com/avatar';
+
   generateAvatar(email: string): Promise<string | null> {
     if (!email) return Promise.resolve(null);
     const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
-    return Promise.resolve(`https://www.gravatar.com/avatar/${hash}?d=identicon`);
+    return Promise.resolve(`${this.baseUrl}/${hash}?d=identicon`);
   }
 }

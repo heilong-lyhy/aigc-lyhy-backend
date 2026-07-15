@@ -1,28 +1,25 @@
 // src/adapters/api/graphql/auth/auth.resolver.ts
 
-import { AuthLoginModel, LoginResultModel, UserInfoView } from '@app-types/models/auth.types';
+import { AuthLoginModel, UserInfoView } from '@app-types/models/auth.types';
 import { GeographicInfo } from '@app-types/models/user-info.types';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { FetchUserInfoUsecase } from '@usecases/account/fetch-user-info.usecase';
-import type { CompleteUserData } from '@usecases/account/fetch-user-info.types';
-import { LoginWithPasswordUsecase } from '@usecases/auth/login-with-password.usecase';
+import { LoginWithUserInfoUsecase } from '@usecases/auth/login-with-user-info.usecase';
 import { LoginResult } from '../account/dto/login-result.dto';
 import { UserInfoDTO } from '../account/dto/user-info.dto';
 import { AuthLoginInput } from './dto/auth-login.input';
 
 /**
  * 认证相关的 GraphQL Resolver
+ * 只负责注入身份和映射结果，业务编排由 Usecase 处理
  */
 @Resolver()
 export class AuthResolver {
   constructor(
-    private readonly loginWithPasswordUsecase: LoginWithPasswordUsecase,
-    private readonly fetchUserInfoUsecase: FetchUserInfoUsecase,
+    private readonly loginWithUserInfoUsecase: LoginWithUserInfoUsecase,
   ) {}
 
   @Mutation(() => LoginResult)
   async login(@Args('input') input: AuthLoginInput): Promise<LoginResult> {
-    // 将 DTO 转换为领域模型
     const authLoginModel: AuthLoginModel = {
       loginName: input.loginName,
       loginPassword: input.loginPassword,
@@ -31,37 +28,16 @@ export class AuthResolver {
       audience: input.audience,
     };
 
-    // 调用 usecase
-    const result: LoginResultModel = await this.loginWithPasswordUsecase.execute(authLoginModel);
+    // 单一 Usecase 编排 login + fetchUserInfo
+    const { loginResult, userInfoView } = await this.loginWithUserInfoUsecase.loginWithPassword(authLoginModel);
 
-    // 获取用户信息
-    const userInfo = await this.getUserInfoForGraphQL(result.accountId);
-
-    // 将领域模型转换回 DTO
-    const loginResult: LoginResult = {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      accountId: result.accountId,
-      role: result.role,
-      userInfo,
+    return {
+      accessToken: loginResult.accessToken,
+      refreshToken: loginResult.refreshToken,
+      accountId: loginResult.accountId,
+      role: loginResult.role,
+      userInfo: this.mapUserInfoViewToSecureDTO(userInfoView),
     };
-
-    return loginResult;
-  }
-
-  /**
-   * 获取用于 GraphQL 响应的用户信息
-   * 使用现有的安全验证流程，确保 accessGroup 和 metaDigest 已完成比对
-   */
-  private async getUserInfoForGraphQL(accountId: number): Promise<UserInfoDTO> {
-    // 使用现有的 executeForLoginFlow 方法，它已经包含了安全验证
-    const completeUserData: CompleteUserData = await this.fetchUserInfoUsecase.executeForLoginFlow({
-      accountId,
-    });
-
-    // 安全验证已在 executeForLoginFlow 中完成
-    // 现在将 userInfoView 转换为安全的 DTO（移除 metaDigest）
-    return this.mapUserInfoViewToSecureDTO(completeUserData.userInfoView);
   }
 
   /**

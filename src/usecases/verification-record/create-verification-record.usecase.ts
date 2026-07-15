@@ -4,6 +4,7 @@ import {
   CreateVerificationRecordParams,
   VerificationRecordType,
 } from '@app-types/models/verification-record.types';
+import { IdentityTypeEnum } from '@app-types/models/account.types';
 import { DomainError, VERIFICATION_RECORD_ERROR } from '@core/common/errors/domain-error';
 import { VerificationCodeHelper } from '@modules/verification-record/verification-code.helper';
 import { Injectable } from '@nestjs/common';
@@ -28,6 +29,8 @@ export interface CreateVerificationRecordUsecaseParams extends Omit<
   generateNumericCode?: boolean;
   /** 数字验证码长度（仅在 generateNumericCode 为 true 时有效，默认 6） */
   numericCodeLength?: number;
+  /** 当前用户的角色列表，用于授权决策 */
+  userAccessGroup?: string[];
 }
 
 /**
@@ -40,6 +43,8 @@ export interface CreateVerificationRecordUsecaseResult {
   token: string;
   /** 是否由服务端生成 token（true: 自动生成, false: 使用自定义 token） */
   generatedByServer: boolean;
+  /** 当前用户是否有权获取明文 token（基于角色和服务端生成状态决策） */
+  canReturnToken: boolean;
 }
 
 /**
@@ -123,11 +128,32 @@ export class CreateVerificationRecordUsecase {
       token,
     });
 
+    // 授权决策：只有 ADMIN/STAFF 且 token 由服务端生成时才能返回明文 token
+    const canReturnToken = this.canUserReturnToken(params.userAccessGroup, generatedByServer);
+
     return {
       record: this.verificationRecordQueryService.toDetailView(record),
       token,
       generatedByServer,
+      canReturnToken,
     };
+  }
+
+  /**
+   * 判断用户是否有权获取明文 token
+   * 只有 ADMIN/STAFF 且 token 由服务端生成时才允许
+   */
+  private canUserReturnToken(userAccessGroup: string[] | undefined, generatedByServer: boolean): boolean {
+    if (!generatedByServer || !userAccessGroup) {
+      return false;
+    }
+    const normalizedRoles = userAccessGroup.map((role) =>
+      typeof role === 'string' ? role.toLowerCase() : String(role).toLowerCase(),
+    );
+    return (
+      normalizedRoles.includes(IdentityTypeEnum.ADMIN.toLowerCase()) ||
+      normalizedRoles.includes(IdentityTypeEnum.STAFF.toLowerCase())
+    );
   }
 
   /**
