@@ -1,34 +1,36 @@
 import type { CapabilityResult } from '@app-types/common/capability.types';
-import {
-  REFERENCE_PROFILE_CAPABILITY_ID,
-  REFERENCE_PROFILE_OPERATIONS,
-  type ReferenceProfileListByGroupKeysInput,
-  type ReferenceProfileSummary,
+import type {
+  ReferenceProfileListByGroupKeysInput,
+  ReferenceProfileSummary,
 } from '@app-types/reference/reference-profile.types';
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  CAPABILITY_QUERY_BUS,
-  type CapabilityQueryBus,
-} from '@src/usecases/common/ports/capability-bus.contract';
+  REFERENCE_PROFILE_LIST_HANDLER,
+  type ReferenceProfileListHandlerPort,
+} from '@src/modules/reference/reference-profile-list-by-group-keys.contract';
 import type { ReferenceProfileClient } from '@src/usecases/common/ports/reference-profile-client.contract';
 
 @Injectable()
-export class DispatcherReferenceProfileClient implements ReferenceProfileClient {
+export class DirectReferenceProfileClient implements ReferenceProfileClient {
   constructor(
-    @Inject(CAPABILITY_QUERY_BUS)
-    private readonly queryBus: CapabilityQueryBus,
+    @Inject(REFERENCE_PROFILE_LIST_HANDLER)
+    private readonly handler: ReferenceProfileListHandlerPort,
   ) {}
 
   async listByGroupKeys(
     input: ReferenceProfileListByGroupKeysInput,
   ): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    return await this.queryBus.ask<
-      ReferenceProfileListByGroupKeysInput,
-      readonly ReferenceProfileSummary[]
-    >({
-      capability: REFERENCE_PROFILE_CAPABILITY_ID,
-      operation: REFERENCE_PROFILE_OPERATIONS.listByGroupKeys,
+    return await this.handler.handle({
+      capability: this.handler.capability,
+      operation: this.handler.operation,
+      operationKind: this.handler.operationKind as 'query',
+      context: {
+        traceId: 'direct-call',
+        requestId: 'direct-call',
+        actor: { source: 'system' },
+      },
       payload: input,
+      createdAt: new Date(),
     });
   }
 }

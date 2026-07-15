@@ -1,15 +1,14 @@
-import type { CapabilityQuery, CapabilityResult } from '@app-types/common/capability.types';
-import { Inject, Injectable } from '@nestjs/common';
+import type {
+  CapabilityOperationHandler as CapabilityOperationHandlerType,
+  CapabilityQuery,
+  CapabilityResult,
+} from '@app-types/common/capability.types';
+import { Injectable } from '@nestjs/common';
 import {
   CapabilityOperationHandlerProvider,
   CapabilityAnchorProvider,
   CapabilityRuntimeContributionProvider,
 } from '@src/infrastructure/capability/capability.decorators';
-import {
-  CAPABILITY_QUERY_BUS,
-  type CapabilityOperationHandler,
-  type CapabilityQueryBus,
-} from '@src/usecases/common/ports/capability-bus.contract';
 
 export const REFERENCE_PROFILE_CAPABILITY_ID = 'reference.profile';
 export const REFERENCE_PROFILE_LIST_OPERATION = 'listByGroupKeys';
@@ -42,18 +41,12 @@ export interface ReferenceReportView {
   capabilityId: REFERENCE_PROFILE_CAPABILITY_ID,
   mode: 'switchable',
   decisionRef: 'docs/capabilities/reference-fixtures.md',
+  requires: [],
 })
 @CapabilityRuntimeContributionProvider({
   capabilityId: REFERENCE_PROFILE_CAPABILITY_ID,
-  operations: {
-    queries: [
-      {
-        kind: 'query',
-        name: REFERENCE_PROFILE_LIST_OPERATION,
-        transport: 'in-process',
-      },
-    ],
-  },
+  runtimeDependencies: [],
+  queueResources: [],
 })
 export class ReferenceProfileCapabilityAnchor {}
 
@@ -69,7 +62,7 @@ const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [
   operation: REFERENCE_PROFILE_LIST_OPERATION,
   operationKind: 'query',
 })
-export class ReferenceProfileListHandler implements CapabilityOperationHandler<
+export class ReferenceProfileListHandler implements CapabilityOperationHandlerType<
   { readonly groupKeys: readonly string[] },
   readonly ReferenceProfileSummary[]
 > {
@@ -89,29 +82,30 @@ export class ReferenceProfileListHandler implements CapabilityOperationHandler<
 }
 
 @Injectable()
-export class DispatcherReferenceProfileClient implements ReferenceProfileClient {
-  constructor(
-    @Inject(CAPABILITY_QUERY_BUS)
-    private readonly queryBus: CapabilityQueryBus,
-  ) {}
+export class DirectReferenceProfileClient implements ReferenceProfileClient {
+  constructor(private readonly handler: ReferenceProfileListHandler) {}
 
-  listByGroupKeys(input: {
+  async listByGroupKeys(input: {
     readonly groupKeys: readonly string[];
   }): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    return this.queryBus.ask({
-      capability: REFERENCE_PROFILE_CAPABILITY_ID,
-      operation: REFERENCE_PROFILE_LIST_OPERATION,
+    return await this.handler.handle({
+      capability: this.handler.capability,
+      operation: this.handler.operation,
+      operationKind: this.handler.operationKind,
+      context: {
+        traceId: 'direct-call',
+        requestId: 'direct-call',
+        actor: { source: 'system' },
+      },
       payload: input,
+      createdAt: new Date(),
     });
   }
 }
 
 @Injectable()
 export class BuildReferenceReportUsecase {
-  constructor(
-    @Inject(REFERENCE_PROFILE_CLIENT)
-    private readonly profileClient: ReferenceProfileClient,
-  ) {}
+  constructor(private readonly profileClient: ReferenceProfileClient) {}
 
   async execute(input: {
     readonly groupKeys: readonly string[];
@@ -141,11 +135,11 @@ export class BuildReferenceReportUsecase {
 export const REFERENCE_PROFILE_FIXTURE_PROVIDERS = [
   ReferenceProfileCapabilityAnchor,
   ReferenceProfileListHandler,
-  DispatcherReferenceProfileClient,
+  DirectReferenceProfileClient,
   BuildReferenceReportUsecase,
   {
     provide: REFERENCE_PROFILE_CLIENT,
-    useExisting: DispatcherReferenceProfileClient,
+    useExisting: DirectReferenceProfileClient,
   },
 ] as const;
 
