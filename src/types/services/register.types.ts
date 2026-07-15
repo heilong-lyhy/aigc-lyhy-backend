@@ -24,7 +24,7 @@ export interface RegisterInputModel {
 
 /**
  * 准备好的注册数据类型
- * 用于 TypeORM 创建账户实体的数据结构
+ * 用于创建账户的数据结构
  */
 export type PreparedRegisterData = Omit<RegisterInputModel, 'confirmPassword' | 'type'> & {
   /** 账户状态 */

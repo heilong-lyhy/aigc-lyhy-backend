@@ -4,10 +4,8 @@
 // 文件类型白名单与大小限制在此服务中校验
 // View 映射委托 BlogFileQueryService，避免 toView 重复
 
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { getTypeOrmEntityManager as getTransactionEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { BLOG_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';

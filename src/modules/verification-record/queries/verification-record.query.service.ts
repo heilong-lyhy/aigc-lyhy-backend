@@ -7,7 +7,6 @@ import type {
   VerificationRecordSnapshot,
   VerificationRecordView,
 } from '../verification-record.types';
-import { VerificationRecordEntity } from '../verification-record.entity';
 import { VerificationReadQueryService } from './verification-read.query.service';
 
 export type {

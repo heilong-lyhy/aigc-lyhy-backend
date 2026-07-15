@@ -8,6 +8,7 @@ import {
   CAPABILITY_STATE_READER,
   type CapabilityStateReader,
 } from '@src/modules/common/capability-state-reader.contract';
+import { RUNTIME_ASYNC_TASK_CAPABILITY_ID } from './async-task-record.capability';
 import { AsyncTaskRecordEntity } from './async-task-record.entity';
 import type {
   AsyncTaskRecordView,
@@ -408,7 +409,7 @@ export class AsyncTaskRecordService {
   private getRepository(
     transactionContext?: PersistenceTransactionContext,
   ): Repository<AsyncTaskRecordEntity> {
-    this.capabilityStateReader.requireEnabled('runtime.async-task');
+    this.capabilityStateReader.requireEnabled(RUNTIME_ASYNC_TASK_CAPABILITY_ID);
     const manager = transactionContext ? getTypeOrmEntityManager(transactionContext) : undefined;
     return manager ? manager.getRepository(AsyncTaskRecordEntity) : this.asyncTaskRecordRepository;
   }

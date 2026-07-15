@@ -8,6 +8,20 @@ export function trimTextPure(value: unknown): unknown {
   return value;
 }
 
+/**
+ * 邮箱脱敏，避免日志泄露。
+ * local part ≤2 字符时保留首字符 + `***`，否则保留前 2 字符 + `***`，域名原样保留。
+ */
+export function maskEmail(email: string): string {
+  const parts = email.split('@');
+  if (parts.length !== 2) return '***';
+  const [localPart, domainPart] = parts;
+  if (localPart.length <= 2) {
+    return `${localPart.charAt(0) || '*'}***@${domainPart}`;
+  }
+  return `${localPart.slice(0, 2)}***@${domainPart}`;
+}
+
 // [KEPT:业务保留] trimText: trim 后空字符串转为 undefined
 export function trimText(value: unknown): string | undefined {
   if (typeof value === 'string') {

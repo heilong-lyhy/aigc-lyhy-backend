@@ -1,4 +1,6 @@
-// src/types/response.types.ts
+// src/infrastructure/middleware/response.types.ts
+// Ant Design Pro 约定的统一响应格式，仅由 FormatResponseMiddleware 使用
+
 /**
  * 显示类型枚举
  */
@@ -37,35 +39,3 @@ export interface ApiResponse<T = unknown> {
   /** 服务器主机名 */
   host?: string;
 }
-
-/**
- * 专门描述分页内容的数据结构
- */
-export interface PaginationResponse<T = unknown> {
-  /** 数据列表 */
-  list: T[];
-  /** 当前页码 */
-  current: number;
-  /** 每页条数 */
-  pageSize: number;
-  /** 总条数 */
-  total: number;
-}
-
-/**
- * 分页接口标准响应：ApiResponse<PaginationResponse<T>>
- * 推荐实际分页接口使用这个组合类型返回
- * 示例：
- * {
- *   success: true,
- *   data: {
- *     list: [...],
- *     current: 1,
- *     pageSize: 20,
- *     total: 180
- *   },
- *   requestId: "...",
- *   host: "..."
- * }
- */
-export type PaginatedApiResponse<T = unknown> = ApiResponse<PaginationResponse<T>>;

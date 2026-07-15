@@ -143,7 +143,10 @@ export class CreateVerificationRecordUsecase {
    * 判断用户是否有权获取明文 token
    * 只有 ADMIN/STAFF 且 token 由服务端生成时才允许
    */
-  private canUserReturnToken(userAccessGroup: string[] | undefined, generatedByServer: boolean): boolean {
+  private canUserReturnToken(
+    userAccessGroup: string[] | undefined,
+    generatedByServer: boolean,
+  ): boolean {
     if (!generatedByServer || !userAccessGroup) {
       return false;
     }

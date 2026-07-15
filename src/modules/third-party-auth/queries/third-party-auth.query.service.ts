@@ -5,6 +5,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ThirdPartyAuthEntity } from '../third-party-auth.entity';
+import { IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID } from '../third-party-auth.capability';
 import {
   CAPABILITY_STATE_READER,
   type CapabilityStateReader,
@@ -23,7 +24,7 @@ export class ThirdPartyAuthQueryService {
     readonly provider: ThirdPartyProviderEnum;
     readonly providerUserId: string;
   }): Promise<ThirdPartyAuthView | null> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const record = await this.thirdPartyAuthRepository.findOne({
       where: { provider: params.provider, providerUserId: params.providerUserId },
       select: {
@@ -40,7 +41,7 @@ export class ThirdPartyAuthQueryService {
   }
 
   async getThirdPartyAuths(accountId: number): Promise<ThirdPartyAuthView[]> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const records = await this.thirdPartyAuthRepository.find({
       where: { accountId },
       select: {
@@ -68,7 +69,7 @@ export class ThirdPartyAuthQueryService {
     accountId: number,
     provider: ThirdPartyProviderEnum,
   ): Promise<ThirdPartyAuthView | null> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const record = await this.thirdPartyAuthRepository.findOne({
       where: { accountId, provider },
       select: {

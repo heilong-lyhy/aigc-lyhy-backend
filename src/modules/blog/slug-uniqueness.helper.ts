@@ -3,10 +3,8 @@
 // BlogPost / BlogCategory / BlogTag 均需要 slug 唯一检查，逻辑完全相同，仅错误码不同
 
 import { DomainError } from '@core/common/errors/domain-error';
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { getTypeOrmEntityManager as getTransactionEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Repository } from 'typeorm';
 
 /**

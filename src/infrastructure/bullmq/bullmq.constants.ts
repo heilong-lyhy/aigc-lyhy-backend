@@ -1,19 +1,31 @@
 // src/infrastructure/bullmq/bullmq.constants.ts
-// Re-export queue/job constants from the types layer (single source of truth).
-// Infrastructure-only mapping (BULLMQ_QUEUE_JOBS) remains here.
-export { BULLMQ_QUEUES, BULLMQ_JOBS } from '@app-types/worker/bullmq.types';
-export type {
-  BullMqQueueName,
-  BullMqEmailJobName,
-  BullMqAiJobName,
-  BullMqCapabilityJobName,
-} from '@app-types/worker/bullmq.types';
+// Queue and job name constants for BullMQ — single source of truth.
+// Moved from types layer; types layer should not hold runtime constants.
 
-import { BULLMQ_QUEUES, BULLMQ_JOBS, type BullMqQueueName } from '@app-types/worker/bullmq.types';
+export const BULLMQ_QUEUES = {
+  EMAIL: 'email',
+  AI: 'ai-execution',
+  AI_WORKFLOW: 'ai-workflow',
+} as const;
+
+export type BullMqQueueName = (typeof BULLMQ_QUEUES)[keyof typeof BULLMQ_QUEUES];
+
+export const BULLMQ_JOBS = {
+  EMAIL: {
+    SEND: 'send',
+  },
+  AI: {
+    GENERATE: 'generate',
+    EMBED: 'embed',
+    WORKFLOW: 'workflow',
+  },
+} as const;
+
+export type BullMqEmailJobName = (typeof BULLMQ_JOBS.EMAIL)[keyof typeof BULLMQ_JOBS.EMAIL];
+export type BullMqAiJobName = (typeof BULLMQ_JOBS.AI)[keyof typeof BULLMQ_JOBS.AI];
 
 export const BULLMQ_QUEUE_JOBS: Readonly<Record<BullMqQueueName, ReadonlyArray<string>>> = {
   [BULLMQ_QUEUES.EMAIL]: Object.values(BULLMQ_JOBS.EMAIL),
   [BULLMQ_QUEUES.AI]: [BULLMQ_JOBS.AI.GENERATE, BULLMQ_JOBS.AI.EMBED],
   [BULLMQ_QUEUES.AI_WORKFLOW]: [BULLMQ_JOBS.AI.WORKFLOW],
-  [BULLMQ_QUEUES.CAPABILITY]: Object.values(BULLMQ_JOBS.CAPABILITY),
 };

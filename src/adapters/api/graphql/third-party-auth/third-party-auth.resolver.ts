@@ -62,7 +62,8 @@ export class ThirdPartyAuthResolver {
     };
 
     // 单一 Usecase 编排 login + fetchUserInfo
-    const { loginResult, userInfoView } = await this.loginWithUserInfoUsecase.loginWithThirdParty(params);
+    const { loginResult, userInfoView } =
+      await this.loginWithUserInfoUsecase.loginWithThirdParty(params);
 
     return {
       accessToken: loginResult.accessToken,

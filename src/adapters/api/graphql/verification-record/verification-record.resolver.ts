@@ -48,55 +48,43 @@ export class VerificationRecordResolver {
     @Args('input') input: CreateVerificationRecordInput,
     @currentUser() user: JwtPayload,
   ): Promise<CreateVerificationRecordResult> {
-    try {
-      const result = await this.createVerificationRecordUsecase.execute({
-        type: this.mapCreatableType(input.type),
-        customToken: input.token,
-        tokenLength: input.tokenLength,
-        generateNumericCode: input.generateNumericCode,
-        numericCodeLength: input.numericCodeLength,
-        targetAccountId: input.targetAccountId,
-        subjectType: input.subjectType,
-        subjectId: input.subjectId,
-        payload: input.payload,
-        expiresAt: input.expiresAt,
-        notBefore: input.notBefore,
-        issuedByAccountId: user.sub,
-        userAccessGroup: user.accessGroup,
-      });
+    const result = await this.createVerificationRecordUsecase.execute({
+      type: this.mapCreatableType(input.type),
+      customToken: input.token,
+      tokenLength: input.tokenLength,
+      generateNumericCode: input.generateNumericCode,
+      numericCodeLength: input.numericCodeLength,
+      targetAccountId: input.targetAccountId,
+      subjectType: input.subjectType,
+      subjectId: input.subjectId,
+      payload: input.payload,
+      expiresAt: input.expiresAt,
+      notBefore: input.notBefore,
+      issuedByAccountId: user.sub,
+      userAccessGroup: user.accessGroup,
+    });
 
-      return {
-        success: true,
-        data: {
-          id: result.record.id,
-          type: result.record.type,
-          status: result.record.status,
-          expiresAt: result.record.expiresAt,
-          notBefore: result.record.notBefore,
-          targetAccountId: result.record.targetAccountId,
-          subjectType: result.record.subjectType,
-          subjectId: result.record.subjectId,
-          payload: result.record.payload,
-          issuedByAccountId: result.record.issuedByAccountId,
-          consumedByAccountId: result.record.consumedByAccountId,
-          consumedAt: result.record.consumedAt,
-          createdAt: result.record.createdAt,
-          updatedAt: result.record.updatedAt,
-        },
-        token: input.returnToken && result.canReturnToken ? result.token : null,
-        message: null,
-      };
-    } catch (error) {
-      // DomainError 应冒泡到全局 GraphQL Filter
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      return {
-        success: false,
-        data: null,
-        message: error instanceof Error ? error.message : '创建验证记录失败',
-      };
-    }
+    return {
+      success: true,
+      data: {
+        id: result.record.id,
+        type: result.record.type,
+        status: result.record.status,
+        expiresAt: result.record.expiresAt,
+        notBefore: result.record.notBefore,
+        targetAccountId: result.record.targetAccountId,
+        subjectType: result.record.subjectType,
+        subjectId: result.record.subjectId,
+        payload: result.record.payload,
+        issuedByAccountId: result.record.issuedByAccountId,
+        consumedByAccountId: result.record.consumedByAccountId,
+        consumedAt: result.record.consumedAt,
+        createdAt: result.record.createdAt,
+        updatedAt: result.record.updatedAt,
+      },
+      token: input.returnToken && result.canReturnToken ? result.token : null,
+      message: null,
+    };
   }
 
   /**
@@ -124,30 +112,26 @@ export class VerificationRecordResolver {
       return null;
     }
 
-    try {
-      const result = await this.findVerificationRecordUsecase.findActiveConsumableByToken({
-        token: input.token,
-        expectedType: input.expectedType,
-        ignoreTargetRestriction: input.ignoreTargetRestriction,
-      });
+    const result = await this.findVerificationRecordUsecase.findActiveConsumableByToken({
+      token: input.token,
+      expectedType: input.expectedType,
+      ignoreTargetRestriction: input.ignoreTargetRestriction,
+    });
 
-      if (!result) {
-        return null;
-      }
-
-      return {
-        id: result.id,
-        type: result.type,
-        status: result.status,
-        expiresAt: result.expiresAt,
-        notBefore: result.notBefore,
-        subjectType: result.subjectType,
-        subjectId: result.subjectId,
-        publicPayload: result.publicPayload ?? null,
-      };
-    } catch {
+    if (!result) {
       return null;
     }
+
+    return {
+      id: result.id,
+      type: result.type,
+      status: result.status,
+      expiresAt: result.expiresAt,
+      notBefore: result.notBefore,
+      subjectType: result.subjectType,
+      subjectId: result.subjectId,
+      publicPayload: result.publicPayload ?? null,
+    };
   }
 
   /**
@@ -159,30 +143,18 @@ export class VerificationRecordResolver {
     @Args('input') input: ConsumeVerificationRecordInput,
     @currentUser() user: JwtPayload,
   ): Promise<UpdateVerificationRecordResult> {
-    try {
-      // 使用 ConsumeVerificationFlowUsecase 处理验证记录消费
-      await this.consumeVerificationFlowUsecase.execute({
-        token: input.token,
-        consumedByAccountId: user.sub,
-        expectedType: input.expectedType,
-      });
+    // 使用 ConsumeVerificationFlowUsecase 处理验证记录消费
+    await this.consumeVerificationFlowUsecase.execute({
+      token: input.token,
+      consumedByAccountId: user.sub,
+      expectedType: input.expectedType,
+    });
 
-      return {
-        success: true,
-        data: null,
-        message: '验证记录消费成功',
-      };
-    } catch (error) {
-      // DomainError 应冒泡到全局 GraphQL Filter
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      return {
-        success: false,
-        data: null,
-        message: error instanceof Error ? error.message : '消费验证记录失败',
-      };
-    }
+    return {
+      success: true,
+      data: null,
+      message: '验证记录消费成功',
+    };
   }
 
   /**
@@ -194,41 +166,29 @@ export class VerificationRecordResolver {
     @Args('input') input: RevokeVerificationRecordInput,
     @currentUser() _user: JwtPayload,
   ): Promise<UpdateVerificationRecordResult> {
-    try {
-      const result = await this.consumeVerificationRecordUsecase.revokeRecord({
-        recordId: input.recordId,
-      });
+    const result = await this.consumeVerificationRecordUsecase.revokeRecord({
+      recordId: input.recordId,
+    });
 
-      return {
-        success: true,
-        data: {
-          id: result.id,
-          type: result.type,
-          status: result.status,
-          expiresAt: result.expiresAt,
-          notBefore: result.notBefore,
-          targetAccountId: result.targetAccountId,
-          subjectType: result.subjectType,
-          subjectId: result.subjectId,
-          payload: result.payload,
-          issuedByAccountId: result.issuedByAccountId,
-          consumedByAccountId: result.consumedByAccountId,
-          consumedAt: result.consumedAt,
-          createdAt: result.createdAt,
-          updatedAt: result.updatedAt,
-        },
-        message: null,
-      };
-    } catch (error) {
-      // DomainError 应冒泡到全局 GraphQL Filter
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      return {
-        success: false,
-        data: null,
-        message: error instanceof Error ? error.message : '撤销验证记录失败',
-      };
-    }
+    return {
+      success: true,
+      data: {
+        id: result.id,
+        type: result.type,
+        status: result.status,
+        expiresAt: result.expiresAt,
+        notBefore: result.notBefore,
+        targetAccountId: result.targetAccountId,
+        subjectType: result.subjectType,
+        subjectId: result.subjectId,
+        payload: result.payload,
+        issuedByAccountId: result.issuedByAccountId,
+        consumedByAccountId: result.consumedByAccountId,
+        consumedAt: result.consumedAt,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+      },
+      message: null,
+    };
   }
 }

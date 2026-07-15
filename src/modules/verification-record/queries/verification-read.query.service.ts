@@ -57,7 +57,7 @@ export class VerificationReadQueryService {
       now: params.now,
       transactionContext: params.transactionContext,
     });
-    return record ? this.toCleanView(record) : null;
+    return record ? this.toCleanView(this.toSnapshot(record)) : null;
   }
 
   async findActiveConsumableById(params: {
@@ -76,7 +76,7 @@ export class VerificationReadQueryService {
       now: params.now,
       transactionContext: params.transactionContext,
     });
-    return record ? this.toCleanView(record) : null;
+    return record ? this.toCleanView(this.toSnapshot(record)) : null;
   }
 
   async getTargetAccountIdByRecordId(params: {
@@ -129,7 +129,7 @@ export class VerificationReadQueryService {
     }
 
     // 返回清洁的记录视图
-    return this.toCleanView(record);
+    return this.toCleanView(this.toSnapshot(record));
   }
 
   /**
@@ -321,14 +321,34 @@ export class VerificationReadQueryService {
     }
   }
 
+  /** 将 Entity 转为稳定 snapshot，避免向上游暴露 ORM Entity */
+  private toSnapshot(entity: VerificationRecordEntity): VerificationRecordSnapshot {
+    return {
+      id: entity.id,
+      type: entity.type,
+      status: entity.status,
+      expiresAt: entity.expiresAt,
+      notBefore: entity.notBefore,
+      targetAccountId: entity.targetAccountId,
+      subjectType: entity.subjectType,
+      subjectId: entity.subjectId,
+      payload: entity.payload,
+      issuedByAccountId: entity.issuedByAccountId,
+      consumedByAccountId: entity.consumedByAccountId,
+      consumedAt: entity.consumedAt,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    };
+  }
+
   /**
    * 转换为清洁的记录视图
    * 隐藏敏感信息，只返回必要的字段
    *
-   * @param record 验证记录实体
+   * @param record 验证记录快照
    * @returns 清洁的记录视图
    */
-  toCleanView(record: VerificationRecordEntity | VerificationRecordSnapshot): VerificationRecordView {
+  toCleanView(record: VerificationRecordSnapshot): VerificationRecordView {
     return {
       id: record.id,
       type: record.type,
@@ -346,7 +366,7 @@ export class VerificationReadQueryService {
     };
   }
 
-  toDetailView(record: VerificationRecordEntity | VerificationRecordSnapshot): VerificationRecordDetailView {
+  toDetailView(record: VerificationRecordSnapshot): VerificationRecordDetailView {
     return {
       id: record.id,
       type: record.type,

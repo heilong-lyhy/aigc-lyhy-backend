@@ -2,10 +2,8 @@
 // 文章读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
 // 分页编排下沉到 QueryService，usecase 只拿 PaginatedResult<BlogPostView>
 
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { getTypeOrmEntityManager as getTransactionEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { BlogPostStatus } from '@app-types/models/blog.types';
 import { BLOG_ERROR } from '@core/common/errors';
 import { DomainError } from '@core/common/errors/domain-error';

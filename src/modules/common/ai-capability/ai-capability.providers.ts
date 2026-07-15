@@ -11,6 +11,8 @@ import { AI_CAPABILITY_ID, AI_EXECUTION_CAPABILITY_ID } from './ai-capability.co
 })
 export class AiCapabilityAnchor {}
 
+// `runtime.async-task` is owned by the async-task-record business module; `common/*`
+// cannot import from business modules, so this ID is kept as a literal. See docs/dependency-rules.
 @Injectable()
 @CapabilityAnchorProvider({
   capabilityId: AI_EXECUTION_CAPABILITY_ID,

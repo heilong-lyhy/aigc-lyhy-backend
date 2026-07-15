@@ -8,6 +8,7 @@ import {
   CAPABILITY_STATE_READER,
   type CapabilityStateReader,
 } from '@src/modules/common/capability-state-reader.contract';
+import { maskEmail } from '@src/core/common/text/text.helper';
 import { PinoLogger } from 'nestjs-pino';
 import type { QueueEmailInput, QueueEmailResult } from './email-queue.types';
 
@@ -47,7 +48,7 @@ export class EmailQueueService {
     });
     this.logger.info(
       {
-        to: this.maskEmail(input.to),
+        to: maskEmail(input.to),
         jobId: job.jobId,
         traceId: job.traceId,
       },
@@ -57,15 +58,5 @@ export class EmailQueueService {
       jobId: job.jobId,
       traceId: job.traceId,
     };
-  }
-
-  private maskEmail(email: string): string {
-    const parts = email.split('@');
-    if (parts.length !== 2) return '***';
-    const [localPart, domainPart] = parts;
-    if (localPart.length <= 2) {
-      return `${localPart.charAt(0) || '*'}***@${domainPart}`;
-    }
-    return `${localPart.slice(0, 2)}***@${domainPart}`;
   }
 }

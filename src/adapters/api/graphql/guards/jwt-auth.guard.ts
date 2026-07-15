@@ -45,7 +45,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') implements CanActivate {
   handleRequest<TUser = JwtPayload>(
     err: Error | null,
     user: TUser | false,
-    _info: unknown,
+    info: unknown,
     _context: ExecutionContext,
   ): TUser {
     // 如果有错误或用户信息为空，则认证失败
@@ -53,6 +53,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') implements CanActivate {
       // 如果已经是 DomainError，直接抛出
       if (err && err instanceof DomainError) {
         throw err;
+      }
+
+      // 检查 info 以区分 token 过期、签名错误等精确原因
+      if (info instanceof Error || (typeof info === 'object' && info !== null && 'name' in info)) {
+        const infoName = info instanceof Error ? info.name : (info as { name: string }).name;
+        if (infoName === 'TokenExpiredError') {
+          throw new DomainError(JWT_ERROR.TOKEN_EXPIRED, 'JWT Token 已过期', undefined, err);
+        }
+        if (infoName === 'JsonWebTokenError') {
+          throw new DomainError(JWT_ERROR.TOKEN_INVALID, 'JWT Token 无效', undefined, err);
+        }
+        if (infoName === 'NotBeforeError') {
+          throw new DomainError(JWT_ERROR.TOKEN_NOT_BEFORE, 'JWT Token 尚未生效', undefined, err);
+        }
       }
 
       // 抛出统一的认证失败错误

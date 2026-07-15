@@ -18,7 +18,11 @@ import { Repository } from 'typeorm';
 // ✅ base 层实体（始终存在）
 import { AccountEntity } from '../entities/account.entity';
 import { UserInfoEntity } from '../entities/user-info.entity';
-import type { AccountCreateResult, UserInfoCreateResult } from '../../account.types';
+import type {
+  AccountCreateResult,
+  AccountSnapshot,
+  UserInfoCreateResult,
+} from '../../account.types';
 export interface AccountCreateData {
   loginName?: string | null;
   loginEmail?: string | null;
@@ -107,8 +111,8 @@ export class AccountService {
     });
   }
 
-  /** 创建账户实体（不落库） */
-  createAccountEntity(params: {
+  /** 创建账户实体（不落库，仅供同 service 内部组合使用） */
+  private createAccountEntity(params: {
     accountData: AccountCreateData;
     transactionContext?: PersistenceTransactionContext;
   }): AccountEntity {
@@ -117,8 +121,8 @@ export class AccountService {
     return repository.create(accountData);
   }
 
-  /** 落库账户实体 */
-  async saveAccount(params: {
+  /** 落库账户实体（内部方法，返回 Entity 仅供同 service 内组合使用） */
+  private async saveAccountEntity(params: {
     account: AccountEntity;
     transactionContext?: PersistenceTransactionContext;
   }): Promise<AccountEntity> {
@@ -156,7 +160,10 @@ export class AccountService {
     newPassword: string;
     transactionContext?: PersistenceTransactionContext;
   }): Promise<void> {
-    const account = await this.lockByIdForUpdate(params.accountId, params.transactionContext!);
+    const account = await this.lockEntityByIdForUpdate(
+      params.accountId,
+      params.transactionContext!,
+    );
     if (!account.loginPassword) {
       throw new DomainError(AUTH_ERROR.INVALID_PASSWORD, '账户未设置密码');
     }
@@ -180,12 +187,23 @@ export class AccountService {
   }
 
   /**
-   * 显式锁定账户以避免并发覆盖
+   * 显式锁定账户以避免并发覆盖，返回 snapshot（公开接口）
    * @param accountId 账户 ID
    * @param transactionContext 事务上下文
-   * @returns 锁定的账户实体
+   * @returns 锁定的账户快照
    */
   async lockByIdForUpdate(
+    accountId: number,
+    transactionContext: PersistenceTransactionContext,
+  ): Promise<AccountSnapshot> {
+    const entity = await this.lockEntityByIdForUpdate(accountId, transactionContext);
+    return this.toAccountSnapshot(entity);
+  }
+
+  /**
+   * 锁定账户返回完整 Entity（内部方法，仅供同 service 内组合使用）
+   */
+  private async lockEntityByIdForUpdate(
     accountId: number,
     transactionContext: PersistenceTransactionContext,
   ): Promise<AccountEntity> {
@@ -203,8 +221,21 @@ export class AccountService {
     return account;
   }
 
-  /** 创建用户信息实体（不落库） */
-  createUserInfoEntity(params: {
+  private toAccountSnapshot(entity: AccountEntity): AccountSnapshot {
+    return {
+      id: entity.id,
+      loginName: entity.loginName,
+      loginEmail: entity.loginEmail,
+      status: entity.status,
+      identityHint: entity.identityHint,
+      recentLoginHistory: entity.recentLoginHistory,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    };
+  }
+
+  /** 创建用户信息实体（不落库，仅供同 service 内部组合使用） */
+  private createUserInfoEntity(params: {
     userInfoData: UserInfoCreateData;
     transactionContext?: PersistenceTransactionContext;
   }): UserInfoEntity {
@@ -213,8 +244,8 @@ export class AccountService {
     return repository.create(userInfoData);
   }
 
-  /** 落库用户信息实体 */
-  async saveUserInfo(params: {
+  /** 落库用户信息实体（内部方法，返回 Entity 仅供同 service 内组合使用） */
+  private async saveUserInfoEntity(params: {
     userInfo: UserInfoEntity;
     transactionContext?: PersistenceTransactionContext;
   }): Promise<UserInfoEntity> {
@@ -233,7 +264,10 @@ export class AccountService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<AccountCreateResult> {
     const account = this.createAccountEntity(params);
-    const saved = await this.saveAccount({ account, transactionContext: params.transactionContext });
+    const saved = await this.saveAccountEntity({
+      account,
+      transactionContext: params.transactionContext,
+    });
     return { id: saved.id, createdAt: saved.createdAt };
   }
 
@@ -243,7 +277,10 @@ export class AccountService {
     transactionContext?: PersistenceTransactionContext;
   }): Promise<UserInfoCreateResult> {
     const userInfo = this.createUserInfoEntity(params);
-    const saved = await this.saveUserInfo({ userInfo, transactionContext: params.transactionContext });
+    const saved = await this.saveUserInfoEntity({
+      userInfo,
+      transactionContext: params.transactionContext,
+    });
     return { accountId: saved.accountId };
   }
 

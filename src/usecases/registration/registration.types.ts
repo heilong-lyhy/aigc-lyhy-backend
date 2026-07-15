@@ -1,4 +1,4 @@
-// src/types/models/registration.types.ts
+// src/usecases/registration/registration.types.ts
 
 import { RegisterTypeEnum } from '@app-types/services/register.types';
 

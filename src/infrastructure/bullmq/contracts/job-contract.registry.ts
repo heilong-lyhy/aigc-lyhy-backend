@@ -1,7 +1,6 @@
 // src/infrastructure/bullmq/contracts/job-contract.registry.ts
 import { BULLMQ_JOBS, BULLMQ_QUEUES, type BullMqQueueName } from '../bullmq.constants';
 import { AI_JOB_CONTRACT } from './ai-queue.runtime';
-import { CAPABILITY_JOB_CONTRACT } from './capability-queue.runtime';
 import { EMAIL_JOB_CONTRACT } from './email-queue.runtime';
 
 type PayloadValidator<T> = (payload: unknown) => payload is T;
@@ -16,7 +15,6 @@ type QueueJobContractMap = {
     typeof AI_JOB_CONTRACT,
     typeof BULLMQ_JOBS.AI.WORKFLOW
   >;
-  readonly [BULLMQ_QUEUES.CAPABILITY]: typeof CAPABILITY_JOB_CONTRACT;
 };
 
 export type BullMqJobName<Q extends BullMqQueueName> = keyof QueueJobContractMap[Q] & string;
@@ -48,10 +46,6 @@ export const BULLMQ_JOB_PAYLOAD_VALIDATORS = {
   },
   [BULLMQ_QUEUES.AI_WORKFLOW]: {
     [BULLMQ_JOBS.AI.WORKFLOW]: AI_JOB_CONTRACT[BULLMQ_JOBS.AI.WORKFLOW].payloadValidator,
-  },
-  [BULLMQ_QUEUES.CAPABILITY]: {
-    [BULLMQ_JOBS.CAPABILITY.DISPATCH]:
-      CAPABILITY_JOB_CONTRACT[BULLMQ_JOBS.CAPABILITY.DISPATCH].payloadValidator,
   },
 } as const satisfies {
   readonly [Q in BullMqQueueName]: {

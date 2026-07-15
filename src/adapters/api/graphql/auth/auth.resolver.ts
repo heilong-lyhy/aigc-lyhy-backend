@@ -14,9 +14,7 @@ import { AuthLoginInput } from './dto/auth-login.input';
  */
 @Resolver()
 export class AuthResolver {
-  constructor(
-    private readonly loginWithUserInfoUsecase: LoginWithUserInfoUsecase,
-  ) {}
+  constructor(private readonly loginWithUserInfoUsecase: LoginWithUserInfoUsecase) {}
 
   @Mutation(() => LoginResult)
   async login(@Args('input') input: AuthLoginInput): Promise<LoginResult> {
@@ -29,7 +27,8 @@ export class AuthResolver {
     };
 
     // 单一 Usecase 编排 login + fetchUserInfo
-    const { loginResult, userInfoView } = await this.loginWithUserInfoUsecase.loginWithPassword(authLoginModel);
+    const { loginResult, userInfoView } =
+      await this.loginWithUserInfoUsecase.loginWithPassword(authLoginModel);
 
     return {
       accessToken: loginResult.accessToken,

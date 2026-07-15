@@ -2618,4 +2618,90 @@ describe('Blog GraphQL (e2e)', () => {
       expect(body.errors![0].extensions?.errorCode).toBe('BLOG_POST_NOT_FOUND');
     });
   });
+
+  // ─── 权限错误路径 ───
+
+  describe('权限错误路径（FORBIDDEN）', () => {
+    let guestToken: string;
+
+    beforeAll(async () => {
+      await seedTestAccounts({ dataSource, includeKeys: ['guest'] });
+      guestToken = await login({
+        app,
+        loginName: testAccountsConfig.guest.loginName,
+        loginPassword: testAccountsConfig.guest.loginPassword,
+      });
+    });
+
+    it('普通用户创建文章应返回 FORBIDDEN', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation CreateBlogPost($input: CreateBlogPostInput!) {
+            createBlogPost(input: $input) { id }
+          }
+        `,
+        variables: {
+          input: { title: '非法文章', slug: 'forbidden-post', content: '内容' },
+        },
+        token: guestToken,
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('FORBIDDEN');
+    });
+
+    it('普通用户删除文章应返回 FORBIDDEN', async () => {
+      const res = await postGql({
+        app,
+        query: `mutation DeleteBlogPost($id: Int!) { deleteBlogPost(id: $id) }`,
+        variables: { id: 1 },
+        token: guestToken,
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('FORBIDDEN');
+    });
+
+    it('普通用户审核评论应返回 FORBIDDEN', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          mutation UpdateBlogCommentStatus($input: UpdateBlogCommentStatusInput!) {
+            updateBlogCommentStatus(input: $input) { id }
+          }
+        `,
+        variables: { input: { id: 1, status: 'APPROVED' } },
+        token: guestToken,
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('FORBIDDEN');
+    });
+
+    it('普通用户查询管理端文章列表应返回 FORBIDDEN', async () => {
+      const res = await postGql({
+        app,
+        query: `
+          query BlogPosts { blogPosts(page: 1, limit: 10) { list { id } total } }
+        `,
+        token: guestToken,
+      });
+
+      const body = res.body as {
+        errors?: Array<{ message: string; extensions?: { code?: string } }>;
+      };
+      expect(body.errors).toBeDefined();
+      expect(body.errors![0].extensions?.code).toBe('FORBIDDEN');
+    });
+  });
 });

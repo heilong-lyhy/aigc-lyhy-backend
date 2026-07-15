@@ -1,6 +1,6 @@
 // src/infrastructure/middleware/format-response.middleware.ts
 
-import { ApiResponse, ShowType } from '@app-types/response.types';
+import { ApiResponse, ShowType } from './response.types';
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { GraphQLError } from 'graphql';

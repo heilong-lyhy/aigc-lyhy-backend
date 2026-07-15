@@ -1,6 +1,4 @@
-// src/types/reference/reference-report.types.ts
-
-export const REFERENCE_REPORT_CAPABILITY_ID = 'reference.report' as const;
+// src/usecases/reference/reference-report.types.ts
 
 export interface ReferenceReportItem {
   readonly groupKey: string;

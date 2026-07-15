@@ -1,10 +1,8 @@
 // src/modules/blog/queries/blog-file.query.service.ts
 // 文件读侧 QueryService：读取、输出规范化、分页编排，不写、不开事务
 
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { getTypeOrmEntityManager as getTransactionEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { BlogFileType } from '@app-types/models/blog.types';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';

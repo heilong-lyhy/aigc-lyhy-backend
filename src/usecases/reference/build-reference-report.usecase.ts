@@ -1,9 +1,6 @@
 import type { CapabilityResult } from '@app-types/common/capability.types';
 import type { ReferenceProfileSummary } from '@app-types/reference/reference-profile.types';
-import type {
-  ReferenceReportItem,
-  ReferenceReportView,
-} from '@app-types/reference/reference-report.types';
+import type { ReferenceReportItem, ReferenceReportView } from './reference-report.types';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   REFERENCE_PROFILE_CLIENT,

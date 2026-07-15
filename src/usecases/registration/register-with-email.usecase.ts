@@ -10,10 +10,7 @@ import {
   TRANSACTION_RUNNER,
   type TransactionRunner,
 } from '@src/usecases/common/ports/transaction-runner.contract';
-import {
-  RegisterWithEmailParams,
-  RegisterWithEmailResult,
-} from '@app-types/models/registration.types';
+import { RegisterWithEmailParams, RegisterWithEmailResult } from './registration.types';
 import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { PinoLogger } from 'nestjs-pino';
 import {

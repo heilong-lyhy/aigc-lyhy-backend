@@ -5,9 +5,11 @@ import type { AvatarGenerator } from '@modules/blog/contracts/avatar-generator.c
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 
+const DEFAULT_GRAVATAR_BASE_URL = 'https://www.gravatar.com/avatar';
+
 @Injectable()
 export class GravatarAvatarGeneratorAdapter implements AvatarGenerator {
-  private readonly baseUrl = process.env.GRAVATAR_BASE_URL ?? 'https://www.gravatar.com/avatar';
+  private readonly baseUrl = process.env.GRAVATAR_BASE_URL ?? DEFAULT_GRAVATAR_BASE_URL;
 
   generateAvatar(email: string): Promise<string | null> {
     if (!email) return Promise.resolve(null);

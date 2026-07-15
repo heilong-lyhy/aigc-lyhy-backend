@@ -21,6 +21,7 @@ import {
   WeAppProviderContract,
   WeAppQrcodeImage,
 } from './contracts/third-party-provider.contract';
+import { IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID } from './third-party-auth.capability';
 import { ThirdPartyAuthEntity } from './third-party-auth.entity';
 
 /** 第三方认证提供者映射的依赖注入标识 */
@@ -63,7 +64,7 @@ export class ThirdPartyAuthService {
     authCredential: string;
     audience: AudienceTypeEnum;
   }): Promise<ThirdPartySession> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const adapter = this.adapters.get(provider);
     if (!adapter) {
       throw new DomainError(
@@ -96,7 +97,7 @@ export class ThirdPartyAuthService {
     accountId: number;
     input: BindThirdPartyInputModel;
   }): Promise<ThirdPartyAuthView> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const { accountId, input } = params;
 
     // 检查当前账户是否已绑定该平台
@@ -147,7 +148,7 @@ export class ThirdPartyAuthService {
     accountId: number;
     input: UnbindThirdPartyInputModel;
   }): Promise<boolean> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const { accountId, input } = params;
 
     const where = input?.id ? { id: input.id, accountId } : { accountId, provider: input.provider };
@@ -177,7 +178,7 @@ export class ThirdPartyAuthService {
     provider: ThirdPartyProviderEnum;
     session: ThirdPartySession;
   }): Promise<ThirdPartyAuthView> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const { accountId, provider, session } = params;
 
     // 检查当前账户是否已绑定该平台
@@ -236,7 +237,7 @@ export class ThirdPartyAuthService {
     phoneCode: string;
     audience: AudienceTypeEnum;
   }): Promise<PhoneNumberResult> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const accessToken = await this.weappProvider.getAccessToken({
       audience: params.audience,
     });
@@ -261,7 +262,7 @@ export class ThirdPartyAuthService {
     envVersion?: 'develop' | 'trial' | 'release';
     isHyaline?: boolean;
   }): Promise<WeAppQrcodeImage> {
-    this.capabilityStateReader.requireEnabled('identity.external-account');
+    this.capabilityStateReader.requireEnabled(IDENTITY_EXTERNAL_ACCOUNT_CAPABILITY_ID);
     const accessToken = await this.weappProvider.getAccessToken({
       audience: params.audience,
     });

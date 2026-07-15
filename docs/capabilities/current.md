@@ -51,3 +51,27 @@ Owns email admission, queue transport, sendmail delivery, Worker lifecycle, and 
 does not own the business outcome that requested an email. Async Task recording is optional
 observation: audit failure may reduce trace quality but must not rewrite an accepted or completed
 delivery result. A disabled Worker does not claim queued jobs.
+
+## `notification.email`
+
+Owns the notification-level email capability: admission of notification-originated email requests
+and delegation to a delivery provider. It is the parent capability for email-sending providers that
+serve the notification use case surface. It does not own queue transport or sendmail delivery itself.
+
+## `notification.email.sendmail`
+
+Owns sendmail-specific delivery binding under `notification.email`. It is switchable: when disabled,
+the sendmail provider does not claim jobs and notification emails remain undelivered until another
+provider is enabled. It requires `notification.email` as its parent capability.
+
+## `ai.provider-call-observation`
+
+Owns AI provider call recording, observation metadata, and call-record persistence. It is always-on
+and has no switchable gate. It belongs under `ai.execution` semantically but retains its own
+capability ID for independent health observation of the call-record subsystem.
+
+## `reference.profile`
+
+Owns reference profile query, group-based lookup, and profile summary projection. It is always-on
+and provides `ReferenceProfileQueryHandler` as a runtime contribution. Cross-capability consumers
+access it through the narrow-typed `ReferenceProfileClient` contract, not through a generic bus.

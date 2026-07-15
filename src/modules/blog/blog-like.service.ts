@@ -3,10 +3,8 @@
 // 职责：点赞/取消点赞（幂等 toggle）；不含跨聚合根编排
 // likeCount 变更由 usecase 通过 BlogPostService 编排，本服务不跨聚合写入 BlogPostEntity
 
-import {
-  getTransactionEntityManager,
-  type PersistenceTransactionContext,
-} from '@app-types/common/transaction.types';
+import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { getTypeOrmEntityManager as getTransactionEntityManager } from '@src/infrastructure/database/transaction/typeorm-persistence-transaction-context';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

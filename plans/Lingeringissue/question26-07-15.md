@@ -207,7 +207,7 @@
 
 ## 9. 通用 Capability dispatcher/bus 抽象仍保留
 
-- **状态**：[部分解决] — CapabilityModule 仍在 worker.module.ts 中使用，需创建治理计划决定保留/移除
+- **状态**：[部分解决] — CapabilityCommandBus/QueueTransport/QueueConsumer/EventPublisher/PermissionChecker 已移除，CAPABILITY 队列已移除；仅保留 CapabilityQueryBus（因 DispatcherReferenceProfileClient 消费方）
 - **严重度**：中高
 - **规范依据**：`docs/common/capability.rules.md` — 不建立通用 bus、dispatcher、envelope，不用它包装普通调用
 - **现状**：
@@ -273,7 +273,7 @@
 
 ## 12. types 层包含 framework-specific 和单流程类型
 
-- **状态**：[部分解决] — 需治理计划协调 import 路径变更和循环依赖风险
+- **状态**：[已解决] — response.types.ts 已移至 infrastructure/middleware/，registration.types.ts 已移至 usecases/registration/，bullmq.types.ts 常量已移至 infrastructure/bullmq/bullmq.constants.ts
 - **严重度**：中
 - **规范依据**：`docs/common/type.rules.md` — types 应为稳定无框架契约；单流程类型应 collocate
 - **现状**：
