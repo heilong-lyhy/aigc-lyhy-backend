@@ -7,8 +7,7 @@ import { BlogCommentStatus } from '@app-types/models/blog.types';
 import type { PaginatedResult } from '@core/pagination/pagination.types';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-// eslint-disable-next-line local-architecture/no-queryservice-to-mixed-service-imports -- PaginationService 是只读分页助手（委托 IPaginator 端口），非混合读写服务
-import { PaginationService } from '@modules/common/pagination.service';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 import { Repository } from 'typeorm';
 import type { BlogCommentView } from '../blog.types';
 import { BlogCommentEntity } from '../entities/blog-comment.entity';
@@ -42,7 +41,7 @@ export class BlogCommentQueryService {
   constructor(
     @InjectRepository(BlogCommentEntity)
     private readonly commentRepo: Repository<BlogCommentEntity>,
-    private readonly paginationService: PaginationService,
+    private readonly paginationService: PaginationQueryService,
   ) {}
 
   async findCommentById(

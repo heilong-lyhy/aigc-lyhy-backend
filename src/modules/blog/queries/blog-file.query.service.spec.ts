@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BlogFileType } from '@app-types/models/blog.types';
 import { BlogFileEntity } from '../entities/blog-file.entity';
 import { BlogFileQueryService } from './blog-file.query.service';
-import { PaginationService } from '@modules/common/pagination.service';
+import { PaginationQueryService } from '@modules/common/pagination.query.service';
 
 describe('BlogFileQueryService', () => {
   let service: BlogFileQueryService;
@@ -36,7 +36,7 @@ describe('BlogFileQueryService', () => {
       providers: [
         BlogFileQueryService,
         { provide: getRepositoryToken(BlogFileEntity), useValue: mockFileRepo },
-        { provide: PaginationService, useValue: mockPaginationService },
+        { provide: PaginationQueryService, useValue: mockPaginationService },
       ],
     }).compile();
 

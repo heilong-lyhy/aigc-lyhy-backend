@@ -1,5 +1,5 @@
-// src/modules/common/pagination.service.ts
-// 同域可复用的“读”服务封装（依赖 core 端口），承接 DI
+// src/modules/common/pagination.query.service.ts
+// 同域可复用的"读"服务封装（依赖 core 端口），承接 DI
 
 import { DomainError, PAGINATION_ERROR } from '@core/common/errors/domain-error';
 import {
@@ -16,10 +16,10 @@ import type {
 import { ensureTieBreaker, type ISortResolver } from '@core/sort/sort.contract';
 import { Inject, Injectable } from '@nestjs/common';
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
-import { PAGINATION_TOKENS } from './tokens/pagination.tokens';
+import { PAGINATION_TOKENS } from '@core/pagination/pagination.tokens';
 
 @Injectable()
-export class PaginationService {
+export class PaginationQueryService {
   constructor(
     @Inject(PAGINATION_TOKENS.PAGINATOR)
     private readonly paginator: IPaginator,

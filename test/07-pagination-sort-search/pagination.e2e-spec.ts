@@ -16,8 +16,8 @@ import { DatabaseModule } from '@src/infrastructure/database/database.module';
 import { AccountEntity } from '@src/modules/account/base/entities/account.entity';
 import { UserInfoEntity } from '@src/modules/account/base/entities/user-info.entity';
 import { PaginationModule } from '@src/modules/common/pagination.module';
-import { PaginationService } from '@src/modules/common/pagination.service';
-import { PAGINATION_TOKENS } from '@src/modules/common/tokens/pagination.tokens';
+import { PaginationQueryService } from '@src/modules/common/pagination.query.service';
+import { PAGINATION_TOKENS } from '@core/pagination/pagination.tokens';
 import { VerificationRecordEntity } from '@src/modules/verification-record/verification-record.entity';
 import { randomBytes } from 'crypto';
 import { DataSource, In, Like } from 'typeorm';
@@ -25,7 +25,7 @@ import { DataSource, In, Like } from 'typeorm';
 describe('分页工具 (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
-  let paginationService: PaginationService;
+  let paginationService: PaginationQueryService;
   let seededAccountIds: number[] = [];
 
   const accountPrefix = 'PAG_CASE_';
@@ -72,7 +72,7 @@ describe('分页工具 (e2e)', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
-    paginationService = app.get(PaginationService);
+    paginationService = app.get(PaginationQueryService);
 
     await seedAccounts(30, accountPrefix);
   });
