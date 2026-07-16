@@ -78,14 +78,14 @@ export class FetchUserInfoUsecase {
     // 1. 获取登录安全快照
     const loginSnapshot = await this.accountQueryService.getLoginBootstrapSnapshot({ accountId });
 
-    // 2. 执行安全验证（metaDigest 与 accessGroup 比对）
-    const securityResult = this.accountSecurityService.checkAndHandleAccountSecurity({
+    // 2. 执行安全验证（纯校验，不做写操作）
+    const securityResult = this.accountSecurityService.validateAccessGroupConsistency({
       id: loginSnapshot.account.id,
       userInfo: loginSnapshot.userInfo,
     });
 
-    // 3. 如果账号被暂停，抛出错误
-    if (securityResult.wasSuspended) {
+    // 3. 如果账号应被暂停，抛出错误（暂停写入由上层 Usecase 负责）
+    if (securityResult.shouldSuspend) {
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_SUSPENDED, '账户因安全问题已被暂停');
     }
 
@@ -94,7 +94,11 @@ export class FetchUserInfoUsecase {
 
     return {
       userInfoView,
-      securityResult,
+      securityResult: {
+        isValid: securityResult.isValid,
+        wasSuspended: false,
+        realAccessGroup: securityResult.realAccessGroup,
+      },
     };
   }
 }

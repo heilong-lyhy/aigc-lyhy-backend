@@ -4,13 +4,19 @@
 
 import type { AvatarGenerator } from '@modules/blog/contracts/avatar-generator.contract';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 
 const DEFAULT_CRAVATAR_BASE_URL = 'https://cravatar.cn/avatar';
 
 @Injectable()
 export class CravatarAvatarGeneratorAdapter implements AvatarGenerator {
-  private readonly baseUrl = process.env.CRAVATAR_BASE_URL ?? DEFAULT_CRAVATAR_BASE_URL;
+  private readonly baseUrl: string;
+
+  constructor(private readonly configService: ConfigService) {
+    this.baseUrl =
+      this.configService.get<string>('CRAVATAR_BASE_URL')?.trim() || DEFAULT_CRAVATAR_BASE_URL;
+  }
 
   generateAvatar(email: string): Promise<string | null> {
     if (!email) return Promise.resolve(null);

@@ -111,9 +111,8 @@ Source of truth: Current resolver/usecase/type code remains executable truth; th
 - 前端应先通过验证记录读取能力预读 token 状态。
 - mutation 调用 `ConsumeVerificationFlowUsecase`。
 - 成功返回 `success: true` 与 `accountId`。
-- 失败返回 `success: false` 与失败消息。
-
-后续若收敛为统一 GraphQL error contract，应单独更新本 current 文档。
+- 失败抛出 GraphQL error，遵循 `docs/api/graphql-error-contract-current.md` 全局错误契约。
+- 不再返回 `success: false` 结构化响应，避免绕过全局错误过滤器。
 
 ## 禁止项
 

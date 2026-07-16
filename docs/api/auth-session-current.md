@@ -25,7 +25,7 @@ Global error contract: Every GraphQL interface must also follow docs/api/graphql
 
 - `login(input: AuthLoginInput): LoginResult`
   - Resolver：`src/adapters/api/graphql/auth/auth.resolver.ts`
-  - Usecase：`LoginWithPasswordUsecase`
+  - Usecase：`LoginWithUserInfoUsecase`（编排 login + fetchUserInfo + security check）
 
 失败通过 GraphQL error contract 表达，不通过 `LoginResult.success` 表达。
 

@@ -2,7 +2,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
 import { CapabilityRuntimeContributionProvider } from '@src/infrastructure/capability/capability.decorators';
-import { RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID } from '@src/modules/common/email-capability/email-capability.constants';
+import {
+  NOTIFICATION_EMAIL_CAPABILITY_ID,
+  RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID,
+} from '@src/modules/common/email-capability/email-capability.constants';
 import {
   CAPABILITY_STATE_READER,
   type CapabilityStateReader,
@@ -37,6 +40,8 @@ export class EmailDeliveryService {
    * 发送邮件，使用本机 sendmail 交给 Postfix 转发。
    */
   async send(input: SendEmailInput): Promise<SendEmailResult> {
+    // 禁用 notification.email 后 Worker 不应认领/执行邮件任务
+    this.capabilityStateReader.requireEnabled(NOTIFICATION_EMAIL_CAPABILITY_ID);
     this.capabilityStateReader.requireEnabled(RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID);
     const providerMessageId = `sendmail-${randomUUID()}`;
     const body = input.html ?? input.text ?? '';

@@ -3,7 +3,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
 import { BullMqProducerGateway } from '@src/infrastructure/bullmq/producer.gateway';
 import { CapabilityRuntimeContributionProvider } from '@src/infrastructure/capability/capability.decorators';
-import { RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID } from '@src/modules/common/email-capability/email-capability.constants';
+import {
+  NOTIFICATION_EMAIL_CAPABILITY_ID,
+  RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID,
+} from '@src/modules/common/email-capability/email-capability.constants';
 import {
   CAPABILITY_STATE_READER,
   type CapabilityStateReader,
@@ -31,6 +34,9 @@ export class EmailQueueService {
   }
 
   async enqueueSend(input: QueueEmailInput): Promise<QueueEmailResult> {
+    // notification.email 是通知级邮件门控：禁用后不应再入队通知邮件
+    this.capabilityStateReader.requireEnabled(NOTIFICATION_EMAIL_CAPABILITY_ID);
+    // runtime.email-delivery 是投递基础设施门控：禁用后投递机制不可用
     this.capabilityStateReader.requireEnabled(RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID);
     const job = await this.producer.enqueue({
       queueName: BULLMQ_QUEUES.EMAIL,

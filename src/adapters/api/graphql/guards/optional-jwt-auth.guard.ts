@@ -47,13 +47,13 @@ export class OptionalJwtAuthGuard extends AuthGuard('jwt') implements CanActivat
   ): TUser | null {
     // 显式认证错误（err 存在）
     if (err) {
-      throw err;
+      throw new UnauthorizedException('认证失败');
     }
     // Passport 通过 info 传递的认证失败（token 过期/签名错误等）
     // 当 info 是 Error 实例或包含 name 字段（如 TokenExpiredError、JsonWebTokenError）时，
     // 表示用户携带了无效 token，应拒绝而非放行为匿名
     if (info instanceof Error) {
-      throw info;
+      throw new UnauthorizedException(`认证失败: ${info.message}`);
     }
     if (typeof info === 'object' && info !== null && 'name' in info) {
       const infoObj = info as { name: string };

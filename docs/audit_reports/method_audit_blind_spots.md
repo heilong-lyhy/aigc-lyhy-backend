@@ -1,7 +1,9 @@
 # 方法体语义审计盲区分析报告
 
 > 生成时间：2026-07-15
+> 更新时间：2026-07-16
 > 触发原因：首轮架构审计仅使用 import 级 grep + ESLint 扫描，遗漏了 6 类明确架构/契约偏差。本报告系统性梳理所有"平常不会检查但可能导致错误遗漏"的审计盲区，供后续全局检查计划参考。
+> 2026-07-16 更新：Codex 二轮审计发现首轮修复后仍有 8 类遗漏，新增 B10–B14 盲区类别，并更新 B1/B3/B5/B6/B8 的遗漏分析。
 
 ---
 
@@ -18,6 +20,11 @@
 | B7 | 死代码/重复定义 | modules 层 WeAppProvider 死代码、双 ThirdPartyProvider 接口 | 未做 modules 层框架 import 检查；未做同域接口重复检测 | 检查 modules 层是否 import HttpService 等 infrastructure 框架；检查同域 interfaces/ vs contracts/ 重复定义 |
 | B8 | 硬编码配置值 | 微信 API URL、timeout、Cravatar URL 硬编码 | 未 grep 硬编码 URL 和 magic number | grep infrastructure 层中的 URL 字面量和数值 timeout |
 | B9 | 单测覆盖盲区 | GraphQL filter 单测未覆盖 401/403/400→INTERNAL_SERVER_ERROR 分支 | 未对照实现分支检查单测覆盖 | 对照 filter 实现的条件分支，检查单测是否覆盖每个分支 |
+| B10 | Capability 运行时门控实效 | notification.email Anchor 已安装但入队/发送只检查 runtime.email-delivery，禁用 notification.email 无效 | 只检查 Anchor 是否声明，未追踪实际运行时 gate 是否检查正确的 CapabilityId | 追踪每个 Capability Anchor 对应的运行时 requireEnabled 调用，确认 gate 检查的 ID 与 Anchor 一致 |
+| B11 | Usecase→Usecase 链式多跳 | LoginWithUserInfoUsecase→LoginWithPasswordUsecase→ExecuteLoginFlowUsecase（3 层）；第三方链达 4 层 | B3 只检查 Resolver→Usecase 编排，未追踪 Usecase→Usecase 调用链深度 | 递归追踪每个 Usecase 内的 Usecase 调用，计算调用链深度，≥2 层即违反 usecase.rules.md |
+| B12 | modules(service) 业务决策与写语义 | AccountSecurityService.checkAndHandleAccountSecurity() 做暂停决策 + fire-and-forget 写入 | 只检查 modules 是否 import infrastructure，未检查 modules(service) 是否承担了本应由 Usecase 负责的业务决策和写编排 | 检查 modules(service) 的公开方法是否包含条件性写操作、业务决策逻辑或 fire-and-forget 异步写入 |
+| B13 | 文档-代码漂移 | auth-session-current.md 仍写 LoginWithPasswordUsecase 为入口（实际已改为 LoginWithUserInfoUsecase）；account-write-current.md 仍写 success:false（代码已改为抛 GraphQL error） | 审计未包含文档-代码一致性检查规程 | 每次代码修改后对照对应的 `*-current.md` 文档验证入口路径、返回格式、错误分类是否一致 |
+| B14 | 修复验证不完整 | B1 修复 Guard 后扔原始 Error 仍被 Filter 映射为 500；B5 删了 bus 但 envelope/handler 抽象仍大量使用；B8 硬编码 URL 仍未迁出；B6 field-encryption 常量仍残留 | 审计发现问题后只做局部修复，未沿因果链验证修复是否真正解决根因 | 修复后沿异常传播路径端到端验证；修复后检查相关抽象层是否还有残留；修复后 grep 确认硬编码值已消失 |
 
 ---
 
@@ -167,6 +174,99 @@
 2. 扫描对应 `*.spec.ts`，确认每个分支是否有测试用例
 3. 对未覆盖的关键分支（尤其是错误分类相关），标记为单测盲区
 
+### B10：Capability 运行时门控实效
+
+**遗漏场景**：
+- `notification.email` Anchor 已在 `email-capability.providers.ts` 安装，但 `EmailQueueService.enqueueSend()` 只检查 `runtime.email-delivery`，`EmailDeliveryService` 也只检查 `runtime.email-delivery`
+- 禁用 `notification.email` 不会阻止任何入队或发送行为
+- `notification.email.sendmail` 未注册进任何 Module，Worker 激活仍检查 `runtime.email-delivery`，与文档"禁用后不认领任务"不一致
+
+**为什么 import 级 grep 检测不到**：
+- B5 只检查了 Anchor 是否声明、queue-registry 是否有废弃队列
+- 未追踪实际运行时 `requireEnabled()` 调用检查的是哪个 CapabilityId
+- Anchor 存在不等于行为被正确门控
+
+**检查规程**：
+1. 对每个 switchable Capability Anchor，grep 其 `requireEnabled` 调用位置
+2. 验证 `requireEnabled` 传入的 CapabilityId 是否与 Anchor 的 capabilityId 一致
+3. 对父子 Capability 关系，验证子 Capability 的运行时行为是否受父 Capability 状态控制
+4. 对照 `docs/capabilities/current.md` 验证每个 Capability 的行为描述与实际 gate 一致
+
+### B11：Usecase→Usecase 链式多跳
+
+**遗漏场景**：
+- 密码链：`LoginWithUserInfoUsecase` → `LoginWithPasswordUsecase` → `ExecuteLoginFlowUsecase`（3 层）
+- 第三方链：`LoginWithUserInfoUsecase` → `LoginWithThirdPartyUsecase` → `LoginByAccountIdUsecase` → `ExecuteLoginFlowUsecase`（4 层）
+- 直接违反 `docs/common/usecase.rules.md:51` 的"仅允许一层、禁止 A→B→C"
+
+**为什么 B3 没覆盖**：
+- B3 只检查了 Resolver→Usecase 的编排数量
+- 未将检查延伸至 Usecase→Usecase→Usecase 的调用链深度
+- usecase.rules.md 明确禁止链式多跳，但审计规程未包含此检查
+
+**检查规程**：
+1. 扫描 `src/usecases/**/*.usecase.ts`，列出每个 Usecase 的构造函数中注入的其他 Usecase
+2. 递归构建 Usecase 依赖图
+3. 对每条调用路径，计算 Usecase→Usecase 的链式深度
+4. 深度 ≥2 的链标记为违规，应按规则"新增上层 Usecase 统一编排，直接调用底层 service"
+
+### B12：modules(service) 业务决策与写语义
+
+**遗漏场景**：
+- `AccountSecurityService.checkAndHandleAccountSecurity()` 是 modules(service) 层的公开方法
+- 内部做业务决策（检测到不一致→决定暂停账户）
+- 使用 fire-and-forget 方式执行 `suspendAccount()` 数据库更新
+- 调用方（`LoginWithUserInfoUsecase` 和 `ExecuteLoginFlowUsecase`）无法等待写入完成、无法纳入事务
+- 写失败仅记日志，不向上传播
+
+**为什么 import 级 grep 检测不到**：
+- B3/B4 只关注 Resolver 和 Usecase 层的编排/异常处理
+- modules(service) 的 import 方向合法（可依赖 infrastructure/core）
+- 问题在于 modules(service) 承担了本应由 Usecase 负责的业务决策和写编排语义
+
+**检查规程**：
+1. 扫描 `src/modules/**/*.service.ts`，检查公开方法是否包含条件性写操作
+2. 检查是否有 fire-and-forget 异步写入（`.catch()` 不向上传播错误）
+3. 验证写操作是否应提升到 Usecase 层编排
+4. 对照 `docs/common/usecase.rules.md` 验证"写语义一律在 Usecase 内完成"
+
+### B13：文档-代码漂移
+
+**遗漏场景**：
+- `docs/api/auth-session-current.md:24` 仍写 Usecase 入口为 `LoginWithPasswordUsecase`，实际入口已改为 `LoginWithUserInfoUsecase`
+- `docs/api/account-write-current.md:110` 仍规定密码重置失败返回 `success:false`，当前代码已改为抛 GraphQL error
+- `npm run capability:docs:check` 失败，生成文档缺少 `notification.email`
+
+**为什么 import 级 grep 检测不到**：
+- 前版审计完全没有文档-代码一致性检查规程
+- 文档漂移是架构偏离的隐性载体——开发者以文档为准做决策时可能引入更多偏差
+
+**检查规程**：
+1. 每次代码修改后，grep 对应 `*-current.md` 文档中引用的类名/方法名是否仍存在于代码
+2. 对照文档描述的返回格式与实际代码实现是否一致
+3. 运行 `npm run capability:docs:check`（如有）确认文档与代码拓扑一致
+4. 按 `rule-precedence.rules.md` 判断文档冲突时的优先级：专项契约在其范围内优先
+
+### B14：修复验证不完整
+
+**遗漏场景**：
+- B1 修复了 Guard 的 `info` 参数，但扔出的原始 Error 被 Filter 的 `buildGraphQLErrorFromUnknown` 路径捕获，映射为 `INTERNAL_SERVER_ERROR`，仍未达到 `UNAUTHENTICATED` 契约
+- B5 删除了通用 Capability bus contract，但 `capability.types.ts` 中的 Envelope/Handler/Operation 抽象仍大量残留并被实际使用；`capability.decorators.ts` 中的通用元数据注册器仍保留
+- B8 标记了硬编码 URL，但修复后 `cravatar-avatar-generator.adapter.ts` 仍直接读 `process.env` 并保留硬编码 fallback URL；`weapp-http.provider.ts` 仍硬编码 API URL 和超时
+- B6 标记了 field-encryption 的 reflect-metadata 副作用，但修复后残留未使用的运行时 metadata 常量，且与 infrastructure 定义重复
+
+**根本原因**：
+- 审计发现问题后只做了局部修复，未沿因果链端到端验证修复效果
+- 例如：修复 Guard 扔 Error→未验证 Filter 如何处理非 HttpException 非 DomainError 的原始 Error
+- 例如：删除 bus contract→未检查 capability.types.ts 中是否还有通用 envelope/handler 抽象被使用
+- 例如：标记硬编码→未验证修复后 grep 确认硬编码值已消失
+
+**检查规程**：
+1. 修复后沿异常传播路径端到端验证：从 Guard 抛出→Filter 接收→最终 GraphQL 响应
+2. 修复后检查相关抽象层是否还有残留使用：grep 被删除抽象的消费者
+3. 修复后 grep 确认硬编码值已消失：`grep -rn "https\?://" src/infrastructure/` 应返回空
+4. 对每个修复项，写一个"验证条件"，修复完成时必须确认验证条件通过
+
 ---
 
 ## 三、审计策略修正建议
@@ -177,17 +277,22 @@
 ESLint boundaries + grep import 方向 → 仅覆盖分层依赖方向
 ```
 
-### 修正后策略（import 级 + 方法体语义级）
+### 修正后策略（import 级 + 方法体语义级 + 因果链验证级）
 
 ```
 Step 1: ESLint boundaries + grep import 方向（分层依赖方向）
 Step 2: 方法返回类型追踪（跨层类型隐式传播，B2）
-Step 3: Guard/Filter 条件分支审查（运行时行为语义，B1）
+Step 3: Guard/Filter 条件分支审查 + 异常传播端到端验证（运行时行为语义，B1 + B14）
 Step 4: Resolver 方法体编排/授权审查（B3 + B4）
-Step 5: 架构决策一致性对照（B5）
-Step 6: types 层内容语义审查（B6）
-Step 7: 死代码/重复定义/硬编码扫描（B7 + B8）
-Step 8: 单测覆盖盲区检查（B9）
+Step 5: Usecase→Usecase 调用链深度追踪（B11）
+Step 6: modules(service) 业务决策/写语义审查（B12）
+Step 7: Capability 运行时门控实效验证（B10）
+Step 8: 架构决策一致性对照（B5）+ 通用抽象残留检查
+Step 9: types 层内容语义审查（B6）
+Step 10: 死代码/重复定义/硬编码扫描 + 修复后验证（B7 + B8 + B14）
+Step 11: 文档-代码一致性检查（B13）
+Step 12: 单测覆盖盲区检查（B9）
+Step 13: 修复验证——沿因果链端到端确认每个修复项（B14）
 ```
 
 ---
@@ -205,3 +310,8 @@ Step 8: 单测覆盖盲区检查（B9）
 | B7 | `grep -rn "HttpService" src/modules/`；同域 interfaces/ vs contracts/ 对比 |
 | B8 | `grep -rn "https\?://" src/infrastructure/` + `grep -rn "timeout:" src/infrastructure/` |
 | B9 | 对照实现分支检查 `*.spec.ts` 覆盖 |
+| B10 | 对每个 switchable Capability，grep `requireEnabled` 确认 gate ID 与 Anchor 一致 |
+| B11 | 递归追踪 `src/usecases/**/*.usecase.ts` 构造函数注入的 Usecase 依赖，计算链深度 |
+| B12 | grep `src/modules/**/*.service.ts` 中的 fire-and-forget（`.catch(` 无 rethrow）和条件性写操作 |
+| B13 | 对每个 `*-current.md`，grep 文档中引用的类名/方法名是否仍存在于代码 |
+| B14 | 修复后沿异常传播路径端到端验证；grep 确认残留/硬编码已消失 |

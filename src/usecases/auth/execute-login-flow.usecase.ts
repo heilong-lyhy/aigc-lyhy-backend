@@ -93,11 +93,11 @@ export class ExecuteLoginFlowUsecase {
   private async fetchUserData(accountId: number): Promise<LoginUserDataCollection> {
     const loginSnapshot = await this.accountQueryService.getLoginBootstrapSnapshot({ accountId });
 
-    const securityResult = this.accountSecurityService.checkAndHandleAccountSecurity({
+    const securityResult = this.accountSecurityService.validateAccessGroupConsistency({
       id: loginSnapshot.account.id,
       userInfo: loginSnapshot.userInfo,
     });
-    if (securityResult.wasSuspended) {
+    if (securityResult.shouldSuspend) {
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_SUSPENDED, '账户因安全问题已被暂停');
     }
 

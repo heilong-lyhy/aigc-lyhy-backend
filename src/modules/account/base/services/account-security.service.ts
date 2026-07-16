@@ -130,6 +130,7 @@ export class AccountSecurityService {
 
   /**
    * 暂停账号
+   * 仅供 Usecase 层调用——写语义由 Usecase 负责编排
    * @param accountId 账号 ID
    * @param reason 暂停原因
    * @returns 是否成功暂停
@@ -155,52 +156,5 @@ export class AccountSecurityService {
       this.logger.error({ err: error, accountId }, `暂停账号 ${accountId} 失败`);
       return false;
     }
-  }
-
-  /**
-   * 检查并处理账号安全性
-   * @param account 账号实体（包含 userInfo）
-   * @returns 处理结果
-   */
-  checkAndHandleAccountSecurity(account: AccountSecuritySubjectSnapshot): {
-    isValid: boolean;
-    wasSuspended: boolean;
-    realAccessGroup?: IdentityTypeEnum[];
-  } {
-    const validationResult = this.validateAccessGroupConsistency(account);
-
-    if (!validationResult.isValid && validationResult.shouldSuspend) {
-      // 立即记录安全事件，不等待数据库操作
-      this.logSecurityEvent({
-        accountId: account.id,
-        eventType: 'SECURITY_BREACH_DETECTED',
-        details: {
-          reason: '检测到访问组不一致 - 潜在安全威胁',
-          detectedAt: new Date().toISOString(),
-          immediateBlock: true,
-        },
-      });
-
-      // 异步尝试暂停账号，但不等待结果
-      this.suspendAccount(account.id, '检测到访问组不一致 - 潜在安全威胁').catch((error: Error) => {
-        this.logger.error(
-          { err: error, accountId: account.id },
-          `在数据库中暂停账号 ${account.id} 失败，但访问仍被阻止`,
-        );
-      });
-
-      // 无论数据库操作是否成功，都立即阻断访问
-      return {
-        isValid: false,
-        wasSuspended: true, // 强制返回 true，确保流程被阻断
-        realAccessGroup: validationResult.realAccessGroup,
-      };
-    }
-
-    return {
-      isValid: validationResult.isValid,
-      wasSuspended: false,
-      realAccessGroup: validationResult.realAccessGroup,
-    };
   }
 }
