@@ -1,22 +1,18 @@
 // src/infrastructure/blog-storage/cravatar-avatar-generator.adapter.ts
 // AvatarGenerator boundary contract 的实现：基于 Cravatar（cravatar.cn）的头像 URL 拼装
-// 国内访问稳定，替代 Gravatar
 
 import type { AvatarGenerator } from '@modules/blog/contracts/avatar-generator.contract';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 
-const DEFAULT_CRAVATAR_BASE_URL = 'https://cravatar.cn/avatar';
+export const CRAVATAR_BASE_URL_TOKEN = Symbol('CRAVATAR_BASE_URL');
 
 @Injectable()
 export class CravatarAvatarGeneratorAdapter implements AvatarGenerator {
-  private readonly baseUrl: string;
-
-  constructor(private readonly configService: ConfigService) {
-    this.baseUrl =
-      this.configService.get<string>('CRAVATAR_BASE_URL')?.trim() || DEFAULT_CRAVATAR_BASE_URL;
-  }
+  constructor(
+    @Inject(CRAVATAR_BASE_URL_TOKEN)
+    private readonly baseUrl: string,
+  ) {}
 
   generateAvatar(email: string): Promise<string | null> {
     if (!email) return Promise.resolve(null);

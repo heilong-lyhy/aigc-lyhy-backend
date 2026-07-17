@@ -98,6 +98,11 @@ export class ExecuteLoginFlowUsecase {
       userInfo: loginSnapshot.userInfo,
     });
     if (securityResult.shouldSuspend) {
+      // 写语义由 Usecase 负责：先持久化暂停状态，再抛出领域错误
+      await this.accountSecurityService.suspendAccount(
+        loginSnapshot.account.id,
+        '登录时检测到访问组不一致，自动暂停',
+      );
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_SUSPENDED, '账户因安全问题已被暂停');
     }
 

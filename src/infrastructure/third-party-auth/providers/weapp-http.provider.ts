@@ -21,8 +21,6 @@ import { WEAPP_PROVIDER_OPTIONS, type WeAppProviderOptions } from '../weapp-prov
  * 微信小程序认证提供者
  * 实现微信小程序 js_code 换取 session_key 和 openid 的认证流程
  */
-const DEFAULT_WEAPP_API_BASE_URL = 'https://api.weixin.qq.com';
-const DEFAULT_REQUEST_TIMEOUT = 10000;
 
 @Injectable()
 export class WeAppHttpProvider implements WeAppProviderContract {
@@ -46,8 +44,9 @@ export class WeAppHttpProvider implements WeAppProviderContract {
     private readonly options: WeAppProviderOptions,
     private readonly logger: PinoLogger,
   ) {
-    this.apiBaseUrl = options.apiBaseUrl ?? DEFAULT_WEAPP_API_BASE_URL;
-    this.requestTimeout = options.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT;
+    // 默认值由 Module factory 提供，此处做防御性断言
+    this.apiBaseUrl = this.options.apiBaseUrl ?? 'https://api.weixin.qq.com';
+    this.requestTimeout = this.options.requestTimeout ?? 10000;
   }
 
   /**

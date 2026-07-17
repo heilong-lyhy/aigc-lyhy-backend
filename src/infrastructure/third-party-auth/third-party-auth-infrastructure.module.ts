@@ -15,8 +15,10 @@ import { WEAPP_PROVIDER_OPTIONS, type WeAppProviderOptions } from './weapp-provi
       useFactory: (configService: ConfigService): WeAppProviderOptions => ({
         appId: configService.get<string>('WECHAT_APP_ID')?.trim() || undefined,
         appSecret: configService.get<string>('WECHAT_APP_SECRET')?.trim() || undefined,
-        apiBaseUrl: configService.get<string>('WECHAT_API_BASE_URL')?.trim() || undefined,
-        requestTimeout: configService.get<number>('WECHAT_REQUEST_TIMEOUT') ?? undefined,
+        apiBaseUrl:
+          configService.get<string>('WECHAT_API_BASE_URL')?.trim() || 'https://api.weixin.qq.com',
+        requestTimeout:
+          configService.get<number>('WECHAT_REQUEST_TIMEOUT') ?? 10000,
       }),
     },
     WeAppHttpProvider,

@@ -315,3 +315,4 @@ Step 13: 修复验证——沿因果链端到端确认每个修复项（B14）
 | B12 | grep `src/modules/**/*.service.ts` 中的 fire-and-forget（`.catch(` 无 rethrow）和条件性写操作 |
 | B13 | 对每个 `*-current.md`，grep 文档中引用的类名/方法名是否仍存在于代码 |
 | B14 | 修复后沿异常传播路径端到端验证；grep 确认残留/硬编码已消失 |
+| B15 | 修复表面化——只改了入口路径，未删除违规实现 + 未追踪完整因果链 | 5 项"已修复"问题被 Codex 证实未真正修复：(1) sendmail Anchor 未注册到 Module；(2) 旧多跳 Usecase 仍注册为生产 provider；(3) shouldSuspend 只抛错误未写库；(4) 硬编码默认值仍留在执行类；(5) Gravatar adapter 仍读 process.env | 修复时只关注"新入口是否绕开问题"，未验证"旧违规路径是否仍可达"；修复时只改了最明显的症状，未追踪问题是否在整个因果链上被彻底消除 | 修复后必须：(1) grep 确认旧违规实现无生产调用者后删除；(2) 验证修复不仅解决表面症状，还沿因果链确认根因被消除；(3) 检查是否遗漏了同族问题（如注册了父 Capability gate 但子 Capability Anchor 仍未注册） |

@@ -57,7 +57,7 @@ export class LoginWithUserInfoUsecase {
 
   /** 密码登录 + 获取用户信息 */
   async loginWithPassword(params: AuthLoginModel): Promise<LoginWithUserInfoResult> {
-    // 1. 验证凭据（直接调用 service，不通过 LoginWithPasswordUsecase 中转）
+    // 1. 验证凭据
     const account = await this.validateLoginCredentials({
       loginName: params.loginName,
       loginPassword: params.loginPassword,
@@ -207,7 +207,6 @@ export class LoginWithUserInfoUsecase {
 
   /**
    * 解析第三方凭证
-   * 直接使用 ThirdPartyAuthService，不通过 LoginWithThirdPartyUsecase 中转
    */
   private async resolveThirdPartyIdentity(params: ThirdPartyLoginParams): Promise<ThirdPartySession> {
     const authCredential = normalizeRequiredText(params.authCredential, {

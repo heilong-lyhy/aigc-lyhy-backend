@@ -6,29 +6,20 @@ import { AccountInstallerModule } from '@src/modules/account/account-installer.m
 import { DecideLoginRoleUsecase } from '@src/usecases/auth/decide-login-role.usecase';
 import { EnrichLoginWithIdentityUsecase } from '@src/usecases/auth/enrich-login-with-identity.usecase';
 import { ExecuteLoginFlowUsecase } from '@src/usecases/auth/execute-login-flow.usecase';
-import { LoginByAccountIdUsecase } from '@src/usecases/auth/login-by-account-id.usecase';
-import { LoginWithPasswordUsecase } from '@src/usecases/auth/login-with-password.usecase';
-import { LoginWithThirdPartyUsecase } from '@src/usecases/auth/login-with-third-party.usecase';
 import { LoginWithUserInfoUsecase } from '@src/usecases/auth/login-with-user-info.usecase';
 import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-access-token-session.usecase';
 
 @Module({
   imports: [AuthModule, ThirdPartyAuthModule, AccountInstallerModule],
   providers: [
-    LoginWithPasswordUsecase,
     ExecuteLoginFlowUsecase,
-    LoginByAccountIdUsecase,
-    LoginWithThirdPartyUsecase,
     LoginWithUserInfoUsecase,
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,
     ValidateAccessTokenSessionUsecase,
   ],
   exports: [
-    LoginWithPasswordUsecase,
     ExecuteLoginFlowUsecase,
-    LoginByAccountIdUsecase,
-    LoginWithThirdPartyUsecase,
     LoginWithUserInfoUsecase,
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,

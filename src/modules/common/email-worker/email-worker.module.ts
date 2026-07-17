@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailCapabilityModule } from '../email-capability/email-capability.module';
 import { EmailDeliveryService } from './email-delivery.service';
+import { EmailSendmailCapabilityBinding } from './email-sendmail.capability';
 import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worker.options';
 
 @Module({
@@ -17,6 +18,7 @@ import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worke
       }),
     },
     EmailDeliveryService,
+    EmailSendmailCapabilityBinding,
   ],
   exports: [EmailDeliveryService],
 })
