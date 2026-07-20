@@ -53,6 +53,43 @@ describe('LegacyPasswordCryptoHelper', () => {
       expect(isValid).toBe(false);
     });
 
+    it('hashedPassword 长度不一致时应返回 false 而非抛 RangeError', () => {
+      // 模拟数据库被篡改、迁移错误、字段截断等场景
+      const password = 'guest';
+      const salt = new Date('2023-03-15T10:18:09Z').toString();
+      const truncatedHash = 'c3e10d4a4af293057b42eb10bbf05f436b0a771f'; // 截断
+
+      expect(() =>
+        LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, truncatedHash),
+      ).not.toThrow();
+      expect(
+        LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, truncatedHash),
+      ).toBe(false);
+    });
+
+    it('hashedPassword 为非法 hex 字符串时应返回 false', () => {
+      const password = 'guest';
+      const salt = new Date('2023-03-15T10:18:09Z').toString();
+      const invalidHex = 'not-a-valid-hex-string!!';
+
+      expect(() =>
+        LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, invalidHex),
+      ).not.toThrow();
+      expect(LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, invalidHex)).toBe(
+        false,
+      );
+    });
+
+    it('hashedPassword 为空字符串时应返回 false', () => {
+      const password = 'guest';
+      const salt = new Date('2023-03-15T10:18:09Z').toString();
+
+      expect(() =>
+        LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, ''),
+      ).not.toThrow();
+      expect(LegacyPasswordCryptoHelper.verifyPasswordWithCrypto(password, salt, '')).toBe(false);
+    });
+
     //   it('应该使 crypto-js 用给定的密码和盐值生成正确的哈希值', () => {
     //     // Arrange
     //     const password = 'guest';

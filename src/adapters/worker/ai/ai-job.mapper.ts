@@ -7,7 +7,8 @@ import type {
   ConsumeAiGenerateJobFailInput,
   ConsumeAiGenerateJobProcessInput,
 } from '@src/usecases/ai-worker/consume-ai-job.types';
-import type { Job } from 'bullmq';
+import { resolveMissingJobTraceId } from '@src/adapters/worker/internal/job-mapper.helpers';
+import { UnrecoverableError, type Job } from 'bullmq';
 
 export const AI_QUEUE_NAME = 'ai-execution';
 export const AI_GENERATE_JOB_NAME = 'generate';
@@ -147,13 +148,14 @@ export function mapMissingAiJobToFailInput(input: {
   const occurredAt = input.occurredAt ?? new Date();
   const jobName = 'unknown';
   const jobId = resolveMissingJobId({ occurredAt, jobName });
+  const traceId = resolveMissingJobTraceId({ occurredAt, jobName });
   return {
     queueName: AI_QUEUE_NAME,
     jobName,
     jobId,
-    traceId: jobId,
+    traceId,
     bizType: 'ai_worker',
-    bizKey: jobId,
+    bizKey: traceId,
     attemptsMade: 0,
     enqueuedAt: occurredAt,
     finishedAt: occurredAt,
@@ -293,7 +295,8 @@ function resolveTraceId(input: {
     return payloadTraceId;
   }
   if (input.mode === 'strict') {
-    throw new Error(`missing_payload_trace_id:${input.job.name}`);
+    // payload 缺失 traceId 是 producer 端编程错误，不可重试（避免 BullMQ 死循环重试）
+    throw new UnrecoverableError(`missing_payload_trace_id:${input.job.name}`);
   }
   const jobId = resolveJobId({ job: input.job });
   return `degraded-trace:${input.job.name}:${jobId}`;

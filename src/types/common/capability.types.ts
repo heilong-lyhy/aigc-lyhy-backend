@@ -1,3 +1,8 @@
+// Capability 稳定跨域类型定义
+// 仅包含被 infrastructure capability 框架和跨域 contract 引用的稳定类型
+// 通用 CQRS/Session/Provider/Envelope 抽象已移除（见 capability.rules.md "no generic bus"）
+// 无消费者的 HealthCheck/ProviderBinding/QueueBinding 类型已移除（无 real production behavior 消费）
+
 export type CapabilityId = string;
 
 export type CapabilityMode = 'always-on' | 'switchable';
@@ -48,37 +53,11 @@ export interface CapabilityStateSnapshot {
   readonly rootBlockers: readonly CapabilityRootBlocker[];
 }
 
-// ===== Backward-compatible business capability types (CQRS-based) =====
-
-export type CapabilityOperationKind = 'command' | 'query' | 'event';
-
-export type CapabilityTransportName = 'in-process' | 'queue';
-
-export type CapabilityProviderKind = string;
-
-export type CapabilityEnableState = 'enabled' | 'disabled';
-
-export type CapabilityActorSource = 'anonymous' | 'account' | 'system' | 'worker';
-
-export type CapabilityEntryPoint = 'graphql-api' | 'worker';
-
-export type CapabilityErrorCode =
-  | 'CAPABILITY_NOT_INSTALLED'
-  | 'CAPABILITY_DISABLED'
-  | 'CAPABILITY_OPERATION_DISABLED'
-  | 'CAPABILITY_OPERATION_NOT_FOUND'
-  | 'CAPABILITY_PERMISSION_DENIED'
-  | 'CAPABILITY_VALIDATION_FAILED'
-  | 'CAPABILITY_TIMEOUT'
-  | 'CAPABILITY_TEMPORARILY_UNAVAILABLE'
-  | 'CAPABILITY_PROVIDER_UNAVAILABLE'
-  | 'CAPABILITY_TRANSPORT_UNAVAILABLE'
-  | 'CAPABILITY_CONTRACT_VERSION_UNSUPPORTED'
-  | 'CAPABILITY_INTERNAL_ERROR'
-  | 'CAPABILITY_IDEMPOTENCY_CONFLICT';
-
+// Capability 操作结果包装——被 narrow-typed contract 使用
+// code 字段使用 string 类型，避免与 src/core/common/errors/domain-error.ts 的 CapabilityErrorCode 重复定义
+// （type.rules.md: 业务错误码单一真源在 src/core；src/types 禁止依赖 src/core）
 export interface CapabilityError {
-  readonly code: CapabilityErrorCode;
+  readonly code: string;
   readonly message: string;
   readonly capabilityId?: CapabilityId;
   readonly operation?: string;
@@ -94,178 +73,3 @@ export type CapabilityResult<TResult> =
       readonly ok: false;
       readonly error: CapabilityError;
     };
-
-export interface CapabilityProviderContribution {
-  readonly providerKind: CapabilityProviderKind;
-  readonly providerName: string;
-}
-
-export interface CapabilityQueueContribution {
-  readonly operation: string;
-  readonly operationKind: CapabilityOperationKind;
-  readonly queueName: string;
-  readonly jobName: string;
-  readonly dedupKeyMapping?: 'jobId' | 'bullmq-dedup-option' | 'none';
-}
-
-export interface CapabilityGraphqlOperationContribution {
-  readonly operationName: string;
-  readonly operationKind: 'query' | 'mutation' | 'subscription';
-  readonly requiredPermissions?: readonly string[];
-}
-
-export interface CapabilityApiContribution {
-  readonly graphqlOperations?: readonly CapabilityGraphqlOperationContribution[];
-}
-
-export interface CapabilityOperationDefinition {
-  readonly name: string;
-  readonly kind: CapabilityOperationKind;
-  readonly description?: string;
-  readonly version?: string;
-  readonly enabledByDefault?: boolean;
-  readonly requiredPermissions?: readonly string[];
-  readonly timeoutMs?: number;
-  readonly transport?: CapabilityTransportName;
-}
-
-export interface CapabilityCommandDefinition extends CapabilityOperationDefinition {
-  readonly kind: 'command';
-  readonly sideEffects: 'none' | 'internal' | 'external';
-}
-
-export interface CapabilityQueryDefinition extends CapabilityOperationDefinition {
-  readonly kind: 'query';
-  readonly cache?: {
-    readonly cacheable: boolean;
-    readonly ttlMs?: number;
-  };
-}
-
-export interface CapabilityEventDefinition extends CapabilityOperationDefinition {
-  readonly kind: 'event';
-  readonly eventType: 'fact' | 'signal';
-}
-
-export interface CapabilityOperations {
-  readonly commands?: readonly CapabilityCommandDefinition[];
-  readonly queries?: readonly CapabilityQueryDefinition[];
-  readonly events?: readonly CapabilityEventDefinition[];
-}
-
-export interface CapabilityOperationDescriptor {
-  readonly capabilityId: CapabilityId;
-  readonly operation: string;
-  readonly operationKind: CapabilityOperationKind;
-  readonly transport: CapabilityTransportName;
-  readonly enabled: boolean;
-  readonly operationVersion?: string;
-  readonly requiredPermissions?: readonly string[];
-  readonly timeoutMs?: number;
-}
-
-export interface CapabilitySessionPrincipalContribution {
-  readonly principalCode: string;
-  readonly description?: string;
-  readonly identityResolver: string;
-  readonly sessionProjectionKey?: string;
-  readonly exposedInSessionIdentity?: boolean;
-}
-
-export interface CapabilitySessionAuthorityClaimContribution {
-  readonly claimCode: string;
-  readonly description?: string;
-  readonly subjectPrincipalCode?: string;
-  readonly summaryResolver: string;
-  readonly scopeAuthorizer?: string;
-  readonly exposedInSession?: boolean;
-  readonly sessionProjectionKey?: string;
-}
-
-export interface CapabilitySessionContribution {
-  readonly principals?: readonly CapabilitySessionPrincipalContribution[];
-  readonly authorityClaims?: readonly CapabilitySessionAuthorityClaimContribution[];
-}
-
-export interface CapabilityRuntimePolicy {
-  readonly defaultState?: CapabilityEnableState;
-  readonly healthCheck?: boolean;
-}
-
-export interface CapabilityContributions {
-  readonly api?: CapabilityApiContribution;
-  readonly providers?: readonly CapabilityProviderContribution[];
-  readonly queues?: readonly CapabilityQueueContribution[];
-  readonly session?: CapabilitySessionContribution;
-}
-
-export interface CapabilityHealthResult {
-  readonly status: CapabilityHealthStatus;
-  readonly checkedAt: Date;
-  readonly message?: string;
-  readonly details?: Readonly<Record<string, unknown>>;
-}
-
-export interface CapabilityHealthReport extends CapabilityHealthResult {
-  readonly capabilityId: CapabilityId;
-  readonly name: string;
-}
-
-export interface CapabilityHealthCheck {
-  check(): Promise<CapabilityHealthResult>;
-}
-
-export interface CapabilityOperationHandler<TPayload = unknown, TResult = unknown> {
-  readonly capability: CapabilityId;
-  readonly operation: string;
-  readonly operationKind: CapabilityOperationKind;
-  handle(
-    envelope: CapabilityCommand<TPayload> | CapabilityQuery<TPayload>,
-  ): Promise<CapabilityResult<TResult>>;
-}
-
-export interface CapabilityActorContext {
-  readonly accountId?: number;
-  readonly activeRole?: string | null;
-  readonly principalCodes?: readonly string[];
-  readonly authorityClaims?: readonly string[];
-  readonly accessGroup?: readonly string[];
-  readonly source: CapabilityActorSource;
-}
-
-export interface CapabilityRequestContext {
-  readonly traceId: string;
-  readonly requestId: string;
-  readonly actor: CapabilityActorContext;
-  readonly entryPoint?: CapabilityEntryPoint;
-  readonly tenantId?: string;
-  readonly locale?: string;
-  readonly ip?: string;
-  readonly userAgent?: string;
-}
-
-export interface CapabilityEnvelope<TPayload> {
-  readonly capability: CapabilityId;
-  readonly operation: string;
-  readonly operationKind: CapabilityOperationKind;
-  readonly operationVersion?: string;
-  readonly context: CapabilityRequestContext;
-  readonly idempotencyKey?: string;
-  readonly dedupKey?: string;
-  readonly payload: TPayload;
-  readonly createdAt: Date;
-}
-
-export type CapabilityCommand<TPayload> = CapabilityEnvelope<TPayload> & {
-  readonly operationKind: 'command';
-};
-
-export type CapabilityQuery<TPayload> = CapabilityEnvelope<TPayload> & {
-  readonly operationKind: 'query';
-};
-
-export type CapabilityEvent<TPayload> = CapabilityEnvelope<TPayload> & {
-  readonly operationKind: 'event';
-  readonly eventId: string;
-  readonly occurredAt: Date;
-};

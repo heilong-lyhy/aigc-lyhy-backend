@@ -130,13 +130,20 @@ export class WeappRegisterUsecase {
         throw new DomainError(
           THIRDPARTY_ERROR.PROVIDER_API_ERROR,
           error.message || '第三方服务调用失败',
+          undefined,
+          error,
         );
       }
 
       this.logger.error(
         `微信小程序注册失败: ${error instanceof Error ? error.message : String(error)}`,
       );
-      throw new DomainError(THIRDPARTY_ERROR.REGISTRATION_FAILED, '微信小程序注册失败');
+      throw new DomainError(
+        THIRDPARTY_ERROR.REGISTRATION_FAILED,
+        '微信小程序注册失败',
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 

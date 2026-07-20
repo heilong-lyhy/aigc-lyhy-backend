@@ -52,7 +52,15 @@ const BLOG_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
 const BLOG_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: BLOG_ALLOWED_TAGS,
   allowedAttributes: BLOG_ALLOWED_ATTRIBUTES,
+  // 关键：仅允许 http/https/mailto 协议，禁止 javascript:/data:/vbscript: 等
   allowedSchemes: ['http', 'https', 'mailto'],
+  // 关键修复：将协议白名单应用到所有 URL 属性（href、src），而非仅 href
+  // 修复前：allowedSchemes 默认只作用于 href，src 仍可使用 javascript:/data: 协议
+  //         攻击者可注入 <img src="javascript:alert(1)">（旧 IE）或
+  //         <img src="data:image/svg+xml;base64,..."> 植入 SVG XSS
+  allowedSchemesAppliedToAttributes: ['href', 'src'],
+  // 关键修复：禁止 //example.com 这种协议相对 URL，防止从 https 页面跳到 http 被中间人
+  allowProtocolRelative: false,
 };
 
 /**

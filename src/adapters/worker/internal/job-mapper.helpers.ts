@@ -2,7 +2,7 @@
 // Worker adapter 层共享的 BullMQ Job → usecase input 映射辅助函数
 // 所有 worker mapper 复用同一组纯函数，避免同功能二次实现
 
-import type { Job } from 'bullmq';
+import { UnrecoverableError, type Job } from 'bullmq';
 
 // ─── 通用 Job 类型约束 ───
 
@@ -47,7 +47,8 @@ export function resolveTraceId(input: {
     return payloadTraceId;
   }
   if (input.mode === 'strict') {
-    throw new Error(`missing_payload_trace_id:${input.job.name}`);
+    // payload 缺失 traceId 是 producer 端编程错误，不可重试（避免 BullMQ 死循环重试）
+    throw new UnrecoverableError(`missing_payload_trace_id:${input.job.name}`);
   }
   const jobId = resolveJobId({ job: input.job });
   return `degraded-trace:${input.job.name}:${jobId}`;

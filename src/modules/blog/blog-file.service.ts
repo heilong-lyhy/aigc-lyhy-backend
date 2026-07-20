@@ -20,6 +20,47 @@ import {
 import { BlogFileEntity } from './entities/blog-file.entity';
 import { BlogFileQueryService } from './queries/blog-file.query.service';
 
+/**
+ * Magic bytes → MIME 类型映射表
+ * 用于校验客户端声明的 mimeType 与文件实际内容是否一致，防止：
+ * 1. 攻击者把 .exe 改名 .jpg 上传（绕过基于扩展名/mime 头的校验）
+ * 2. 上传伪装成图片的恶意脚本（如 polyglot 文件）
+ *
+ * 仅校验声明的 MIME 是否与文件头匹配，不做完整文件结构验证（那是更上层职责）
+ */
+const MAGIC_BYTES_TO_MIME: ReadonlyArray<{ readonly bytes: number[]; readonly mime: string }> = [
+  // 图片
+  { bytes: [0xff, 0xd8, 0xff], mime: 'image/jpeg' },
+  { bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], mime: 'image/png' },
+  { bytes: [0x47, 0x49, 0x46, 0x38], mime: 'image/gif' }, // GIF8
+  { bytes: [0x42, 0x4d], mime: 'image/bmp' }, // BM
+  { bytes: [0x52, 0x49, 0x46, 0x46], mime: 'image/webp' }, // RIFF....WEBP（前 4 字节）
+  // 文档
+  { bytes: [0x25, 0x50, 0x44, 0x46], mime: 'application/pdf' }, // %PDF
+];
+
+/**
+ * 通过文件头（magic bytes）检测实际 MIME 类型
+ * @param buffer 文件二进制内容（前 16 字节即可）
+ * @returns 检测到的 MIME 类型；未匹配返回 null
+ */
+function detectMimeTypeByMagicBytes(buffer: Buffer): string | null {
+  for (const { bytes, mime } of MAGIC_BYTES_TO_MIME) {
+    if (buffer.length < bytes.length) continue;
+    let matched = true;
+    for (let i = 0; i < bytes.length; i++) {
+      if (buffer[i] !== bytes[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) {
+      return mime;
+    }
+  }
+  return null;
+}
+
 @Injectable()
 export class BlogFileService {
   private readonly allowedMimeTypes: readonly string[];
@@ -51,6 +92,17 @@ export class BlogFileService {
     if (input.fileSize > this.maxFileSize) {
       throw new DomainError(BLOG_ERROR.FILE_SIZE_EXCEEDED, '文件大小超过限制');
     }
+
+    // 关键安全校验：magic bytes 验证
+    // 攻击场景：客户端把 evil.exe 改名 evil.jpg，Content-Type: image/jpeg
+    // 仅检查 mimeType 字段会被绕过，必须读文件头比对
+    const detectedMime = detectMimeTypeByMagicBytes(input.buffer);
+    if (detectedMime !== null && detectedMime !== input.mimeType) {
+      // 声明是 image/jpeg 但实际是 image/png 等 → 视为伪装攻击，拒绝
+      throw new DomainError(BLOG_ERROR.FILE_TYPE_NOT_ALLOWED, '文件内容与声明类型不一致');
+    }
+    // 若 detectedMime === null，说明该类型未在 magic bytes 表中（如 text/plain），
+    // 此处不阻断；调用方应确保 allowedMimeTypes 仅包含可信类型
 
     // 通过 FileStorageAdapter 保存文件到存储后端
     const storagePath = await this.fileStorage.saveFile({

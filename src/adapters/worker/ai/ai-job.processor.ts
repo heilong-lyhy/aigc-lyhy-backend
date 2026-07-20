@@ -1,6 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { AiWorkerActivationUsecase } from '@src/usecases/ai-worker/ai-worker-activation.usecase';
+import { UnrecoverableError } from 'bullmq';
 import { AiJobHandler } from './ai-job.handler';
 import {
   AI_EMBED_JOB_NAME,
@@ -36,7 +37,8 @@ export class AiJobProcessor extends WorkerHost implements OnApplicationBootstrap
   async process(job: AiExecutionJob): Promise<AiExecutionJobResult> {
     if (job.name === AI_GENERATE_JOB_NAME) return await this.handler.processGenerate({ job });
     if (job.name === AI_EMBED_JOB_NAME) return await this.handler.processEmbed({ job });
-    throw new Error('Unsupported AI job');
+    // 兜底：BullMQ 不应分发未知 job name，到达此处视为运行时类型破损，不可重试
+    throw new UnrecoverableError('Unsupported AI job name');
   }
 
   @OnWorkerEvent('completed')
@@ -49,7 +51,7 @@ export class AiJobProcessor extends WorkerHost implements OnApplicationBootstrap
       await this.handler.onEmbedCompleted({ job });
       return;
     }
-    throw new Error('Unsupported AI job');
+    this.logger.warn('Unsupported AI job name on completed event');
   }
 
   @OnWorkerEvent('failed')

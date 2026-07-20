@@ -178,7 +178,7 @@ npx eslint "{src,apps,libs,test}/**/*.ts" --cache
 
 ## 输出格式
 
-所有发现的问题整理后放入 `plans/Lingeringissue/` 目录，文件命名格式与现有文件保持一致（`question{date}.md`），内容格式参照 `question26-07-13.md`，包含：
+所有发现的问题整理后放入 `plans/Lingeringissue/` 目录，文件命名格式为 `questionYY-MM-DD.md`（YY 为两位年份，MM 为月份，DD 为日期）。同一天若有多个文件，从第 2 个起在文件名末尾加 `~n`（n 为序号），例如 `question26-07-16.md`、`question26-07-16~2.md`、`question26-07-16~3.md`。内容格式参照 `question26-07-13.md`，包含：
 - 问题编号与标题
 - 状态标记：[未解决] / [已解决]
 - 规范依据

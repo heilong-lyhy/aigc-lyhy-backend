@@ -1,9 +1,9 @@
 // src/types/services/register.types.ts
 
-import { AccountStatus } from '../models/account.types';
-
 /**
  * 注册类型枚举
+ * 仅作为注册 bounded context 的领域 enum，因 GraphQL enum.registry 与
+ * register.input DTO 需要运行时值引用而保留在 L1（type.rules.md §3.1 例外）。
  */
 export enum RegisterTypeEnum {
   /** 工作人员 */
@@ -11,32 +11,3 @@ export enum RegisterTypeEnum {
   /** 注册用户 */
   REGISTRANT = 'REGISTRANT',
 }
-
-export interface RegisterInputModel {
-  loginName?: string | null;
-  loginEmail: string;
-  loginPassword: string;
-  nickname?: string;
-  type: RegisterTypeEnum;
-  inviteToken?: string;
-  confirmPassword?: string;
-}
-
-/**
- * 准备好的注册数据类型
- * 用于创建账户的数据结构
- */
-export type PreparedRegisterData = Omit<RegisterInputModel, 'confirmPassword' | 'type'> & {
-  /** 账户状态 */
-  status: AccountStatus;
-  /** 用户昵称 */
-  nickname: string;
-  /** 邮箱地址 */
-  email: string;
-  /** 访问权限组 */
-  accessGroup: string[];
-  /** 身份提示 */
-  identityHint: string;
-  /** 私有字段 */
-  metaDigest: string | null; // 修复：改为 string | null，与实体定义一致
-};

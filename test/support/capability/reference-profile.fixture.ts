@@ -1,17 +1,11 @@
-import type {
-  CapabilityOperationHandler as CapabilityOperationHandlerType,
-  CapabilityQuery,
-  CapabilityResult,
-} from '@app-types/common/capability.types';
+import type { CapabilityResult } from '@app-types/common/capability.types';
 import { Injectable } from '@nestjs/common';
 import {
-  CapabilityOperationHandlerProvider,
   CapabilityAnchorProvider,
   CapabilityRuntimeContributionProvider,
 } from '@src/infrastructure/capability/capability.decorators';
 
 export const REFERENCE_PROFILE_CAPABILITY_ID = 'reference.profile';
-export const REFERENCE_PROFILE_LIST_OPERATION = 'listByGroupKeys';
 export const REFERENCE_PROFILE_CLIENT = Symbol('REFERENCE_PROFILE_CLIENT');
 
 export interface ReferenceProfileSummary {
@@ -57,23 +51,11 @@ const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [
 ];
 
 @Injectable()
-@CapabilityOperationHandlerProvider({
-  capabilityId: REFERENCE_PROFILE_CAPABILITY_ID,
-  operation: REFERENCE_PROFILE_LIST_OPERATION,
-  operationKind: 'query',
-})
-export class ReferenceProfileListHandler implements CapabilityOperationHandlerType<
-  { readonly groupKeys: readonly string[] },
-  readonly ReferenceProfileSummary[]
-> {
-  readonly capability = REFERENCE_PROFILE_CAPABILITY_ID;
-  readonly operation = REFERENCE_PROFILE_LIST_OPERATION;
-  readonly operationKind = 'query' as const;
-
-  handle(
-    envelope: CapabilityQuery<{ readonly groupKeys: readonly string[] }>,
-  ): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    const groupKeys = normalizeGroupKeys(envelope.payload.groupKeys);
+export class ReferenceProfileListHandler {
+  listByGroupKeys(input: {
+    readonly groupKeys: readonly string[];
+  }): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
+    const groupKeys = normalizeGroupKeys(input.groupKeys);
     return Promise.resolve({
       ok: true,
       value: REFERENCE_PROFILES.filter((profile) => groupKeys.includes(profile.groupKey)),
@@ -85,21 +67,10 @@ export class ReferenceProfileListHandler implements CapabilityOperationHandlerTy
 export class DirectReferenceProfileClient implements ReferenceProfileClient {
   constructor(private readonly handler: ReferenceProfileListHandler) {}
 
-  async listByGroupKeys(input: {
+  listByGroupKeys(input: {
     readonly groupKeys: readonly string[];
   }): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    return await this.handler.handle({
-      capability: this.handler.capability,
-      operation: this.handler.operation,
-      operationKind: this.handler.operationKind,
-      context: {
-        traceId: 'direct-call',
-        requestId: 'direct-call',
-        actor: { source: 'system' },
-      },
-      payload: input,
-      createdAt: new Date(),
-    });
+    return this.handler.listByGroupKeys(input);
   }
 }
 

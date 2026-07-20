@@ -316,6 +316,31 @@ describe('TokenHelper', () => {
         'refresh token 生成失败',
       );
     });
+
+    // 新增：测试 expiresIn 参数（修复 refresh token 永不过期 bug 的回归测试）
+    it('应该支持自定义 expiresIn', () => {
+      // Arrange
+      jwtService.sign.mockReturnValue(mockToken);
+      const params: GenerateRefreshTokenParams = {
+        payload: { sub: mockJwtPayload.sub },
+        expiresIn: '7d',
+        audience: AudienceTypeEnum.SSTSWEB,
+      };
+
+      // Act
+      const result = tokenHelper.generateRefreshToken(params);
+
+      // Assert
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: mockJwtPayload.sub,
+          type: 'refresh',
+          tokenVersion: 1,
+        },
+        { expiresIn: '7d', audience: AudienceTypeEnum.SSTSWEB },
+      );
+      expect(result).toBe(mockToken);
+    });
   });
 
   describe('verifyToken', () => {

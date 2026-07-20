@@ -1,18 +1,11 @@
-import type {
-  CapabilityCommand,
-  CapabilityOperationHandler,
-  CapabilityQuery,
-  CapabilityResult,
-} from '@app-types/common/capability.types';
+import type { CapabilityResult } from '@app-types/common/capability.types';
 import {
-  REFERENCE_PROFILE_CAPABILITY_ID,
-  REFERENCE_PROFILE_OPERATIONS,
   type ReferenceProfileListByGroupKeysInput,
   type ReferenceProfileSummary,
 } from '@app-types/reference/reference-profile.types';
 import { Injectable } from '@nestjs/common';
-import { CapabilityOperationHandlerProvider } from '@src/infrastructure/capability/capability.decorators';
 import { normalizeReferenceGroupKeysInput } from './reference.input.normalize';
+import type { ReferenceProfileListHandlerPort } from './reference-profile-list-by-group-keys.contract';
 
 const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [
   { profileKey: 'profile-alpha-1', groupKey: 'alpha', displayName: 'Alpha One' },
@@ -21,25 +14,11 @@ const REFERENCE_PROFILES: readonly ReferenceProfileSummary[] = [
 ];
 
 @Injectable()
-@CapabilityOperationHandlerProvider({
-  capabilityId: REFERENCE_PROFILE_CAPABILITY_ID,
-  operation: REFERENCE_PROFILE_OPERATIONS.listByGroupKeys,
-  operationKind: 'query',
-})
-export class ReferenceProfileListByGroupKeysHandler implements CapabilityOperationHandler<
-  ReferenceProfileListByGroupKeysInput,
-  readonly ReferenceProfileSummary[]
-> {
-  readonly capability = REFERENCE_PROFILE_CAPABILITY_ID;
-  readonly operation = REFERENCE_PROFILE_OPERATIONS.listByGroupKeys;
-  readonly operationKind = 'query' as const;
-
-  handle(
-    envelope:
-      | CapabilityCommand<ReferenceProfileListByGroupKeysInput>
-      | CapabilityQuery<ReferenceProfileListByGroupKeysInput>,
+export class ReferenceProfileListByGroupKeysHandler implements ReferenceProfileListHandlerPort {
+  listByGroupKeys(
+    input: ReferenceProfileListByGroupKeysInput,
   ): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    const requestedGroupKeys = normalizeReferenceGroupKeysInput(envelope.payload.groupKeys);
+    const requestedGroupKeys = normalizeReferenceGroupKeysInput(input.groupKeys);
     const profiles = REFERENCE_PROFILES.filter((profile) =>
       requestedGroupKeys.includes(profile.groupKey),
     );

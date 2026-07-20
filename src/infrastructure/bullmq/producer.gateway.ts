@@ -6,6 +6,7 @@ import { ModuleRef } from '@nestjs/core';
 import { type JobsOptions, Queue } from 'bullmq';
 import { PinoLogger } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
+import { DomainError, QUEUE_ERROR } from '@core/common/errors/domain-error';
 import { BULLMQ_QUEUE_JOBS, type BullMqQueueName } from './bullmq.constants';
 import {
   assertBullMqJobPayload,
@@ -79,20 +80,33 @@ export class BullMqProducerGateway {
     const dedupKey = input.dedupKey?.trim() || undefined;
     const explicitJobId = this.normalizeExplicitJobId(input.explicitJobId);
     if (dedupKey && explicitJobId) {
-      throw new Error(`explicit_job_id_conflicts_with_dedup_key:${input.queueName}`);
+      throw new DomainError(
+        QUEUE_ERROR.JOB_ID_CONFLICTS_WITH_DEDUP_KEY,
+        'dedupKey 与 explicitJobId 不可同时提供',
+        { queueName: input.queueName },
+      );
     }
     if (dedupKey) {
       const existingJob = await queue.getJob(dedupKey);
       if (existingJob) {
         if (existingJob.name !== input.jobName) {
-          throw new Error(
-            `dedup_job_name_conflict:${input.queueName}:${dedupKey}:${existingJob.name}->${input.jobName}`,
+          throw new DomainError(
+            QUEUE_ERROR.DEDUP_JOB_NAME_CONFLICT,
+            'dedupKey 已绑定其他 jobName，拒绝覆盖',
+            {
+              queueName: input.queueName,
+              dedupKey,
+              existingJobName: existingJob.name,
+              incomingJobName: input.jobName,
+            },
           );
         }
         const existingTraceId = this.readTraceIdFromPayload(existingJob.data);
         if (!existingTraceId) {
-          throw new Error(
-            `missing_existing_payload_trace_id:${input.queueName}/${input.jobName}:${dedupKey}`,
+          throw new DomainError(
+            QUEUE_ERROR.MISSING_EXISTING_PAYLOAD_TRACE_ID,
+            '已有任务的 payload 缺少 traceId，无法续传链路',
+            { queueName: input.queueName, jobName: input.jobName, dedupKey },
           );
         }
         const existingJobId =
@@ -142,7 +156,9 @@ export class BullMqProducerGateway {
   }> {
     const jobId = input.jobId.trim();
     if (!jobId) {
-      throw new Error(`bullmq_job_id_required:${input.queueName}`);
+      throw new DomainError(QUEUE_ERROR.JOB_ID_REQUIRED, 'BullMQ 返回的 jobId 为空', {
+        queueName: input.queueName,
+      });
     }
     const queue = this.getQueue({ queueName: input.queueName });
     const job = await queue.getJob(jobId);

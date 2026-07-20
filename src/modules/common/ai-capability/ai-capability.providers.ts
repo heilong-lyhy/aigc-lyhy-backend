@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { RUNTIME_ASYNC_TASK_CAPABILITY_ID } from '@app-types/common/capability-id.types';
 import { CapabilityAnchorProvider } from '@src/infrastructure/capability/capability.decorators';
 import { AI_CAPABILITY_ID, AI_EXECUTION_CAPABILITY_ID } from './ai-capability.constants';
 
@@ -11,13 +12,11 @@ import { AI_CAPABILITY_ID, AI_EXECUTION_CAPABILITY_ID } from './ai-capability.co
 })
 export class AiCapabilityAnchor {}
 
-// `runtime.async-task` is owned by the async-task-record business module; `common/*`
-// cannot import from business modules, so this ID is kept as a literal. See docs/dependency-rules.
 @Injectable()
 @CapabilityAnchorProvider({
   capabilityId: AI_EXECUTION_CAPABILITY_ID,
   mode: 'switchable',
   decisionRef: 'docs/capabilities/current.md',
-  requires: ['runtime.async-task'],
+  requires: [RUNTIME_ASYNC_TASK_CAPABILITY_ID],
 })
 export class AiExecutionCapabilityAnchor {}

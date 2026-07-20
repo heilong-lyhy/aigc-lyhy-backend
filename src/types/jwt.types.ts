@@ -17,6 +17,7 @@ export type GenerateAccessTokenParams = {
 export type GenerateRefreshTokenParams = {
   payload: Pick<JwtPayload, 'sub'>;
   tokenVersion?: number;
+  expiresIn?: string; // 刷新令牌有效期，未提供时由调用方按配置传入
   audience?: AudienceTypeEnum; // 更明确的类型，使用枚举而非字符串
 };
 

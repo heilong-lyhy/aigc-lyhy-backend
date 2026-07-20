@@ -10,11 +10,12 @@ import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/doma
 import { AccountSecurityService } from '@modules/account/base/services/account-security.service';
 import { AccountQueryService } from '@modules/account/queries/account.query.service';
 import { AuthService } from '@modules/auth/auth.service';
+import { AUTH_TOKENS } from '@modules/auth/auth.tokens';
 import { LoginBootstrapQueryService } from '@modules/auth/queries/login-bootstrap.query.service';
 import type { LoginUserDataCollection } from '@modules/auth/auth.types';
 import { LoginResultQueryService } from '@modules/auth/queries/login-result.query.service';
 import { TokenHelper } from '@modules/auth/token.helper';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { AccountService } from '@src/modules/account/base/services/account.service';
 import { PinoLogger } from 'nestjs-pino';
 
@@ -32,6 +33,8 @@ export class ExecuteLoginFlowUsecase {
     private readonly tokenHelper: TokenHelper,
     private readonly loginBootstrapQueryService: LoginBootstrapQueryService,
     private readonly loginResultQueryService: LoginResultQueryService,
+    @Inject(AUTH_TOKENS.JWT_REFRESH_EXPIRES_IN)
+    private readonly refreshExpiresIn: string,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(ExecuteLoginFlowUsecase.name);
@@ -99,6 +102,8 @@ export class ExecuteLoginFlowUsecase {
     });
     if (securityResult.shouldSuspend) {
       // 写语义由 Usecase 负责：先持久化暂停状态，再抛出领域错误
+      // 失败语义：suspendAccount 持久化失败时抛 DomainError(ACCOUNT_SUSPEND_FAILED)，
+      // 优先于下方的 ACCOUNT_SUSPENDED 向上传播，避免账号"看似已暂停实则未持久化"的安全漏洞
       await this.accountSecurityService.suspendAccount(
         loginSnapshot.account.id,
         '登录时检测到访问组不一致，自动暂停',
@@ -145,6 +150,8 @@ export class ExecuteLoginFlowUsecase {
 
     const refreshToken = this.tokenHelper.generateRefreshToken({
       payload: { sub: jwtPayload.sub },
+      // 关键修复：使用 DI 注入的 refreshExpiresIn，避免 refresh token 走 access token 的 2h 全局默认值
+      expiresIn: this.refreshExpiresIn,
       audience: audience, // 传递 audience 参数
     });
 

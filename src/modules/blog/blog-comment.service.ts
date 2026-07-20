@@ -49,9 +49,30 @@ export class BlogCommentService {
       if (!parent) {
         throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '父评论不存在');
       }
+      // 防 IDOR / 数据漂移：父评论必须属于同一文章
+      if (parent.postId !== input.postId) {
+        throw new DomainError(BLOG_ERROR.INVALID_PARAMS, '父评论不属于目标文章', {
+          parentPostId: parent.postId,
+          expectedPostId: input.postId,
+        });
+      }
       nestingLevel = parent.nestingLevel + 1;
       if (nestingLevel > MAX_NESTING_LEVEL) {
         throw new DomainError(BLOG_ERROR.COMMENT_NESTING_EXCEEDED, '评论嵌套层级超过上限');
+      }
+    }
+
+    // replyToId 校验：必须属于同一文章且存在（与 parentId 独立校验）
+    if (input.replyToId) {
+      const replyTarget = await repo.findOne({ where: { id: input.replyToId } });
+      if (!replyTarget) {
+        throw new DomainError(BLOG_ERROR.COMMENT_NOT_FOUND, '被回复评论不存在');
+      }
+      if (replyTarget.postId !== input.postId) {
+        throw new DomainError(BLOG_ERROR.INVALID_PARAMS, '被回复评论不属于目标文章', {
+          replyToPostId: replyTarget.postId,
+          expectedPostId: input.postId,
+        });
       }
     }
 

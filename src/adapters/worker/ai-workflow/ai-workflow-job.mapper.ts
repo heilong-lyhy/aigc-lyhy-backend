@@ -4,7 +4,8 @@ import type {
   ConsumeAiWorkflowJobProcessInput,
   ConsumeAiWorkflowJobProcessResult,
 } from '@src/usecases/ai-worker/consume-ai-workflow-job.types';
-import type { Job } from 'bullmq';
+import { resolveMissingJobTraceId } from '@src/adapters/worker/internal/job-mapper.helpers';
+import { UnrecoverableError, type Job } from 'bullmq';
 
 export const AI_WORKFLOW_QUEUE_NAME = 'ai-workflow';
 export const AI_WORKFLOW_JOB_NAME = 'workflow';
@@ -82,12 +83,13 @@ export function mapMissingAiWorkflowJobToFailInput(input: {
 }): ConsumeAiWorkflowJobFailInput {
   const occurredAt = input.occurredAt ?? new Date();
   const jobId = `missing-job:${AI_WORKFLOW_JOB_NAME}:${occurredAt.getTime()}`;
+  const traceId = resolveMissingJobTraceId({ occurredAt, jobName: AI_WORKFLOW_JOB_NAME });
   return {
     queueName: AI_WORKFLOW_QUEUE_NAME,
     jobName: AI_WORKFLOW_JOB_NAME,
     jobId,
     workflowId: `degraded-workflow:${AI_WORKFLOW_JOB_NAME}:${jobId}`,
-    traceId: jobId,
+    traceId,
     attemptsMade: 0,
     enqueuedAt: occurredAt,
     finishedAt: occurredAt,
@@ -143,7 +145,7 @@ function resolveTraceId(
 ): string {
   const payloadTraceId = readPayloadText(job.data, 'traceId');
   if (payloadTraceId) return payloadTraceId;
-  if (mode === 'strict') throw new Error(`missing_payload_trace_id:${job.name}`);
+  if (mode === 'strict') throw new UnrecoverableError(`missing_payload_trace_id:${job.name}`);
   return `degraded-trace:${job.name}:${resolveJobId(job)}`;
 }
 
@@ -153,7 +155,7 @@ function resolveWorkflowId(
 ): string {
   const workflowId = readPayloadText(job.data, 'workflowId');
   if (workflowId) return workflowId;
-  if (mode === 'strict') throw new Error(`missing_payload_workflow_id:${job.name}`);
+  if (mode === 'strict') throw new UnrecoverableError(`missing_payload_workflow_id:${job.name}`);
   return `degraded-workflow:${job.name}:${resolveJobId(job)}`;
 }
 

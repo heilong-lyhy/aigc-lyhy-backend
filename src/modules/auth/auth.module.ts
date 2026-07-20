@@ -23,6 +23,12 @@ import { TokenHelper } from './token.helper';
       useFactory: (configService: ConfigService): string =>
         configService.get<string>('jwt.audience') ?? '',
     },
+    {
+      provide: AUTH_TOKENS.JWT_REFRESH_EXPIRES_IN,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): string =>
+        configService.get<string>('jwt.refreshExpiresIn') ?? '7d',
+    },
     AuthService,
     TokenHelper,
     LoginBootstrapQueryService,
@@ -31,6 +37,7 @@ import { TokenHelper } from './token.helper';
   exports: [
     AuthService,
     TokenHelper, // 导出 TokenHelper 供其他模块使用
+    AUTH_TOKENS.JWT_REFRESH_EXPIRES_IN,
     LoginBootstrapQueryService,
     LoginResultQueryService,
   ],

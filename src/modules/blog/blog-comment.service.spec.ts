@@ -111,6 +111,7 @@ describe('BlogCommentService', () => {
     it('应成功创建子评论（nestingLevel = parent + 1）', async () => {
       const parentComment = {
         id: 10,
+        postId: 1,
         nestingLevel: 2,
       } as BlogCommentEntity;
 
@@ -170,6 +171,7 @@ describe('BlogCommentService', () => {
       // MAX_NESTING_LEVEL = 5，parent 为 5 时子评论 nestingLevel = 6 > 5
       const parentComment = {
         id: 10,
+        postId: 1,
         nestingLevel: 5,
       } as BlogCommentEntity;
 
@@ -188,6 +190,7 @@ describe('BlogCommentService', () => {
       // parent nestingLevel = 4 → child = 5，等于 MAX_NESTING_LEVEL，应通过
       const parentComment = {
         id: 10,
+        postId: 1,
         nestingLevel: 4,
       } as BlogCommentEntity;
 
@@ -219,6 +222,43 @@ describe('BlogCommentService', () => {
       const result = await service.createComment({ ...baseInput, parentId: 10 });
       expect(result).not.toBeNull();
       expect(result.nestingLevel).toBe(5);
+    });
+
+    it('父评论不属于目标文章时应抛 INVALID_PARAMS', async () => {
+      // 防 IDOR：parent.postId !== input.postId
+      const parentComment = {
+        id: 10,
+        postId: 999, // 属于其他文章
+        nestingLevel: 0,
+      } as BlogCommentEntity;
+
+      commentRepo.findOne.mockResolvedValue(parentComment);
+
+      await expect(service.createComment({ ...baseInput, parentId: 10 })).rejects.toMatchObject({
+        code: 'BLOG_INVALID_PARAMS',
+      });
+    });
+
+    it('replyToId 不存在时应抛 COMMENT_NOT_FOUND', async () => {
+      commentRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.createComment({ ...baseInput, replyToId: 999 })).rejects.toThrow(
+        '被回复评论不存在',
+      );
+    });
+
+    it('replyToId 不属于目标文章时应抛 INVALID_PARAMS', async () => {
+      const replyTarget = {
+        id: 99,
+        postId: 999, // 属于其他文章
+        nestingLevel: 0,
+      } as BlogCommentEntity;
+
+      commentRepo.findOne.mockResolvedValue(replyTarget);
+
+      await expect(service.createComment({ ...baseInput, replyToId: 99 })).rejects.toMatchObject({
+        code: 'BLOG_INVALID_PARAMS',
+      });
     });
 
     it('传入 authorAvatar 时应使用传入值而非 AvatarGenerator', async () => {

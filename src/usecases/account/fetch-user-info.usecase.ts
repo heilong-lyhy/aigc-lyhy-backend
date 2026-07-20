@@ -4,27 +4,14 @@ import type { PersistenceTransactionContext } from '@app-types/common/transactio
 import type { IdentityTypeEnum } from '@app-types/models/account.types';
 import { UserInfoView } from '@app-types/models/auth.types'; // 导入统一的 UserInfoView
 import { UserState } from '@app-types/models/user-info.types';
-import { ACCOUNT_ERROR, DomainError } from '@core/common/errors';
-import { AccountSecurityService } from '@modules/account/base/services/account-security.service';
 import { AccountQueryService } from '@modules/account/queries/account.query.service';
 import { Injectable } from '@nestjs/common';
-import type { CompleteUserData } from './fetch-user-info.types';
 
 // 移除本地的 UserInfoView 定义，使用统一的类型定义
 
 @Injectable()
 export class FetchUserInfoUsecase {
-  constructor(
-    private readonly accountQueryService: AccountQueryService,
-    private readonly accountSecurityService: AccountSecurityService,
-  ) {}
-
-  /**
-   * 登录场景：允许 user_info 不存在，提供兜底值
-   * - accessGroup 可选：外部若已计算可透传；未提供则在本用例内计算（避免多真相源）
-   */
-  // 移除 executeStrict 方法，因为 UserInfoView 现在本身就是严格类型
-  // async executeStrict(...) 方法可以删除
+  constructor(private readonly accountQueryService: AccountQueryService) {}
 
   /**
    * 获取用户信息（登录专用）
@@ -64,42 +51,6 @@ export class FetchUserInfoUsecase {
       accountId,
       transactionContext: params.transactionContext,
     });
-  }
-
-  /**
-   * 登录流程专用：获取完整用户数据并执行安全验证
-   * - 包含 metaDigest 与 accessGroup 的一致性检查
-   * - 返回验证后的真实 accessGroup
-   * - 用于三步登录流程的统一数据获取
-   */
-  async executeForLoginFlow(params: { accountId: number }): Promise<CompleteUserData> {
-    const { accountId } = params;
-
-    // 1. 获取登录安全快照
-    const loginSnapshot = await this.accountQueryService.getLoginBootstrapSnapshot({ accountId });
-
-    // 2. 执行安全验证（纯校验，不做写操作）
-    const securityResult = this.accountSecurityService.validateAccessGroupConsistency({
-      id: loginSnapshot.account.id,
-      userInfo: loginSnapshot.userInfo,
-    });
-
-    // 3. 如果账号应被暂停，抛出错误（暂停写入由上层 Usecase 负责）
-    if (securityResult.shouldSuspend) {
-      throw new DomainError(ACCOUNT_ERROR.ACCOUNT_SUSPENDED, '账户因安全问题已被暂停');
-    }
-
-    // 4. 构建用户信息视图
-    const userInfoView = await this.accountQueryService.getUserInfoViewStrict({ accountId });
-
-    return {
-      userInfoView,
-      securityResult: {
-        isValid: securityResult.isValid,
-        wasSuspended: false,
-        realAccessGroup: securityResult.realAccessGroup,
-      },
-    };
   }
 }
 export { UserInfoView };

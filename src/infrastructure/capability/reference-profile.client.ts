@@ -17,20 +17,9 @@ export class DirectReferenceProfileClient implements ReferenceProfileClient {
     private readonly handler: ReferenceProfileListHandlerPort,
   ) {}
 
-  async listByGroupKeys(
+  listByGroupKeys(
     input: ReferenceProfileListByGroupKeysInput,
   ): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>> {
-    return await this.handler.handle({
-      capability: this.handler.capability,
-      operation: this.handler.operation,
-      operationKind: this.handler.operationKind as 'query',
-      context: {
-        traceId: 'direct-call',
-        requestId: 'direct-call',
-        actor: { source: 'system' },
-      },
-      payload: input,
-      createdAt: new Date(),
-    });
+    return this.handler.listByGroupKeys(input);
   }
 }

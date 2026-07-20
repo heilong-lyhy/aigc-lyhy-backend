@@ -44,9 +44,9 @@ export class WeAppHttpProvider implements WeAppProviderContract {
     private readonly options: WeAppProviderOptions,
     private readonly logger: PinoLogger,
   ) {
-    // 默认值由 Module factory 提供，此处做防御性断言
-    this.apiBaseUrl = this.options.apiBaseUrl ?? 'https://api.weixin.qq.com';
-    this.requestTimeout = this.options.requestTimeout ?? 10000;
+    // 默认值由 Module factory 保证非 undefined
+    this.apiBaseUrl = this.options.apiBaseUrl!;
+    this.requestTimeout = this.options.requestTimeout!;
   }
 
   /**

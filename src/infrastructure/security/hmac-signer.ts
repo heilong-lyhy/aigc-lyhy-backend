@@ -4,7 +4,7 @@
 import { DomainError, PAGINATION_ERROR } from '@core/common/errors/domain-error';
 import type { ICursorSigner } from '@core/pagination/pagination.contract';
 import type { CursorToken } from '@core/pagination/pagination.types';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export class HmacCursorSigner implements ICursorSigner {
   constructor(private readonly secret: string) {}
@@ -21,9 +21,15 @@ export class HmacCursorSigner implements ICursorSigner {
       const decoded = Buffer.from(cursor, 'base64').toString('utf8');
       const obj = JSON.parse(decoded) as { p: string; m: string };
       const expectedMac = createHmac('sha256', this.secret).update(obj.p).digest('base64');
-      if (expectedMac !== obj.m) {
+
+      // 使用常量时间比较防御时序侧信道攻击
+      // 普通 !== 比较会在第一个不匹配字符处短路返回，泄漏 MAC 前缀信息
+      const expectedBuf = Buffer.from(expectedMac, 'utf8');
+      const providedBuf = Buffer.from(obj.m ?? '', 'utf8');
+      if (expectedBuf.length !== providedBuf.length || !timingSafeEqual(expectedBuf, providedBuf)) {
         throw new DomainError(PAGINATION_ERROR.INVALID_CURSOR, '游标签名不匹配');
       }
+
       const token = JSON.parse(obj.p) as CursorToken;
       // 轻量结构校验
       if (!token || typeof token.key !== 'string') {

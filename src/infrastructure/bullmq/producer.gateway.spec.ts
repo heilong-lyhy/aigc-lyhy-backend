@@ -86,7 +86,7 @@ describe('BullMqProducerGateway', () => {
         dedupKey: 'dedup-1',
         traceId: 'trace-1',
       }),
-    ).rejects.toThrow(`explicit_job_id_conflicts_with_dedup_key:${BULLMQ_QUEUES.AI_WORKFLOW}`);
+    ).rejects.toThrow(/dedupKey 与 explicitJobId 不可同时提供/);
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -163,7 +163,7 @@ describe('BullMqProducerGateway', () => {
         queueName: BULLMQ_QUEUES.AI,
         jobId: ' ',
       }),
-    ).rejects.toThrow(`bullmq_job_id_required:${BULLMQ_QUEUES.AI}`);
+    ).rejects.toThrow(/BullMQ 返回的 jobId 为空/);
   });
 
   it('checks queue availability without mutating the queue', async () => {

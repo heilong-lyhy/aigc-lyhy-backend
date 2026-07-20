@@ -316,3 +316,77 @@ Step 13: 修复验证——沿因果链端到端确认每个修复项（B14）
 | B13 | 对每个 `*-current.md`，grep 文档中引用的类名/方法名是否仍存在于代码 |
 | B14 | 修复后沿异常传播路径端到端验证；grep 确认残留/硬编码已消失 |
 | B15 | 修复表面化——只改了入口路径，未删除违规实现 + 未追踪完整因果链 | 5 项"已修复"问题被 Codex 证实未真正修复：(1) sendmail Anchor 未注册到 Module；(2) 旧多跳 Usecase 仍注册为生产 provider；(3) shouldSuspend 只抛错误未写库；(4) 硬编码默认值仍留在执行类；(5) Gravatar adapter 仍读 process.env | 修复时只关注"新入口是否绕开问题"，未验证"旧违规路径是否仍可达"；修复时只改了最明显的症状，未追踪问题是否在整个因果链上被彻底消除 | 修复后必须：(1) grep 确认旧违规实现无生产调用者后删除；(2) 验证修复不仅解决表面症状，还沿因果链确认根因被消除；(3) 检查是否遗漏了同族问题（如注册了父 Capability gate 但子 Capability Anchor 仍未注册） |
+| B16 | 常量声明未与 Anchor/Provider 注册集合做差集核对 | 常量已声明但无对应 Anchor/Provider 注册：`email-capability.constants.ts` 声明 `NOTIFICATION_EMAIL_SENDMAIL_CAPABILITY_ID = 'notification.email.sendmail'`，但 `email-capability.providers.ts` 仅注册 `NotificationEmailCapabilityAnchor` 和 `RuntimeEmailDeliveryCapabilityAnchor`，缺 sendmail 子 Capability 的 Anchor | AI 审计时将"声明常量"等价于"已实现 Anchor"，未做"常量集合 vs 注册 Anchor 集合"的差集扫描；只检查 Anchor 是否存在，未检查每个 capabilityId 常量是否都有对应 Anchor | 扫描 `*.constants.ts` 中所有 `*_CAPABILITY_ID` 常量，与 `@CapabilityAnchorProvider` 装饰器的 `capabilityId` 入参做集合差集，差集元素即为"声明未注册"的盲点 |
+| B17 | "配置缺失兜底默认值"被忽略为可接受的硬编码 | `blog-storage.module.ts` factory 中 `configService.get('CRAVATAR_BASE_URL') ?? 'https://cravatar.cn/avatar'`、`third-party-auth-infrastructure.module.ts` 中 `?? 'https://api.weixin.qq.com'` 和 `?? 10000` | B8 只检查"是否硬编码 URL/magic number"，未区分"硬编码主路径" vs "配置缺失兜底"——后者仍属于硬编码，应通过启动期校验在配置缺失时报错而非静默用 fallback | 扫描所有 `useFactory` 中的 `?? '...'`、`|| '...'`、`?? <number>` 默认值，对照非协商规则判断该配置项是否应强制由环境变量提供；若应强制，则需在启动期校验函数中加 `assertEnv` 而非在 factory 中静默兜底 |
+
+---
+
+## 五、B15 5 项问题二次核查结果（2026-07-20）
+
+对 Codex 在 B15 中提到的 5 项问题做逐项源码核查：
+
+| # | Codex 描述 | 实际核查结果 | 是否成立 |
+|---|-----------|-------------|---------|
+| 1 | sendmail Anchor 未注册到 Module | **初次核查误判为成立，后修正为不成立**：sendmail Anchor 实际上已通过 `src/modules/common/email-worker/email-sendmail.capability.ts` 中的 `EmailSendmailCapabilityBinding` 类（带 `@CapabilityAnchorProvider` 装饰器）注册，并由 `EmailWorkerModule`（仅 worker 进程）加载。生成文档 `docs/generated/capabilities-current.md` 第 9 行也证实 `notification.email.sendmail` 的 entry module 是 `EmailWorkerModule`，processes 为 `worker`。初次核查仅看了 `email-capability.providers.ts` 和 `email-capability.module.ts`，未追踪到 `email-worker/` 目录下的独立 Anchor 注册，导致误判 | **不成立（已修复，初次核查有误）** |
+| 2 | 旧多跳 Usecase 仍注册为生产 provider | `auth-usecases.module.ts` 仅注册 `ExecuteLoginFlowUsecase`/`LoginWithUserInfoUsecase`/`DecideLoginRoleUsecase`/`EnrichLoginWithIdentityUsecase`/`ValidateAccessTokenSessionUsecase`/`LogoutUsecase`/`RefreshAccessTokenUsecase`；Glob 未发现 `login-with-password.usecase.ts`/`login-with-third-party.usecase.ts`/`login-by-account-id.usecase.ts`；Grep 证实代码中无对旧 Usecase 的引用（仅文档/计划中残留） | **不成立（已修复）** |
+| 3 | shouldSuspend 只抛错误未写库 | `execute-login-flow.usecase.ts:103-111` 在 `shouldSuspend === true` 时先 `await this.accountSecurityService.suspendAccount(...)` 持久化，再 `throw DomainError(ACCOUNT_SUSPENDED)`；`login-with-user-info.usecase.ts:249-254` 同样先 `await suspendAccount(...)` 再抛错。代码注释明确说明"先持久化暂停状态，再抛出领域错误"，并解释了 suspendAccount 持久化失败时优先抛 `ACCOUNT_SUSPEND_FAILED` 的语义 | **不成立（已修复）** |
+| 4 | 硬编码默认值仍留在执行类 | `weapp-http.provider.ts` 自身已无硬编码（`apiBaseUrl`/`requestTimeout` 通过 `@Inject(WEAPP_PROVIDER_OPTIONS)` 注入）；`cravatar-avatar-generator.adapter.ts` 已不读 `process.env`（通过 `@Inject(CRAVATAR_BASE_URL_TOKEN)` 注入）；但 `blog-storage.module.ts` 和 `third-party-auth-infrastructure.module.ts` 的 `useFactory` 中保留了 fallback 默认值（`?? 'https://cravatar.cn/avatar'`、`?? 'https://api.weixin.qq.com'`、`?? 10000`） | **部分成立**（仅 module factory 的 fallback 默认值，执行类已干净）→ **已修复**：fallback 已上提到 `config.module.ts` 的 `blogExternalConfig` 和 `thirdPartyAuthConfig`，module factory 改为从 ConfigService 读取已注册配置 |
+| 5 | Gravatar adapter 仍读 process.env | `cravatar-avatar-generator.adapter.ts` 已彻底不读 `process.env`，仅通过 DI 注入 `CRAVATAR_BASE_URL_TOKEN`；`process.env.CRAVATAR_BASE_URL` 的读取已下沉到 `blog-storage.module.ts` 的 `useFactory` 中通过 `ConfigService` 完成，且 adapter 类已重命名为 `CravatarAvatarGeneratorAdapter`（不再是 Gravatar） | **不成立（已修复）** |
+
+**核查结论（修正后）**：5 项中 1 项部分成立（#4，已修复）、4 项已在之前修复中彻底解决（含初次核查有误的 #1）。
+
+### B15 5 项问题为什么 AI 助手未能检查出这些问题？
+
+#### 1. sendmail Anchor 未注册（初次核查误判，B16 撤销）
+
+**初次核查误判原因**：
+- 初次仅查看 `email-capability.providers.ts` 和 `email-capability.module.ts`，未追踪到 `email-worker/` 目录下的独立 Anchor 注册
+- 项目存在"Capability Anchor 分散注册"模式：父 Capability（`notification.email`、`runtime.email-delivery`）在 `email-capability` 模块，子 Capability（`notification.email.sendmail`）在 `email-worker` 模块——这种分离注册符合"子 Capability 仅在 worker 进程生效"的语义，但增加了审计追溯难度
+- 修复时尝试在 `email-capability.providers.ts` 重复注册 `NotificationEmailSendmailCapabilityAnchor`，结果 `npm run capability:docs:check` 报错 `Capability anchor differs across processes: notification.email.sendmail`——因为 api 进程也加载了 EmailCapabilityModule，导致 Anchor 在 api+worker 进程间 requires 字段不一致
+
+**实际状态**：sendmail Anchor 已通过 `EmailSendmailCapabilityBinding`（带 `@CapabilityAnchorProvider` + `@CapabilityRuntimeContributionProvider` 双装饰器）注册到 `EmailWorkerModule`，仅在 worker 进程生效，符合"sendmail provider 仅在 worker 进程领取任务"的契约
+
+**根本原因（撤销 B16）**：B16 提出的"常量声明未与 Anchor 注册集合做差集核对"本身是合理盲点，但本案例不构成 B16 违规——常量已有对应 Anchor，只是 Anchor 分散在不同模块中。真正的盲点是"未做全项目 Anchor 装饰器扫描"，而非"未做差集核对"
+
+#### 2. 旧多跳 Usecase 仍注册为生产 provider
+
+**为何未检出（其实已修复，但 Codex 报告时仍按未修复描述）**：
+- 此项实际已修复——`auth-usecases.module.ts` 已不再注册旧 Usecase，旧文件已删除
+- Codex 报告可能是基于较早版本代码或文档（`docs/audit_reports/method_audit_blind_spots.md` B11 中提到的旧 Usecase 名称）生成
+- AI 助手在多轮检查中确认了此项已修复（参见 `LoginWithUserInfoUsecase` 已扁平化为 1 跳调用 `ExecuteLoginFlowUsecase`/`DecideLoginRoleUsecase`/`EnrichLoginWithIdentityUsecase`）
+
+**根本原因**：Codex 与 AI 助手对"代码当前状态"的认知存在版本差，Codex 报告可能未反映最新修复
+
+#### 3. shouldSuspend 只抛错误未写库
+
+**为何未检出（实际已修复）**：
+- 此项实际已修复——`execute-login-flow.usecase.ts:107-111` 和 `login-with-user-info.usecase.ts:250-254` 都先 `await suspendAccount(...)` 再抛错
+- AI 助手在多轮检查中确认了此项已修复，且代码注释明确解释了"先持久化再抛错"的语义和失败优先级
+
+**根本原因**：同 #2，Codex 报告基于较早版本代码生成
+
+#### 4. 硬编码默认值仍留在执行类（B17 部分成立，已修复）
+
+**为何未检出**：
+- B8 只检查"是否硬编码 URL/magic number"，且只关注执行类（service/provider/adapter）内部
+- 没有覆盖"module factory 中的 `?? '默认值'` 兜底"——这属于"配置缺失兜底"，本质上仍是硬编码，但因符合"约定优于配置"的常见模式而被忽略
+- 修复方案：将 fallback 默认值上提到 `config.module.ts` 的 `blogExternalConfig`（Cravatar）和 `thirdPartyAuthConfig`（微信 API）configFactory，与其他配置项（jwtConfig、blogStorageConfig 等）统一管理；module factory 改为从 ConfigService 读取已注册的配置命名空间
+
+**根本原因**：审计规程对"硬编码"的界定不够严格，未将"配置缺失兜底默认值"纳入硬编码扫描范围；同时项目缺少"所有 fallback 默认值必须集中在 config.module.ts"的明确约定
+
+#### 5. Gravatar adapter 仍读 process.env
+
+**为何未检出（实际已修复）**：
+- 此项实际已修复——adapter 已重命名为 `CravatarAvatarGeneratorAdapter`，已彻底不读 `process.env`，改为通过 DI 注入 `CRAVATAR_BASE_URL_TOKEN`
+- `process.env` 的读取已下沉到 `blog-storage.module.ts` 的 `useFactory` 中通过 `ConfigService` 完成，符合"运行时配置读取只能在 infrastructure module 的 DI wiring 中"的非协商规则
+- Codex 报告可能基于较早版本代码（仍叫 GravatarAvatarGeneratorAdapter）
+
+**根本原因**：同 #2、#3，Codex 报告基于较早版本代码生成
+
+### 经验教训
+
+1. **Capability Anchor 分散注册模式**：子 Capability 可能与其父 Capability 分散在不同模块中（如 `notification.email` 在 `email-capability`，`notification.email.sendmail` 在 `email-worker`），审计必须做"全项目 `@CapabilityAnchorProvider` 装饰器扫描"，不能只查单一模块。
+2. **硬编码的边界**：硬编码不只包括"执行类内部的字面量"，也包括"module factory 中的 `?? 'fallback'` 兜底默认值"——后者在配置缺失时静默使用，可能掩盖配置错误。严格审计应通过启动期 `assertEnv` 校验。
+3. **多版本对齐**：当 Codex/AI 报告与当前代码状态不一致时，必须以源码 grep 为唯一事实来源，而非依赖任一方的历史报告。
+4. **修复验证必须沿因果链端到端**：B14、B15 的核心教训——修复后必须沿"声明 → 注册 → 调用 → 行为"四段链路端到端验证，而非只验证最末端行为。
+5. **运行 lint 即可发现 Capability 注册冲突**：本项目 `npm run lint` 内置 `capability:docs:check`，会校验 Anchor 跨进程一致性。修复 Capability 相关问题时必须先跑 lint 验证，而非只看单元测试。

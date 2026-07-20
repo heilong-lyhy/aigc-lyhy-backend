@@ -99,7 +99,12 @@ export class RegisterWithEmailUsecase {
         this.logger.error(`用户注册失败: ${error.message}`);
       }
 
-      throw new DomainError(ACCOUNT_ERROR.REGISTRATION_FAILED, '注册失败');
+      throw new DomainError(
+        ACCOUNT_ERROR.REGISTRATION_FAILED,
+        '注册失败',
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 

@@ -3,12 +3,14 @@ import { ExceptionPayload } from '@app-types/errors/exception-payload.types';
 import {
   ACCOUNT_ERROR,
   AUTH_ERROR,
+  BLOG_ERROR,
   CAPABILITY_ERROR,
   DomainError,
   isDomainError,
   JWT_ERROR,
   PAGINATION_ERROR,
   PERMISSION_ERROR,
+  QUEUE_ERROR,
   THIRDPARTY_ERROR,
 } from '@core/common/errors';
 import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
@@ -155,6 +157,7 @@ function mapDomainErrorToGqlCode(errorCode: string): string {
     [ACCOUNT_ERROR.EMAIL_TAKEN]: 'CONFLICT',
     [ACCOUNT_ERROR.USER_INFO_NOT_FOUND]: 'NOT_FOUND',
     [ACCOUNT_ERROR.ACCOUNT_SUSPENDED]: 'FORBIDDEN',
+    [ACCOUNT_ERROR.ACCOUNT_SUSPEND_FAILED]: 'INTERNAL_SERVER_ERROR',
 
     // 第三方认证相关错误（与登录错误类别保持一致）
     [THIRDPARTY_ERROR.CREDENTIAL_INVALID]: 'UNAUTHENTICATED',
@@ -180,6 +183,23 @@ function mapDomainErrorToGqlCode(errorCode: string): string {
     [PAGINATION_ERROR.DB_QUERY_FAILED]: 'INTERNAL_SERVER_ERROR',
 
     [CAPABILITY_ERROR.UNAVAILABLE]: 'INTERNAL_SERVER_ERROR',
+
+    // 注册相关错误（与 ACCOUNT_ERROR 同列，保持 PII 安全语义）
+    [ACCOUNT_ERROR.REGISTRATION_FAILED]: 'BAD_USER_INPUT',
+    [ACCOUNT_ERROR.NICKNAME_ALREADY_EXISTS]: 'CONFLICT',
+    [ACCOUNT_ERROR.OPERATION_NOT_SUPPORTED]: 'BAD_USER_INPUT',
+
+    // 认证细节
+    [AUTH_ERROR.PERMISSION_MISMATCH]: 'FORBIDDEN',
+
+    // 队列生产错误（producer 误用，多为 BAD_USER_INPUT）
+    [QUEUE_ERROR.JOB_ID_CONFLICTS_WITH_DEDUP_KEY]: 'BAD_USER_INPUT',
+    [QUEUE_ERROR.DEDUP_JOB_NAME_CONFLICT]: 'CONFLICT',
+    [QUEUE_ERROR.MISSING_EXISTING_PAYLOAD_TRACE_ID]: 'INTERNAL_SERVER_ERROR',
+    [QUEUE_ERROR.JOB_ID_REQUIRED]: 'INTERNAL_SERVER_ERROR',
+
+    // 点赞并发竞态（check-then-insert 撞 unique 约束）
+    [BLOG_ERROR.LIKE_FAILED]: 'CONFLICT',
   };
 
   // 返回映射结果，如果没有找到则返回默认值

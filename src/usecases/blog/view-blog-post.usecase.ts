@@ -44,6 +44,17 @@ export class ViewBlogPostUsecase {
     return view;
   }
 
+  /**
+   * 阅读量自增：显式 fire-and-forget
+   *
+   * 设计依据：docs/plan/blog-feature-completion.md §阅读量自增
+   * - 公开端浏览场景下，阅读量是软指标，不应阻塞详情返回
+   * - 失败仅 warn 日志，不向上传播，避免读路径因计数器写失败而 5xx
+   *
+   * 与 usecase.rules.md「写语义由 Usecase 编排」不冲突：
+   * - 此处的写仍由 Usecase 触发（非 modules/service 自决）
+   * - 失败语义是「可容忍的最终一致」，由 Usecase 显式选择，符合错误映射职责
+   */
   private incrementViewCount(postId: number): void {
     this.postService.incrementViewCount(postId).catch((error) => {
       this.logger.warn(

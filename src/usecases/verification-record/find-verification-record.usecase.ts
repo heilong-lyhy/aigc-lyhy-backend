@@ -51,6 +51,10 @@ export class FindVerificationRecordUsecase {
         now,
       });
     } catch (error) {
+      // DomainError 透传：保留下层业务错误码（如 NOT_FOUND 等），避免被覆盖为 QUERY_FAILED
+      if (error instanceof DomainError) {
+        throw error;
+      }
       throw new DomainError(
         VERIFICATION_RECORD_ERROR.QUERY_FAILED,
         '查询可消费验证记录失败',
@@ -84,6 +88,10 @@ export class FindVerificationRecordUsecase {
         now,
       });
     } catch (error) {
+      // DomainError 透传：保留下层业务错误码（如 NOT_FOUND 等），避免被覆盖为 QUERY_FAILED
+      if (error instanceof DomainError) {
+        throw error;
+      }
       throw new DomainError(
         VERIFICATION_RECORD_ERROR.QUERY_FAILED,
         '查询可消费验证记录失败',

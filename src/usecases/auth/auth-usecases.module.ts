@@ -7,6 +7,8 @@ import { DecideLoginRoleUsecase } from '@src/usecases/auth/decide-login-role.use
 import { EnrichLoginWithIdentityUsecase } from '@src/usecases/auth/enrich-login-with-identity.usecase';
 import { ExecuteLoginFlowUsecase } from '@src/usecases/auth/execute-login-flow.usecase';
 import { LoginWithUserInfoUsecase } from '@src/usecases/auth/login-with-user-info.usecase';
+import { LogoutUsecase } from '@src/usecases/auth/logout.usecase';
+import { RefreshAccessTokenUsecase } from '@src/usecases/auth/refresh-access-token.usecase';
 import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-access-token-session.usecase';
 
 @Module({
@@ -17,6 +19,8 @@ import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-a
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,
     ValidateAccessTokenSessionUsecase,
+    LogoutUsecase,
+    RefreshAccessTokenUsecase,
   ],
   exports: [
     ExecuteLoginFlowUsecase,
@@ -24,6 +28,8 @@ import { ValidateAccessTokenSessionUsecase } from '@src/usecases/auth/validate-a
     DecideLoginRoleUsecase,
     EnrichLoginWithIdentityUsecase,
     ValidateAccessTokenSessionUsecase,
+    LogoutUsecase,
+    RefreshAccessTokenUsecase,
   ],
 })
 export class AuthUsecasesModule {}

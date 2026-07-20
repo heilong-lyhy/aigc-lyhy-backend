@@ -8,7 +8,10 @@ import {
   BLOG_FILE_STORAGE_TOKEN,
   BLOG_FILE_UPLOAD_CONFIG_TOKEN,
 } from '@src/modules/blog/contracts/file-storage.contract';
-import { CRAVATAR_BASE_URL_TOKEN, CravatarAvatarGeneratorAdapter } from './cravatar-avatar-generator.adapter';
+import {
+  CRAVATAR_BASE_URL_TOKEN,
+  CravatarAvatarGeneratorAdapter,
+} from './cravatar-avatar-generator.adapter';
 import { LocalFileStorageAdapter } from './local-file-storage.adapter';
 import { BlogUploadConfigProvider } from './blog-upload-config.provider';
 
@@ -18,8 +21,9 @@ import { BlogUploadConfigProvider } from './blog-upload-config.provider';
     {
       provide: CRAVATAR_BASE_URL_TOKEN,
       inject: [ConfigService],
+      // B17 修复：fallback 默认值已上提到 config.module.ts 的 blogExternalConfig，此处仅读取
       useFactory: (configService: ConfigService): string =>
-        configService.get<string>('CRAVATAR_BASE_URL')?.trim() || 'https://cravatar.cn/avatar',
+        configService.get<string>('blogExternal.cravatarBaseUrl')!,
     },
     { provide: BLOG_AVATAR_GENERATOR_TOKEN, useClass: CravatarAvatarGeneratorAdapter },
     { provide: BLOG_FILE_STORAGE_TOKEN, useClass: LocalFileStorageAdapter },

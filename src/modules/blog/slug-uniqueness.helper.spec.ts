@@ -12,7 +12,10 @@ describe('assertSlugUnique', () => {
     const repo = createMockRepo(null);
 
     await assertSlugUnique(repo as any, 'unique-slug', 'SLUG_DUP', 'slug 已存在');
-    expect(repo.findOne).toHaveBeenCalledWith({ where: { slug: 'unique-slug' } });
+    expect(repo.findOne).toHaveBeenCalledWith({
+      where: { slug: 'unique-slug' },
+      withDeleted: true,
+    });
   });
 
   it('slug 已存在时应抛出 DomainError', async () => {

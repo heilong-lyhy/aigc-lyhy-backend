@@ -85,7 +85,6 @@ const PRODUCTION_REQUIRED_KEYS = [
   'JWT_ENABLE_REFRESH',
   'PAGINATION_HMAC_SECRET',
   'FIELD_ENCRYPTION_KEY',
-  'FIELD_ENCRYPTION_IV',
   'AI_PROVIDER_MODE',
   'AI_QUEUE_DEBUG_ENABLED',
   'EMAIL_QUEUE_DEBUG_ENABLED',
@@ -187,13 +186,11 @@ const collectAiProviderRuleErrors = (): string[] => {
 const collectFieldEncryptionRuleErrors = (): string[] => {
   const errors: string[] = [];
   const fieldEncryptionKey = getOptionalEnv('FIELD_ENCRYPTION_KEY');
-  if (fieldEncryptionKey && fieldEncryptionKey.length < 16) {
-    errors.push('FIELD_ENCRYPTION_KEY length must be at least 16');
+  // AES-256-GCM 需要 32 字节密钥（utf8 字符长度等于字节数仅对 ASCII 成立；非 ASCII 字符需用户自行核算字节数）
+  if (fieldEncryptionKey && Buffer.byteLength(fieldEncryptionKey, 'utf8') !== 32) {
+    errors.push('FIELD_ENCRYPTION_KEY must be exactly 32 bytes (utf8) for AES-256-GCM');
   }
-  const fieldEncryptionIv = getOptionalEnv('FIELD_ENCRYPTION_IV');
-  if (fieldEncryptionIv && fieldEncryptionIv.length < 16) {
-    errors.push('FIELD_ENCRYPTION_IV length must be at least 16');
-  }
+  // FIELD_ENCRYPTION_IV 已废弃：AES-GCM 每次加密使用随机 IV，不再需要固定 IV
   return errors;
 };
 
@@ -449,6 +446,59 @@ const emailDeliveryConfig: ConfigFactory = () => ({
 });
 
 /**
+ * 生成 BlogStorage 配置
+ * - uploadBaseDir: 文件物理存储根目录
+ * - allowedMimeTypes: 允许上传的 MIME 类型白名单
+ * - maxFileSize: 单文件大小上限（字节），同时被 main.ts 用于全局请求体限制
+ */
+const blogStorageConfig: ConfigFactory = () => ({
+  blogStorage: {
+    uploadBaseDir: process.env.BLOG_UPLOAD_BASE_DIR || './uploads',
+    allowedMimeTypes: (
+      process.env.BLOG_ALLOWED_MIME_TYPES ||
+      'image/jpeg,image/png,image/gif,image/webp,application/pdf'
+    )
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0),
+    maxFileSize: getIntEnvWithDefault('BLOG_MAX_FILE_SIZE', 10 * 1024 * 1024), // 默认 10MB
+  },
+});
+
+/**
+ * 生成 Blog 外部服务配置
+ * - cravatarBaseUrl: Cravatar 头像服务基础 URL（公开服务的固定 URL，作为兜底默认值合理）
+ *
+ * 设计说明：将原本散落在 blog-storage.module.ts 的 `?? 'https://cravatar.cn/avatar'` fallback
+ * 集中到 config 层统一管理，符合"所有配置默认值集中在 config.module.ts"的项目约定（B17 修复）
+ */
+const blogExternalConfig: ConfigFactory = () => ({
+  blogExternal: {
+    cravatarBaseUrl: getOptionalEnv('CRAVATAR_BASE_URL') ?? 'https://cravatar.cn/avatar',
+  },
+});
+
+/**
+ * 生成 ThirdPartyAuth 配置
+ * - wechat.apiBaseUrl: 微信 API 基础 URL（公开服务的固定 URL，作为兜底默认值合理）
+ * - wechat.requestTimeout: 微信 API 请求超时毫秒
+ * - wechat.appId / wechat.appSecret: 微信小程序凭据（环境相关，缺失时返回 undefined）
+ *
+ * 设计说明：将原本散落在 third-party-auth-infrastructure.module.ts 的
+ * `?? 'https://api.weixin.qq.com'` 和 `?? 10000` fallback 集中到 config 层统一管理（B17 修复）
+ */
+const thirdPartyAuthConfig: ConfigFactory = () => ({
+  thirdPartyAuth: {
+    wechat: {
+      appId: getOptionalEnv('WECHAT_APP_ID'),
+      appSecret: getOptionalEnv('WECHAT_APP_SECRET'),
+      apiBaseUrl: getOptionalEnv('WECHAT_API_BASE_URL') ?? 'https://api.weixin.qq.com',
+      requestTimeout: getIntEnvWithDefault('WECHAT_REQUEST_TIMEOUT', 10000),
+    },
+  },
+});
+
+/**
  * 生成 JWT 配置
  */
 const jwtConfig = registerAs('jwt', () => ({
@@ -501,6 +551,9 @@ const paginationConfig = () => ({
         emailDeliveryConfig,
         jwtConfig,
         paginationConfig,
+        blogStorageConfig,
+        blogExternalConfig,
+        thirdPartyAuthConfig,
       ],
     }),
   ],

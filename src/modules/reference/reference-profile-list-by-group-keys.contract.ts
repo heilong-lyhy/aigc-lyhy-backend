@@ -1,4 +1,4 @@
-import type { CapabilityOperationHandler } from '@app-types/common/capability.types';
+import type { CapabilityResult } from '@app-types/common/capability.types';
 import type {
   ReferenceProfileListByGroupKeysInput,
   ReferenceProfileSummary,
@@ -6,7 +6,8 @@ import type {
 
 export const REFERENCE_PROFILE_LIST_HANDLER = Symbol('REFERENCE_PROFILE_LIST_HANDLER');
 
-export type ReferenceProfileListHandlerPort = CapabilityOperationHandler<
-  ReferenceProfileListByGroupKeysInput,
-  readonly ReferenceProfileSummary[]
->;
+export interface ReferenceProfileListHandlerPort {
+  listByGroupKeys(
+    input: ReferenceProfileListByGroupKeysInput,
+  ): Promise<CapabilityResult<readonly ReferenceProfileSummary[]>>;
+}

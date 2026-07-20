@@ -1,5 +1,6 @@
 // src/modules/common/email-worker/email-delivery.service.ts
 import { Inject, Injectable } from '@nestjs/common';
+import { RUNTIME_ASYNC_TASK_CAPABILITY_ID } from '@app-types/common/capability-id.types';
 import { BULLMQ_JOBS, BULLMQ_QUEUES } from '@src/infrastructure/bullmq/bullmq.constants';
 import { CapabilityRuntimeContributionProvider } from '@src/infrastructure/capability/capability.decorators';
 import {
@@ -17,12 +18,12 @@ import { PinoLogger } from 'nestjs-pino';
 import { EMAIL_DELIVERY_OPTIONS, type EmailDeliveryOptions } from './email-worker.options';
 import type { SendEmailInput, SendEmailResult } from './email-worker.types';
 
-// `runtime.async-task` is owned by the async-task-record business module; `common/*` cannot
-// import from business modules, so this ID is kept as a literal here. See docs/dependency-rules.
 @Injectable()
 @CapabilityRuntimeContributionProvider({
   capabilityId: RUNTIME_EMAIL_DELIVERY_CAPABILITY_ID,
-  runtimeDependencies: [{ capabilityId: 'runtime.async-task', requirement: 'optional' }],
+  runtimeDependencies: [
+    { capabilityId: RUNTIME_ASYNC_TASK_CAPABILITY_ID, requirement: 'optional' },
+  ],
   queueResources: [{ queueName: BULLMQ_QUEUES.EMAIL, jobName: BULLMQ_JOBS.EMAIL.SEND }],
 })
 export class EmailDeliveryService {

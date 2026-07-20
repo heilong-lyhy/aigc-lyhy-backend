@@ -1,7 +1,9 @@
 // src/modules/blog/blog-like.service.spec.ts
 
+import { DomainError } from '@core/common/errors';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { QueryFailedError } from 'typeorm';
 import { BlogLikeService } from './blog-like.service';
 import { BlogLikeEntity } from './entities/blog-like.entity';
 
@@ -55,6 +57,36 @@ describe('BlogLikeService', () => {
 
       expect(result.liked).toBe(false);
       expect(mockLikeRepo.remove).toHaveBeenCalledWith(existingLike);
+    });
+
+    it('并发竞态撞 unique 约束时应抛 DomainError(LIKE_FAILED)', async () => {
+      const dupError = new QueryFailedError('', [], new Error('Duplicate entry') as never);
+      // 模拟 driverError 字段，触发 isUniqueConstraintViolation
+      (dupError as unknown as { driverError: unknown }).driverError = {
+        code: 'ER_DUP_ENTRY',
+        errno: 1062,
+        sqlState: '23000',
+      };
+
+      mockLikeRepo.findOne.mockResolvedValue(null);
+      mockLikeRepo.create.mockReturnValue({ postId: 1, userIdentifier: 'user1' });
+      mockLikeRepo.save.mockRejectedValue(dupError);
+
+      await expect(service.toggleLike(1, 'user1')).rejects.toMatchObject({
+        code: 'BLOG_LIKE_FAILED',
+      });
+      // 确认是 DomainError 实例，details 携带上下文
+      await expect(service.toggleLike(1, 'user1')).rejects.toBeInstanceOf(DomainError);
+    });
+
+    it('非 unique 约束的保存错误应原样上抛', async () => {
+      const otherError = new QueryFailedError('', [], new Error('Deadlock') as never);
+
+      mockLikeRepo.findOne.mockResolvedValue(null);
+      mockLikeRepo.create.mockReturnValue({ postId: 1, userIdentifier: 'user1' });
+      mockLikeRepo.save.mockRejectedValue(otherError);
+
+      await expect(service.toggleLike(1, 'user1')).rejects.toBe(otherError);
     });
   });
 

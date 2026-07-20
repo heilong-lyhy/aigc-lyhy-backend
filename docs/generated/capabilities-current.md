@@ -13,5 +13,7 @@ This shallow projection is derived from the Nest API and Worker module graphs. E
 | identity.authentication | always-on | enabled | enabled | unknown | - | AuthModule | api | - | [docs/capabilities/current.md](../capabilities/current.md) |
 | identity.external-account | switchable | enabled | enabled | unknown | - | ThirdPartyAuthModule | api | - | [docs/capabilities/current.md](../capabilities/current.md) |
 | identity.verification | always-on | enabled | enabled | unknown | - | VerificationRecordModule | api | - | [docs/capabilities/current.md](../capabilities/current.md) |
+| notification.email | switchable | enabled | enabled | unknown | - | EmailCapabilityModule | api, worker | - | [docs/capabilities/current.md](../capabilities/current.md) |
+| notification.email.sendmail | switchable | enabled | enabled | unknown | - | EmailWorkerModule | worker | - | [docs/capabilities/current.md](../capabilities/current.md) |
 | runtime.async-task | switchable | enabled | enabled | unknown | - | AsyncTaskRecordModule | api, worker | - | [docs/capabilities/current.md](../capabilities/current.md) |
 | runtime.email-delivery | switchable | enabled | enabled | unknown | - | EmailCapabilityModule | api, worker | api:dependency:optional:runtime.async-task;api:queue:email/send;worker:dependency:optional:runtime.async-task;worker:queue:email/send | [docs/capabilities/current.md](../capabilities/current.md) |

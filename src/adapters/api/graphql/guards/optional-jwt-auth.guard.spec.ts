@@ -23,14 +23,16 @@ describe('OptionalJwtAuthGuard', () => {
       expect(result).toBe(user);
     });
 
-    it('err 存在时应抛出错误', () => {
+    it('err 存在时应抛出 UnauthorizedException', () => {
       const err = new Error('认证服务错误');
-      expect(() => guard.handleRequest(err, false, null)).toThrow(err);
+      expect(() => guard.handleRequest(err, false, null)).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(err, false, null)).toThrow('认证失败');
     });
 
-    it('info 为 Error 实例时应抛出', () => {
+    it('info 为 Error 实例时应抛出 UnauthorizedException', () => {
       const info = new Error('jwt malformed');
-      expect(() => guard.handleRequest(null, false, info)).toThrow(info);
+      expect(() => guard.handleRequest(null, false, info)).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(null, false, info)).toThrow('认证失败: jwt malformed');
     });
 
     it('info.name 为 TokenExpiredError 时应抛出 UnauthorizedException', () => {

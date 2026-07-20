@@ -27,10 +27,27 @@ export class LegacyPasswordCryptoHelper {
    * @param salt - 盐值
    * @param hashedPassword - 已存储的哈希密码
    * @returns 密码是否匹配
+   *
+   * 安全说明：
+   * - timingSafeEqual 要求两个 Buffer 长度相同，否则抛 RangeError
+   * - 当 hashedPassword 被篡改/截断/格式错误时，长度可能与计算出的 hash 不一致
+   * - 此时不能让异常冒泡导致 500，应返回 false（视为密码不匹配）
+   * - 但仍要保持常量时间比较以防御时序攻击
    */
   static verifyPasswordWithCrypto(password: string, salt: string, hashedPassword: string): boolean {
     const hash = this.hashPasswordWithCrypto(password, salt);
-    return timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashedPassword, 'hex'));
+    const computedBuf = Buffer.from(hash, 'hex');
+    const storedBuf = Buffer.from(hashedPassword, 'hex');
+
+    // 长度不一致时直接返回 false，但仍执行一次假比较以保持时间常量
+    // （避免根据长度差异推断信息）
+    if (computedBuf.length !== storedBuf.length) {
+      // 用自身与自身比较维持常量时间，但不使用其结果
+      timingSafeEqual(computedBuf, computedBuf);
+      return false;
+    }
+
+    return timingSafeEqual(computedBuf, storedBuf);
   }
 
   /**

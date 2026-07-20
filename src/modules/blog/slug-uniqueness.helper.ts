@@ -9,6 +9,11 @@ import { Repository } from 'typeorm';
 
 /**
  * 通用的 slug 唯一性断言
+ *
+ * 必须使用 withDeleted 包含软删除记录：
+ * 软删除后 unique 索引仍占用该 slug，若不检查软删除记录会通过校验，
+ * 但 save 时会撞数据库 unique 约束并抛出未经映射的 QueryFailedError。
+ *
  * @param repo - 当前事务或默认的 Repository
  * @param slug - 待检查的 slug
  * @param errorCode - 违反时抛出的错误码
@@ -22,7 +27,7 @@ export async function assertSlugUnique(
   errorMessage: string,
   excludeId?: number,
 ): Promise<void> {
-  const existing = await repo.findOne({ where: { slug } });
+  const existing = await repo.findOne({ where: { slug }, withDeleted: true });
   if (existing && existing.id !== excludeId) {
     throw new DomainError(errorCode, errorMessage);
   }

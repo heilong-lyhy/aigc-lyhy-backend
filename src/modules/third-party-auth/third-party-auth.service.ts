@@ -78,9 +78,19 @@ export class ThirdPartyAuthService {
         authCredential,
         audience,
       });
-    } catch {
+    } catch (error) {
       // TODO: 在此处添加横切关注点：错误折叠、监控打点、限流重试、幂等去重等
-      throw new DomainError(THIRDPARTY_ERROR.CREDENTIAL_INVALID, '第三方凭证无效或已过期');
+      // 对外固定折叠为 CREDENTIAL_INVALID（避免暴露 provider 内部细节），但保留原始 cause
+      // 便于排障（按 errors.rules.md 的错误传播契约，禁止吞错）
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError(
+        THIRDPARTY_ERROR.CREDENTIAL_INVALID,
+        '第三方凭证无效或已过期',
+        { provider, reason: error instanceof Error ? error.message.slice(0, 96) : 'unknown' },
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 

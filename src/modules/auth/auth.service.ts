@@ -15,6 +15,8 @@ export class AuthService {
     private readonly tokenHelper: TokenHelper,
     @Inject(AUTH_TOKENS.JWT_AUDIENCE)
     private readonly jwtAudience: string,
+    @Inject(AUTH_TOKENS.JWT_REFRESH_EXPIRES_IN)
+    private readonly refreshExpiresIn: string,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(AuthService.name);
@@ -36,7 +38,11 @@ export class AuthService {
    */
   generateTokens(payload: JwtPayload): { accessToken: string; refreshToken: string } {
     const accessToken = this.tokenHelper.generateAccessToken({ payload });
-    const refreshToken = this.tokenHelper.generateRefreshToken({ payload });
+    // 关键修复：使用 DI 注入的 refreshExpiresIn，避免 refresh token 走 access token 的 2h 全局默认值
+    const refreshToken = this.tokenHelper.generateRefreshToken({
+      payload,
+      expiresIn: this.refreshExpiresIn,
+    });
 
     return { accessToken, refreshToken };
   }

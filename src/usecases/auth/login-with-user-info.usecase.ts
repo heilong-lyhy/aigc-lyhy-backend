@@ -3,9 +3,10 @@
 // 遵循 docs/common/usecase.rules.md "仅允许一层、禁止 A→B→C"
 
 import type { AuthLoginModel, LoginResultModel, UserInfoView } from '@app-types/models/auth.types';
-import type { IdentityTypeEnum } from '@app-types/models/account.types';
 import {
+  AccountStatus,
   AudienceTypeEnum,
+  type IdentityTypeEnum,
 } from '@app-types/models/account.types';
 import type { ThirdPartySession } from '@app-types/models/third-party-auth.types';
 import { ACCOUNT_ERROR, AUTH_ERROR, DomainError, THIRDPARTY_ERROR } from '@core/common/errors';
@@ -18,7 +19,6 @@ import { ThirdPartyAuthService } from '@modules/third-party-auth/third-party-aut
 import { TokenHelper } from '@modules/auth/token.helper';
 import { EnrichedLoginResult, LoginWarningType } from '@app-types/auth/login-flow.types';
 import { JwtPayload } from '@app-types/jwt.types';
-import { AccountStatus } from '@app-types/models/account.types';
 import { Injectable } from '@nestjs/common';
 import { DecideLoginRoleUsecase } from './decide-login-role.usecase';
 import { EnrichLoginWithIdentityUsecase } from './enrich-login-with-identity.usecase';
@@ -138,8 +138,7 @@ export class LoginWithUserInfoUsecase {
       },
     );
 
-    const hasRoles =
-      Array.isArray(basicResult.accessGroup) && basicResult.accessGroup.length > 0;
+    const hasRoles = Array.isArray(basicResult.accessGroup) && basicResult.accessGroup.length > 0;
     if (hasRoles && !basicResult.accessGroup.includes(finalRole)) {
       throw new DomainError(AUTH_ERROR.PERMISSION_MISMATCH, '权限信息异常，拒绝登录', {
         finalRole,
@@ -208,7 +207,9 @@ export class LoginWithUserInfoUsecase {
   /**
    * 解析第三方凭证
    */
-  private async resolveThirdPartyIdentity(params: ThirdPartyLoginParams): Promise<ThirdPartySession> {
+  private async resolveThirdPartyIdentity(
+    params: ThirdPartyLoginParams,
+  ): Promise<ThirdPartySession> {
     const authCredential = normalizeRequiredText(params.authCredential, {
       fieldName: '第三方凭证',
     });
@@ -240,8 +241,16 @@ export class LoginWithUserInfoUsecase {
       userInfo: loginSnapshot.userInfo,
     });
 
-    // 3. 如果账号应被暂停，抛出错误（写操作由 Usecase 负责，见 B12 修复）
+    // 3. 如果账号应被暂停，先持久化暂停状态，再抛出领域错误
+    // 写语义由 Usecase 负责编排（modules.rules.md / usecase.rules.md）
+    // 与 ExecuteLoginFlowUsecase.fetchUserData 保持一致，确保密码/第三方登录链路行为统一
+    // 失败语义：suspendAccount 持久化失败时抛 DomainError(ACCOUNT_SUSPEND_FAILED)，
+    // 优先于下方的 ACCOUNT_SUSPENDED 向上传播，避免账号"看似已暂停实则未持久化"的安全漏洞
     if (securityResult.shouldSuspend) {
+      await this.accountSecurityService.suspendAccount(
+        loginSnapshot.account.id,
+        '登录时检测到访问组不一致，自动暂停',
+      );
       throw new DomainError(ACCOUNT_ERROR.ACCOUNT_SUSPENDED, '账户因安全问题已被暂停');
     }
 

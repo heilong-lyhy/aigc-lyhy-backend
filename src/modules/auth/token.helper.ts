@@ -61,6 +61,7 @@ export class TokenHelper {
   generateRefreshToken({
     payload,
     tokenVersion = 1,
+    expiresIn,
     audience,
   }: GenerateRefreshTokenParams): string {
     try {
@@ -71,6 +72,13 @@ export class TokenHelper {
       };
 
       const signOptions: Record<string, unknown> = {};
+
+      // 关键修复：refresh token 必须显式设置 expiresIn
+      // 修复前：未传 expiresIn，会回退到全局 signOptions.expiresIn（access token 的 2h），
+      //         导致 refresh token 实际仅 2h 过期，配置中的 jwt.refreshExpiresIn (7d) 形同虚设
+      if (expiresIn) {
+        signOptions.expiresIn = expiresIn;
+      }
 
       if (audience) {
         signOptions.audience = audience;

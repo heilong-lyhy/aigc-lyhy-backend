@@ -73,6 +73,24 @@ describe('sanitizeBlogContent', () => {
     expect(sanitizeBlogContent(html)).toBe('<a>evil</a>');
   });
 
+  it('应移除 img src 上的 javascript: scheme', () => {
+    // 修复前：allowedSchemes 默认只作用于 href，src 可被注入 javascript:
+    const html = '<img src="javascript:alert(1)" alt="x">';
+    expect(sanitizeBlogContent(html)).toBe('<img alt="x" />');
+  });
+
+  it('应移除 img src 上的 data: URI（防 SVG XSS）', () => {
+    // 修复前：allowedSchemes 默认只作用于 href，src 可被注入 data:image/svg+xml
+    const html = '<img src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="x">';
+    expect(sanitizeBlogContent(html)).toBe('<img alt="x" />');
+  });
+
+  it('应移除协议相对 URL（防 HTTPS→HTTP 中间人）', () => {
+    // 修复前：allowProtocolRelative 默认 true，允许 //evil.com 这种 URL
+    const html = '<a href="//evil.com">link</a>';
+    expect(sanitizeBlogContent(html)).toBe('<a>link</a>');
+  });
+
   it('应移除 span/div 的 class 属性', () => {
     const html = '<span class="highlight">text</span><div class="container">block</div>';
     expect(sanitizeBlogContent(html)).toBe('<span>text</span><div>block</div>');

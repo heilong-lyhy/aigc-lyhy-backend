@@ -1,5 +1,6 @@
 // src/modules/account/base/services/account-security.service.ts
 import { AccountStatus, IdentityTypeEnum } from '@app-types/models/account.types';
+import { ACCOUNT_ERROR, DomainError } from '@core/common/errors';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { AccountSecuritySubjectSnapshot } from '@src/modules/account/account.types';
@@ -131,11 +132,16 @@ export class AccountSecurityService {
   /**
    * 暂停账号
    * 仅供 Usecase 层调用——写语义由 Usecase 负责编排
+   *
+   * 错误传播策略（modules.rules.md / usecase.rules.md）：
+   * - 持久化失败会破坏安全语义（账号应被暂停却仍可登录），不得静默吞错。
+   * - 抛出 DomainError(ACCOUNT_SUSPEND_FAILED) 让 Usecase 感知失败并通过
+   *   GqlAllExceptionsFilter 向前端映射为 INTERNAL_SERVER_ERROR。
+   *
    * @param accountId 账号 ID
    * @param reason 暂停原因
-   * @returns 是否成功暂停
    */
-  async suspendAccount(accountId: number, reason: string): Promise<boolean> {
+  async suspendAccount(accountId: number, reason: string): Promise<void> {
     try {
       await this.accountRepository.update(accountId, {
         status: AccountStatus.SUSPENDED,
@@ -151,10 +157,14 @@ export class AccountSecurityService {
       });
 
       this.logger.warn({ accountId, reason }, `账号 ${accountId} 已被暂停`);
-      return true;
     } catch (error) {
       this.logger.error({ err: error, accountId }, `暂停账号 ${accountId} 失败`);
-      return false;
+      throw new DomainError(
+        ACCOUNT_ERROR.ACCOUNT_SUSPEND_FAILED,
+        '账号暂停失败，请稍后重试',
+        { accountId, reason: reason.slice(0, 96) },
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }

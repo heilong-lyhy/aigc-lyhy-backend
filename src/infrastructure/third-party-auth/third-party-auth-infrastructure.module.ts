@@ -12,14 +12,21 @@ import { WEAPP_PROVIDER_OPTIONS, type WeAppProviderOptions } from './weapp-provi
     {
       provide: WEAPP_PROVIDER_OPTIONS,
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): WeAppProviderOptions => ({
-        appId: configService.get<string>('WECHAT_APP_ID')?.trim() || undefined,
-        appSecret: configService.get<string>('WECHAT_APP_SECRET')?.trim() || undefined,
-        apiBaseUrl:
-          configService.get<string>('WECHAT_API_BASE_URL')?.trim() || 'https://api.weixin.qq.com',
-        requestTimeout:
-          configService.get<number>('WECHAT_REQUEST_TIMEOUT') ?? 10000,
-      }),
+      // B17 修复：fallback 默认值已上提到 config.module.ts 的 thirdPartyAuthConfig，此处仅读取
+      useFactory: (configService: ConfigService): WeAppProviderOptions => {
+        const wechat = configService.get<{
+          appId?: string;
+          appSecret?: string;
+          apiBaseUrl: string;
+          requestTimeout: number;
+        }>('thirdPartyAuth.wechat')!;
+        return {
+          appId: wechat.appId?.trim() || undefined,
+          appSecret: wechat.appSecret?.trim() || undefined,
+          apiBaseUrl: wechat.apiBaseUrl,
+          requestTimeout: wechat.requestTimeout,
+        };
+      },
     },
     WeAppHttpProvider,
     WechatAuthProvider,

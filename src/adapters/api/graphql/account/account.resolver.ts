@@ -1,5 +1,5 @@
 // src/adapters/api/graphql/account/account.resolver.ts
-import { mapJwtToUsecaseSession } from '@app-types/auth/session.types';
+import { mapJwtToUsecaseSession } from '@core/common/auth/session-mapper';
 import { JwtPayload } from '@app-types/jwt.types';
 import { VerificationRecordType } from '@app-types/models/verification-record.types';
 import { UseGuards } from '@nestjs/common';
