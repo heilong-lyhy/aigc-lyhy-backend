@@ -187,3 +187,48 @@ npx eslint "{src,apps,libs,test}/**/*.ts" --cache
 - 修复方案
 - 涉及文件
 - 风险评估
+
+---
+
+## 执行结果（2026-07-22 全局复核）
+
+### 复核结论
+
+对 B1–B14 盲区逐项复核，**此前所有修复项仍生效**（详见下表）。本次全局检查**新发现 2 项遗留问题**，已在当日修复并记录至 [question26-07-22~2.md](../Lingeringissue/question26-07-22~2.md)。
+
+### 新发现问题（已解决）
+
+| 编号 | 问题 | 类别 | 修复方式 | 涉及文件 |
+|------|------|------|---------|---------|
+| 1 | `jwt.config.ts` 为未加载的重复 `registerAs('jwt')` 死代码 | B7 重复/死代码 | 删除文件 | `src/infrastructure/config/jwt.config.ts`（已删除） |
+| 2 | `mapUserInfoViewToSecureDTO` / `serializeGeographic` 在两个 Resolver 逐字重复 | B7 重复实现 | 改用已存在的共享 mapper，删除私有副本，清理未用 import | `auth.resolver.ts`、`third-party-auth.resolver.ts`、`user-info.mapper.ts`（激活） |
+
+### 验证
+
+- `npm run typecheck` 通过（exit 0）
+- `npx eslint` 三个相关文件均无报错
+- `npx jest --testPathPatterns="(auth|third-party-auth|user-info)"` 4 个测试套件 / 56 个用例全通过
+
+### 已确认生效的历史修复（B1–B14）
+
+| 盲区 | 结论 | 关键证据 |
+|------|------|---------|
+| B1 运行时行为语义 | ✅ | `jwt-auth.guard.ts` 处理 `info`；`graphql-exception.filter.ts` 的 `mapHttpToGqlCode` 与环境无关 |
+| B2 用例持有 Entity | ✅ | `AccountQueryService` 返回 View/Snapshot，非 ORM Entity |
+| B3 Resolver 内编排 | ✅ | `AuthResolver`/`ThirdPartyAuthResolver` 仅调单一 `LoginWithUserInfoUsecase` |
+| B4 异常处理策略 | ✅ | Resolver 不再 catch DomainError 返回 `success:false`，异常上浮 Filter |
+| B5 capability bus 残留 | ✅ | `capability-bus.contract.ts` 已删；`reference` 仅 `reference-profile.capability.ts` |
+| B6 types 层纯洁性 | ✅ | `src/types/` 无 core/框架导入 |
+| B7 重复接口/HttpService/WeAppProvider | ✅ | `ThirdPartyProvider` 单一定义；modules 无 `HttpService`；provider 已下沉 infrastructure |
+| B8 硬编码 URL/超时 | ✅ | URL 集中到 `config.module.ts` fallback；adapter 不直读 `process.env`；无硬编码 timeout |
+| B9 事务边界 | ✅ | 写 usecase 均通过 `TransactionRunner`，无直调 `.save()/.insert()/.update()` |
+| B10 capability 运行时门控 | ✅ | `EmailQueueService.enqueueSend` 双门控 `requireEnabled` |
+| B11 Usecase 多跳链 | ✅ | `LoginWithUserInfoUsecase` 扁平编排，1 hop |
+| B12 Modules 业务决策/写语义 | ✅ | `AccountSecurityService.validateAccessGroupConsistency` 纯方法；`suspendAccount` 由 usecase await |
+| B13 文档-代码漂移 | ✅ | `auth-session-current.md` / `account-write-current.md` 与代码一致 |
+| B14 修复验证 | ✅ | cravatar/weapp URL 与超时已集中 config，adapter 不读 `process.env` |
+
+### 历史 question26-07-13 两项的最终去向
+
+- 第 1 项 `runtime.async-task` 字面量 → 已采用方案 C 修复：`RUNTIME_ASYNC_TASK_CAPABILITY_ID` 迁移至 `@app-types/common/capability-id.types`。
+- 第 2 项 `maskEmail` 重复 → 已修复：抽取至 `@src/core/common/text/text.helper`。

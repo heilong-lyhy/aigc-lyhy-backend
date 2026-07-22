@@ -5,13 +5,11 @@ import {
   ThirdPartyLoginProviderEnum,
   ThirdPartyProviderEnum,
 } from '@app-types/models/account.types';
-import { UserInfoView } from '@app-types/models/auth.types';
-import { GeographicInfo } from '@app-types/models/user-info.types';
 import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { LoginResult } from '@src/adapters/api/graphql/account/dto/login-result.dto';
-import { UserInfoDTO } from '@src/adapters/api/graphql/account/dto/user-info.dto';
+import { mapUserInfoViewToDTO } from '@src/adapters/api/graphql/account/dto/user-info.mapper';
 import { currentUser } from '@src/adapters/api/graphql/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@src/adapters/api/graphql/guards/jwt-auth.guard';
 import { BindThirdPartyInput } from '@src/adapters/api/graphql/third-party-auth/dto/bind-third-party.input';
@@ -70,7 +68,7 @@ export class ThirdPartyAuthResolver {
       refreshToken: loginResult.refreshToken,
       accountId: loginResult.accountId,
       role: loginResult.role,
-      userInfo: this.mapUserInfoViewToSecureDTO(userInfoView),
+      userInfo: mapUserInfoViewToDTO(userInfoView),
     };
   }
 
@@ -208,52 +206,5 @@ export class ThirdPartyAuthResolver {
       imageBase64: result.imageBase64,
       imageBufferBase64: result.imageBuffer ? result.imageBuffer.toString('base64') : undefined,
     };
-  }
-
-  /**
-   * 将 UserInfoView 映射为安全的 UserInfoDTO
-   * 移除敏感字段（如 metaDigest），确保不会泄露给前端
-   */
-  private mapUserInfoViewToSecureDTO(userInfoView: UserInfoView): UserInfoDTO {
-    return {
-      // 基础字段映射
-      id: userInfoView.accountId,
-      accountId: userInfoView.accountId,
-      nickname: userInfoView.nickname,
-      gender: userInfoView.gender,
-      birthDate: userInfoView.birthDate,
-      avatarUrl: userInfoView.avatarUrl,
-      email: userInfoView.email,
-      signature: userInfoView.signature,
-
-      // 联系方式字段
-      address: userInfoView.address,
-      phone: userInfoView.phone,
-
-      // 标签和地理位置
-      tags: userInfoView.tags,
-      geographic: this.serializeGeographic(userInfoView.geographic),
-
-      // 访问组和通知
-      accessGroup: userInfoView.accessGroup,
-      notifyCount: userInfoView.notifyCount,
-      unreadCount: userInfoView.unreadCount,
-
-      // 状态和时间戳
-      userState: userInfoView.userState,
-      createdAt: userInfoView.createdAt,
-      updatedAt: userInfoView.updatedAt,
-    };
-  }
-
-  /**
-   * 将 GeographicInfo 对象序列化为字符串
-   */
-  private serializeGeographic(geographic: GeographicInfo | null): string | null {
-    if (!geographic) return null;
-    const parts: string[] = [];
-    if (geographic.province) parts.push(geographic.province);
-    if (geographic.city) parts.push(geographic.city);
-    return parts.length > 0 ? parts.join(', ') : null;
   }
 }
