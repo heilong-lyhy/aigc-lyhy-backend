@@ -144,21 +144,17 @@ Semantic `requires` and runtime dependencies are different graphs. Queue/job nam
 
 ## Human Observation Window
 
-`npm run capability:list` is the single interactive view. It shows:
+The human observation window is source-driven. To inspect the current capability topology:
 
-- hierarchical ID and mode;
-- configured intent, effective state, health, and final root blockers;
-- derived owner entry module and installed processes;
-- runtime contributions and declared resources;
-- semantic decision reference.
+- Read each business module's `*.capability.ts` file to see declared `@CapabilityAnchorProvider(...)` anchors (hierarchical ID, mode, `decisionRef`, reduced `requires`) and optional `@CapabilityRuntimeContributionProvider(...)` contributions.
+- Consult `docs/capabilities/current.md` for the semantic decision reference of each capability.
+- Consult `docs/generated/capabilities-current.md` for the snapshot projection (hierarchical ID, mode, configured intent, effective state, owner entry module, installed processes); this file is a shallow navigation aid, not a file-level ownership catalog.
 
-The command validates and resolves semantic prerequisites, effective state, runtime dependencies,
-and health independently for each production process before aggregating the display. The union of API
-and Worker Anchors must never satisfy a dependency missing from one real process graph.
+The entry module is the code-navigation seed; semantic scope comes from the decision, and technical responsibility comes from horizontal layer rules. The union of API and Worker Anchors must never satisfy a dependency missing from one real process graph.
 
-`npm run capability:docs` regenerates `docs/generated/capabilities-current.md`; `npm run capability:docs:check` verifies it. The generated projection is shallow navigation, not a file-level ownership catalog. The entry module is the code-navigation seed; semantic scope comes from the decision, and technical responsibility comes from horizontal layer rules.
+> Note: The `capability:list` / `capability:docs` / `capability:docs:check` CLI tools were removed in the strategy-I rollback (commit `5235d79`, 2026-07-22) because they added friction for domestic AI code generation without changing runtime behavior. The Capability system core (`src/infrastructure/capability/`) and all `*.capability.ts` declarations remain in place. To restore the CLI, see `plans/Lingeringissue/question26-07-20.md`.
 
-Tool success never replaces human review of semantics, explicit gates, activation points, and behavior tests.
+Human review of semantics, explicit gates, activation points, and behavior tests is never replaced by tooling.
 
 ## Validation
 

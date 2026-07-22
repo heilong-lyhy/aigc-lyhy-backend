@@ -60,7 +60,7 @@ If the answers describe only composition, reuse, or transport, keep the code as 
 - Every switchable owner-facing behavior has a nearby explicit gate.
 - Disabled Workers do not claim jobs.
 - Existing owner-facing calls and layer boundaries remain understandable without the capability registry.
-- `npm run capability:list` gives a useful shallow view without pretending to own every file.
+- Reading the module's `*.capability.ts` and `docs/generated/capabilities-current.md` gives a useful shallow view without pretending to own every file. (CLI `capability:list` was removed in commit `5235d79`; see `plans/Lingeringissue/question26-07-20.md`.)
 - Behavior tests cover enabled, disabled, and blocked paths where applicable.
 
 If these conditions cannot be met, do not install the Anchor yet. Record the proposed migration in `plans/` and keep current behavior explicit.
