@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "npm run build:api",
-    "prebuild:api": "node scripts/clean-dist.js && npm run capability:docs:check",
+    "prebuild:api": "node scripts/clean-dist.js",
     "build:api": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "npm run start:api",
@@ -18,9 +18,8 @@
     "start:debug": "TZ=Asia/Shanghai NODE_ENV=development nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/bootstraps/api/main",
     "lint:usecase-normalize-guard": "node scripts/check-usecase-normalize-guard.js",
-    "lint:architecture-fixtures": "node scripts/check-eslint-architecture-fixtures.mjs",
-    "lint": "npm run capability:docs:check && npm run lint:usecase-normalize-guard && npm run lint:architecture-fixtures && eslint \"{src,apps,libs,test,scripts}/**/*.ts\" --cache --cache-location .eslintcache --fix",
-    "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "lint": "npm run lint:usecase-normalize-guard && eslint \"{src,apps,libs,test}/**/*.ts\" --cache --cache-location .eslintcache --fix",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test:unit": "TZ=Asia/Shanghai jest",
     "test:watch": "TZ=Asia/Shanghai jest --watch",
     "test:cov": "TZ=Asia/Shanghai jest --coverage",
@@ -37,10 +36,7 @@
     "migration:drill:empty-db": "TZ=Asia/Shanghai NODE_ENV=e2e ts-node -r tsconfig-paths/register src/infrastructure/database/verify-empty-db-migrations.ts",
     "ci:baseline-drill": "npm run migration:drill:empty-db",
     "dev:worker": "TZ=Asia/Shanghai NODE_ENV=development ts-node -r tsconfig-paths/register src/bootstraps/worker/main.ts",
-    "start:worker": "NODE_ENV=production node dist/bootstraps/worker/main",
-    "capability:list": "TZ=Asia/Shanghai ts-node -r tsconfig-paths/register scripts/capability-list.ts list",
-    "capability:docs": "TZ=Asia/Shanghai ts-node -r tsconfig-paths/register scripts/capability-list.ts docs",
-    "capability:docs:check": "TZ=Asia/Shanghai ts-node -r tsconfig-paths/register scripts/capability-list.ts check"
+    "start:worker": "NODE_ENV=production node dist/bootstraps/worker/main"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",

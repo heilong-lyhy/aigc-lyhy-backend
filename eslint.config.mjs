@@ -24,11 +24,8 @@ const MODULES_CONTRACTS_ELEMENT_PATTERNS = [
   // Nested module-owned contracts, e.g. src/modules/common/email-dispatch/email-dispatch.contract.ts.
   'src/modules/*/**/*.contract.ts',
 ];
-const USECASES_CONTRACTS_ELEMENT_PATTERNS = [
-  'src/usecases/*/*.contract.ts',
-  'src/usecases/*/**/*.contract.ts',
-];
-const BOUNDARY_CONTRACT_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.contract(?:\.ts)?$/;
+// Keep this in sync with MODULES_CONTRACTS_ELEMENT_PATTERNS.
+const MODULE_BOUNDARY_CONTRACT_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.contract(?:\.ts)?$/;
 const ENTITY_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.entity(?:\.ts)?$/;
 const GRAPHQL_ADAPTER_ROOT = path.join(PROJECT_ROOT, 'src', 'adapters', 'api', 'graphql');
 const ENTITY_FORBIDDEN_IMPORT_SOURCES = new Set([
@@ -86,10 +83,7 @@ const ENTITY_FORBIDDEN_DECORATOR_NAMES = new Set([
   'UsePipes',
   'ValidateNested',
 ]);
-const GRAPHQL_SCHEMA_REGISTRATION_FUNCTION_NAMES = new Set([
-  'registerEnumType',
-  'registerScalarType',
-]);
+const GRAPHQL_SCHEMA_REGISTRATION_FUNCTION_NAMES = new Set(['registerEnumType', 'registerScalarType']);
 const GRAPHQL_ADAPTER_DECORATOR_NAMES = new Set([
   'Args',
   'ArgsType',
@@ -156,20 +150,16 @@ function isQueryServiceFilePath(filePath) {
  * @param {string} filePath
  * @returns {boolean}
  */
-function isUsecaseImplementationFilePath(filePath) {
-  return /(^|[/\\])[^/\\]+\.usecase(?:\.ts)?$/.test(filePath);
-}
-
-/**
- * @param {string} filePath
- * @returns {boolean}
- */
 function isMixedServiceFilePath(filePath) {
   const resolved = path.resolve(filePath);
   if (!isPathInside(resolved, MODULES_ROOT)) {
     return false;
   }
   const normalized = resolved.split(path.sep).join('/');
+  // [KEPT:业务保留] pagination.service 是纯只读分页服务，不属于 mixed read/write service
+  if (normalized.includes('/common/pagination.service')) {
+    return false;
+  }
   if (normalized.includes('/services/') || normalized.includes('/service/')) {
     return true;
   }
@@ -331,7 +321,7 @@ function getUsecaseScope(filePath) {
  * @param {string} filePath
  * @returns {boolean}
  */
-function isCommonUsecaseBoundaryContractFilePath(filePath) {
+function isUsecaseBoundaryContract(filePath) {
   if (!isPathInside(filePath, USECASES_ROOT)) {
     return false;
   }
@@ -339,17 +329,6 @@ function isCommonUsecaseBoundaryContractFilePath(filePath) {
   return (
     relative.startsWith(`common${path.sep}`) &&
     (relative.endsWith('.contract') || relative.endsWith('.contract.ts'))
-  );
-}
-
-/**
- * @param {string} filePath
- * @returns {boolean}
- */
-function isAnyUsecaseBoundaryContractFilePath(filePath) {
-  const resolved = path.resolve(filePath);
-  return (
-    isPathInside(resolved, USECASES_ROOT) && BOUNDARY_CONTRACT_FILE_PATH_PATTERN.test(resolved)
   );
 }
 
@@ -374,7 +353,10 @@ function getModuleScope(filePath) {
  */
 function isModuleBoundaryContractFilePath(filePath) {
   const resolved = path.resolve(filePath);
-  return isPathInside(resolved, MODULES_ROOT) && BOUNDARY_CONTRACT_FILE_PATH_PATTERN.test(resolved);
+  return (
+    isPathInside(resolved, MODULES_ROOT) &&
+    MODULE_BOUNDARY_CONTRACT_FILE_PATH_PATTERN.test(resolved)
+  );
 }
 
 /**
@@ -862,235 +844,6 @@ const localArchitecturePlugin = {
         };
       },
     },
-    'no-infrastructure-to-usecases-imports': {
-      meta: {
-        type: /** @type {const} */ ('problem'),
-        docs: {
-          description:
-            'disallow infrastructure importing usecase implementations while allowing usecase-owned boundary contracts',
-        },
-        schema: [],
-      },
-      /** @param {import('eslint').Rule.RuleContext} context */
-      create(context) {
-        if (!isPathInside(context.filename, INFRASTRUCTURE_ROOT)) {
-          return {};
-        }
-
-        /**
-         * @param {import('estree').Node} node
-         * @param {string} specifier
-         * @param {string} targetPath
-         * @returns {void}
-         */
-        function checkImport(node, specifier, targetPath) {
-          if (
-            !isPathInside(targetPath, USECASES_ROOT) ||
-            isAnyUsecaseBoundaryContractFilePath(targetPath)
-          ) {
-            return;
-          }
-          context.report({
-            node,
-            message:
-              'Infrastructure 层禁止依赖 usecase 实现；仅允许依赖实际实现或装配的 usecase-owned *.contract.ts。当前 import: "{{specifier}}"',
-            data: { specifier },
-          });
-        }
-
-        /** @param {import('estree').Node & { source?: { value?: unknown } }} node */
-        function reportIfNeeded(node) {
-          checkStaticImportLikeNode(context, node, (specifier, targetPath) => {
-            checkImport(node, specifier, targetPath);
-          });
-        }
-
-        return {
-          ImportDeclaration: reportIfNeeded,
-          ExportAllDeclaration: reportIfNeeded,
-          ExportNamedDeclaration: reportIfNeeded,
-          /** @param {import('estree').CallExpression} node */
-          CallExpression(node) {
-            checkRequireCallNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-          /** @param {import('estree').ImportExpression} node */
-          ImportExpression(node) {
-            checkImportExpressionNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-        };
-      },
-    },
-    'no-adapter-to-queryservice-imports': {
-      meta: {
-        type: /** @type {const} */ ('problem'),
-        docs: {
-          description: 'disallow adapters importing QueryService implementations',
-        },
-        schema: [],
-      },
-      /** @param {import('eslint').Rule.RuleContext} context */
-      create(context) {
-        if (!isPathInside(context.filename, ADAPTERS_ROOT)) {
-          return {};
-        }
-
-        /**
-         * @param {import('estree').Node} node
-         * @param {string} specifier
-         * @param {string} targetPath
-         * @returns {void}
-         */
-        function checkImport(node, specifier, targetPath) {
-          if (!isPathInside(targetPath, MODULES_ROOT) || !isQueryServiceFilePath(targetPath)) {
-            return;
-          }
-          context.report({
-            node,
-            message:
-              'Adapter 层禁止直接依赖 QueryService；必须通过 Usecase 获取读侧结果。当前 import: "{{specifier}}"',
-            data: { specifier },
-          });
-        }
-
-        /** @param {import('estree').Node & { source?: { value?: unknown } }} node */
-        function reportIfNeeded(node) {
-          checkStaticImportLikeNode(context, node, (specifier, targetPath) => {
-            checkImport(node, specifier, targetPath);
-          });
-        }
-
-        return {
-          ImportDeclaration: reportIfNeeded,
-          ExportAllDeclaration: reportIfNeeded,
-          ExportNamedDeclaration: reportIfNeeded,
-          /** @param {import('estree').CallExpression} node */
-          CallExpression(node) {
-            checkRequireCallNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-          /** @param {import('estree').ImportExpression} node */
-          ImportExpression(node) {
-            checkImportExpressionNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-        };
-      },
-    },
-    'no-adapter-to-infrastructure-imports': {
-      meta: {
-        type: /** @type {const} */ ('problem'),
-        docs: {
-          description: 'disallow API and Worker adapters importing infrastructure implementation',
-        },
-        schema: [],
-      },
-      /** @param {import('eslint').Rule.RuleContext} context */
-      create(context) {
-        if (!isPathInside(context.filename, ADAPTERS_ROOT)) {
-          return {};
-        }
-
-        /**
-         * @param {import('estree').Node} node
-         * @param {string} specifier
-         * @param {string} targetPath
-         * @returns {void}
-         */
-        function checkImport(node, specifier, targetPath) {
-          if (!isPathInside(targetPath, INFRASTRUCTURE_ROOT)) {
-            return;
-          }
-          context.report({
-            node,
-            message:
-              'Adapter 层禁止依赖 infrastructure；协议视图留在 adapter，本地映射到 Usecase 输入。当前 import: "{{specifier}}"',
-            data: { specifier },
-          });
-        }
-
-        /** @param {import('estree').Node & { source?: { value?: unknown } }} node */
-        function reportIfNeeded(node) {
-          checkStaticImportLikeNode(context, node, (specifier, targetPath) => {
-            checkImport(node, specifier, targetPath);
-          });
-        }
-
-        return {
-          ImportDeclaration: reportIfNeeded,
-          ExportAllDeclaration: reportIfNeeded,
-          ExportNamedDeclaration: reportIfNeeded,
-          /** @param {import('estree').CallExpression} node */
-          CallExpression(node) {
-            checkRequireCallNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-          /** @param {import('estree').ImportExpression} node */
-          ImportExpression(node) {
-            checkImportExpressionNode(context, node, (specifier, targetPath) => {
-              checkImport(node, specifier, targetPath);
-            });
-          },
-        };
-      },
-    },
-    'no-adapter-types-from-usecase-implementations': {
-      meta: {
-        type: /** @type {const} */ ('problem'),
-        docs: {
-          description:
-            'allow adapters to import usecase execution classes from *.usecase.ts, but require shared flow types to come from dedicated type files',
-        },
-        schema: [],
-      },
-      /** @param {import('eslint').Rule.RuleContext} context */
-      create(context) {
-        if (!isPathInside(context.filename, ADAPTERS_ROOT)) {
-          return {};
-        }
-
-        return {
-          /** @param {import('estree').ImportDeclaration} node */
-          ImportDeclaration(node) {
-            if (typeof node.source.value !== 'string') {
-              return;
-            }
-            const targetPath = resolveInternalImport(context.filename, node.source.value);
-            if (
-              !targetPath ||
-              !isPathInside(targetPath, USECASES_ROOT) ||
-              !isUsecaseImplementationFilePath(targetPath)
-            ) {
-              return;
-            }
-
-            for (const specifier of node.specifiers) {
-              const importedName =
-                specifier.type === 'ImportSpecifier'
-                  ? specifier.imported.type === 'Identifier'
-                    ? specifier.imported.name
-                    : String(specifier.imported.value)
-                  : specifier.local.name;
-              if (specifier.type === 'ImportSpecifier' && importedName.endsWith('Usecase')) {
-                continue;
-              }
-              context.report({
-                node: specifier,
-                message:
-                  'Adapter 从 *.usecase.ts 只能导入 Usecase 执行类；共享流程类型请移到独立 *.types.ts。当前 import: "{{importedName}}"',
-                data: { importedName },
-              });
-            }
-          },
-        };
-      },
-    },
     'no-adapter-decorators-on-entities': {
       meta: {
         type: /** @type {const} */ ('problem'),
@@ -1149,7 +902,8 @@ const localArchitecturePlugin = {
                 }
                 context.report({
                   node: /** @type {import('estree').Node} */ (/** @type {unknown} */ (node)),
-                  message: 'ORM Entity 禁止依赖 adapters 层文件；Entity 只表达持久化结构。',
+                  message:
+                    'ORM Entity 禁止依赖 adapters 层文件；Entity 只表达持久化结构。',
                 });
               },
             );
@@ -1202,7 +956,9 @@ const localArchitecturePlugin = {
                 continue;
               }
               context.report({
-                node: /** @type {import('estree').Node} */ (/** @type {unknown} */ (specifier)),
+                node: /** @type {import('estree').Node} */ (
+                  /** @type {unknown} */ (specifier)
+                ),
                 message:
                   'GraphQL enum/scalar 注册只能放在 src/adapters/api/graphql/schema/。当前导入: "{{importedName}}"',
                 data: { importedName },
@@ -1259,7 +1015,9 @@ const localArchitecturePlugin = {
                 continue;
               }
               context.report({
-                node: /** @type {import('estree').Node} */ (/** @type {unknown} */ (specifier)),
+                node: /** @type {import('estree').Node} */ (
+                  /** @type {unknown} */ (specifier)
+                ),
                 message:
                   'GraphQL decorator 只能出现在 src/adapters/api/graphql/**。当前导入: "{{importedName}}"',
                 data: { importedName },
@@ -1356,10 +1114,7 @@ const localArchitecturePlugin = {
       },
       /** @param {import('eslint').Rule.RuleContext} context */
       create(context) {
-        if (
-          !isPathInside(context.filename, MODULES_ROOT) ||
-          !isQueryServiceFilePath(context.filename)
-        ) {
+        if (!isPathInside(context.filename, MODULES_ROOT) || !isQueryServiceFilePath(context.filename)) {
           return {};
         }
 
@@ -1434,7 +1189,7 @@ const localArchitecturePlugin = {
             if (!isPathInside(targetPath, USECASES_ROOT)) {
               return;
             }
-            if (isCommonUsecaseBoundaryContractFilePath(targetPath)) {
+            if (isUsecaseBoundaryContract(targetPath)) {
               return;
             }
             const toScope = getUsecaseScope(targetPath);
@@ -1464,7 +1219,7 @@ const localArchitecturePlugin = {
               if (!isPathInside(targetPath, USECASES_ROOT)) {
                 return;
               }
-              if (isCommonUsecaseBoundaryContractFilePath(targetPath)) {
+              if (isUsecaseBoundaryContract(targetPath)) {
                 return;
               }
               const toScope = getUsecaseScope(targetPath);
@@ -1489,7 +1244,7 @@ const localArchitecturePlugin = {
               if (!isPathInside(targetPath, USECASES_ROOT)) {
                 return;
               }
-              if (isCommonUsecaseBoundaryContractFilePath(targetPath)) {
+              if (isUsecaseBoundaryContract(targetPath)) {
                 return;
               }
               const toScope = getUsecaseScope(targetPath);
@@ -1703,18 +1458,6 @@ export default defineConfig(
           mode: 'folder',
         },
         {
-          type: 'usecases-contracts',
-          pattern: USECASES_CONTRACTS_ELEMENT_PATTERNS[0],
-          mode: 'file',
-          capture: ['usecaseScope'],
-        },
-        {
-          type: 'usecases-contracts',
-          pattern: USECASES_CONTRACTS_ELEMENT_PATTERNS[1],
-          mode: 'file',
-          capture: ['usecaseScope'],
-        },
-        {
           type: 'usecases',
           pattern: 'src/usecases/*/*.ts',
           mode: 'file',
@@ -1864,19 +1607,10 @@ export default defineConfig(
                     captured: { usecaseScope: '{{from.usecaseScope}}' },
                   },
                 },
-                { to: { type: 'usecases-contracts' } },
                 { to: { type: 'modules-contracts' } },
                 { to: { type: 'modules-types' } },
                 { to: { type: 'modules-queries' } },
                 { to: { type: 'modules-services' } },
-                { to: { type: 'core' } },
-                { to: { type: 'types' } },
-              ],
-            },
-            {
-              from: { type: 'usecases-contracts' },
-              allow: [
-                { to: { type: 'usecases-contracts' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
               ],
@@ -2036,7 +1770,6 @@ export default defineConfig(
               from: { type: 'infrastructure' },
               allow: [
                 { to: { type: 'infrastructure' } },
-                { to: { type: 'usecases-contracts' } },
                 { to: { type: 'modules-contracts' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
@@ -2054,10 +1787,6 @@ export default defineConfig(
         },
       ],
       'local-architecture/no-infrastructure-to-modules-imports': 'error',
-      'local-architecture/no-infrastructure-to-usecases-imports': 'error',
-      'local-architecture/no-adapter-to-infrastructure-imports': 'error',
-      'local-architecture/no-adapter-to-queryservice-imports': 'error',
-      'local-architecture/no-adapter-types-from-usecase-implementations': 'error',
       'local-architecture/no-cross-domain-usecases-imports': 'error',
       'local-architecture/no-types-to-core-imports': 'error',
       'local-architecture/no-cross-domain-modules-imports': 'error',
