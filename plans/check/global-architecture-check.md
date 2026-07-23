@@ -232,3 +232,32 @@ npx eslint "{src,apps,libs,test}/**/*.ts" --cache
 
 - 第 1 项 `runtime.async-task` 字面量 → 已采用方案 C 修复：`RUNTIME_ASYNC_TASK_CAPABILITY_ID` 迁移至 `@app-types/common/capability-id.types`。
 - 第 2 项 `maskEmail` 重复 → 已修复：抽取至 `@src/core/common/text/text.helper`。
+
+---
+
+## 执行结果（2026-07-22 第三轮复审）
+
+### 复核结论
+
+对 B1–B14 盲区再次逐项复核，**前两轮所有修复项仍生效**。本轮新发现 **1 项 B7 重复实现遗漏**（前一轮修复 `auth.resolver.ts`/`third-party-auth.resolver.ts` 时未扫描到 `user-info.resolver.ts` 的同类副本），已在当日修复并记录至 [question26-07-22~3.md](../Lingeringissue/question26-07-22~3.md)。
+
+### 新发现问题（已解决）
+
+| 编号 | 问题 | 类别 | 修复方式 | 涉及文件 |
+|------|------|------|---------|---------|
+| 1 | `user-info.resolver.ts` 三个 private 方法（`mapViewToDTO`/`mapViewToBasicDTO`/`serializeGeographic`）与共享 `user-info.mapper.ts` 逐字重复 | B7 重复实现 | 删除三个 private 方法，改用共享 mapper import，清理 `UserInfoView` import | `user-info.resolver.ts` |
+
+### 本轮验证手段
+
+- 依赖方向：grep 验证 adapters→modules / usecases→infrastructure,adapters / types→core,nestjs / core→上游 均无违规
+- B1：`jwt-auth.guard.ts` + `optional-jwt-auth.guard.ts` 处理 `info`；`graphql-exception.filter.ts` `mapHttpToGqlCode` 映射正确
+- B2：`AiProviderCallRecordService.createRecord`/`updateRecordById` 公开方法返回 `AiProviderCallRecordView`，Entity 仅 private 方法内部流转
+- B4：`success:false` 仅出现在 `schema.init.ts` 幂等守卫（非异常吞没）
+- B5：`src/usecases/common/ports/` 仅 `reference-profile-client.contract.ts` + `transaction-runner.contract.ts`
+- B6：`src/types/` 无 core/框架/上游层 import
+- B7：`grep "private\s+(map\w+ToDTO|serialize\w+)"` 发现并修复 `user-info.resolver.ts` 残留三个私有映射方法；`mapCreatableType`/`mapLoginProvider` 为单 resolver 枚举映射无重复
+- B9：usecase 层 `.update(` 仅 `createHash('sha256').update()` crypto 调用，无数据库写
+- B10：`EmailQueueService.enqueueSend` 双门控 `requireEnabled` 仍生效
+- B11：`LoginWithUserInfoUsecase` 扁平 1 hop 编排
+- B12：`AccountSecurityService.validateAccessGroupConsistency` 返回 `{shouldSuspend}` 纯方法
+- 验证：`npm run typecheck` exit 0；`npx eslint user-info.resolver.ts` exit 0；`npx jest --testPathPatterns="(user-info|account)"` 4 套件 / 44 用例全通过
