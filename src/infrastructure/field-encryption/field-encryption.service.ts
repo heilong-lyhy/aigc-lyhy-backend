@@ -1,5 +1,5 @@
 // src/infrastructure/field-encryption/field-encryption.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { getEncryptedFields } from './field-encryption.metadata';
@@ -34,6 +34,7 @@ const METADATA_PREFIX_LENGTH =
 @Injectable()
 export class FieldEncryptionService {
   private readonly key: Buffer;
+  private readonly logger = new Logger(FieldEncryptionService.name);
 
   constructor(private readonly configService: ConfigService) {
     const keyStr = getRequiredConfig(this.configService, 'FIELD_ENCRYPTION_KEY');
@@ -110,8 +111,11 @@ export class FieldEncryptionService {
             (entity as Record<string | symbol, unknown>)[field] = decrypted;
           }
         } catch {
-          // 解密失败（密文被篡改、密钥错误或非 GCM 格式的旧数据）：跳过该字段
-          // 调用方看到原始密文，可通过日志告警识别；保留 continue 行为不阻断其他字段
+          // 解密失败：密文被篡改、密钥错误或非 GCM 格式的旧数据
+          // 记录告警以便识别未加密的旧数据，但仍跳过以不阻断其他字段解密
+          this.logger.warn(
+            `解密字段 ${String(field)} 失败，可能为加密系统引入前的旧数据或密钥不匹配`,
+          );
           continue;
         }
       }

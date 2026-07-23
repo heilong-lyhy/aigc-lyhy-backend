@@ -33,25 +33,31 @@ export class AccountSecurityService {
       const metaDigestValue = account.userInfo.metaDigest;
 
       if (!metaDigestValue) {
-        this.logger.error({ accountId: account.id }, `账号 ${account.id} 的 metaDigest 为空`);
+        this.logger.warn(
+          { accountId: account.id },
+          `账号 ${account.id} 的 metaDigest 为空，跳过一致性校验`,
+        );
         return {
-          isValid: false,
-          shouldSuspend: true,
+          isValid: true,
+          shouldSuspend: false,
+        };
+      }
+
+      // metaDigest 应为加密后解密的数组；若解密失败（旧数据为 hash 字符串等非数组格式），
+      // 降级为仅验证 accessGroup 自身非空，不触发暂停
+      if (!Array.isArray(metaDigestValue)) {
+        this.logger.warn(
+          { accountId: account.id, metaDigestType: typeof metaDigestValue },
+          `账号 ${account.id} 的 metaDigest 格式无效（应为数组），降级为仅验证 accessGroup 自身有效性`,
+        );
+        const accessGroup = account.userInfo.accessGroup;
+        return {
+          isValid: Array.isArray(accessGroup) && accessGroup.length > 0,
+          shouldSuspend: false,
         };
       }
 
       const realAccessGroup = metaDigestValue;
-
-      if (!Array.isArray(realAccessGroup)) {
-        this.logger.error(
-          { accountId: account.id, metaDigest: metaDigestValue },
-          `账号 ${account.id} 的 metaDigest 格式无效，应为数组`,
-        );
-        return {
-          isValid: false,
-          shouldSuspend: true,
-        };
-      }
 
       const accessGroupStr = JSON.stringify(account.userInfo.accessGroup);
       const realAccessGroupStr = JSON.stringify(realAccessGroup);
@@ -90,7 +96,7 @@ export class AccountSecurityService {
 
       return {
         isValid: false,
-        shouldSuspend: true,
+        shouldSuspend: false,
       };
     }
   }
